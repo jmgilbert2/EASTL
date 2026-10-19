@@ -11,12 +11,12 @@ jobs:
     name: Checkout EASTL and submodules
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           path: EASTL/
       - run: cd EASTL/ && git submodule update --init
       - name: Upload checked out code
-        uses: actions/upload-artifact@v2.3.1
+        uses: actions/upload-artifact@v4
         with:
           name: Code
           path: EASTL/
@@ -44,13 +44,13 @@ jobs:
             cxxflags: '/std:c++20 /Zc:char8_t'
           - os: ubuntu-latest
             compiler: clang
-            cc: 'clang-14'
-            cxx: 'clang++-14'
+            cc: 'clang-18'
+            cxx: 'clang++-18'
             cxxflags: '-std=c++20'
           - os: ubuntu-latest
             compiler: gcc
-            cc: 'gcc-12'
-            cxx: 'g++-12'
+            cc: 'gcc-14'
+            cxx: 'g++-14'
             cxxflags: '-std=c++2a'
 
     name: Build EASTL
@@ -58,7 +58,7 @@ jobs:
     
     steps:
       - name: Download a Build Artifact
-        uses: actions/download-artifact@v2.1.0
+        uses: actions/download-artifact@v4
         with:
           name: Code
           path: Code/
@@ -71,9 +71,9 @@ jobs:
           CC: ${{ matrix.cc }}
       - run: cd build && cmake --build . --config ${{ matrix.configuration }}
       - name: Upload binaries
-        uses: actions/upload-artifact@v2.3.1
+        uses: actions/upload-artifact@v4
         with:
-          name: Binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: Binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}-${{ matrix.std_iter_compatibility }}
           path: build/
     
   test:
@@ -85,6 +85,7 @@ jobs:
         os: [ windows-latest, ubuntu-latest ]
         compiler: [ clang, msvc, gcc ]
         configuration: [ Debug, Release ]
+        std_iter_compatibility: [ std_iter_category_disabled, std_iter_category_enabled ]
         exclude:
         - os: windows-latest
           compiler: gcc
@@ -96,9 +97,9 @@ jobs:
     
     steps:
       - name: Download a Build Artifact
-        uses: actions/download-artifact@v2.1.0
+        uses: actions/download-artifact@v4
         with:
-          name: Binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: Binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}-${{ matrix.std_iter_compatibility }}
           path: Binaries/
       - if: matrix.os == 'ubuntu-latest'
         run: chmod 755 ./Binaries/test/EASTLTest
@@ -124,9 +125,9 @@ jobs:
 
     steps:
       - name: Download a Build Artifact
-        uses: actions/download-artifact@v2.1.0
+        uses: actions/download-artifact@v4
         with:
-          name: Binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: Binaries-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.configuration }}-std_iter_category_disabled
           path: Binaries/
       - if: matrix.os == 'ubuntu-latest'
         run: chmod 755 ./Binaries/benchmark/EASTLBenchmarks
