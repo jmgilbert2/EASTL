@@ -7,8 +7,6 @@ project(EASTL CXX)
 #-------------------------------------------------------------------------------------------
 # Options
 #-------------------------------------------------------------------------------------------
-option(EASTL_BUILD_BENCHMARK "Enable generation of build files for benchmark" OFF)
-option(EASTL_BUILD_TESTS "Enable generation of build files for tests" OFF)
 option(EASTL_STD_ITERATOR_CATEGORY_ENABLED "Enable compatibility with std:: iterator categories" OFF)
 
 
@@ -42,14 +40,6 @@ if (MSVC)
     )
 endif()
 
-if(EASTL_BUILD_BENCHMARK)
-    add_subdirectory(benchmark)
-endif()
-
-if(EASTL_BUILD_TESTS)
-    add_subdirectory(test)
-endif()
-
 #-------------------------------------------------------------------------------------------
 # Defines
 #-------------------------------------------------------------------------------------------
@@ -69,10 +59,6 @@ target_include_directories(EASTL PUBLIC include)
 #-------------------------------------------------------------------------------------------
 # Dependencies
 #-------------------------------------------------------------------------------------------
-if (NOT TARGET EABase)
-    add_subdirectory(test/packages/EABase)
-endif()
-
 target_link_libraries(EASTL EABase)
 
 #-------------------------------------------------------------------------------------------
