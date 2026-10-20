@@ -2368,7 +2368,14 @@ namespace eastl
 
 		if(pBegin != pEnd)
 		{
+			// GCC 10 reports a write past the end of short strings at -O3; [pBegin, pEnd) is inside the string.
+			#if defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION < 11000)
+				EA_DISABLE_GCC_WARNING(-Wstringop-overflow)
+			#endif
 			memmove(const_cast<value_type*>(pBegin), pEnd, (size_t)((internalLayout().EndPtr() - pEnd) + 1) * sizeof(value_type));
+			#if defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION < 11000)
+				EA_RESTORE_GCC_WARNING()
+			#endif
 			const size_type n = (size_type)(pEnd - pBegin);
 			internalLayout().SetSize(internalLayout().GetSize() - n);
 		}

@@ -265,7 +265,15 @@ namespace eastl
 
 #if defined(EA_COMPILER_CPP17_ENABLED)
 	// All main compilers offer a constexpr __builtin_memcmp as soon as C++17 was available.
+	// GCC 10 to 14 report bounds larger than one of the strings, on paths where the callers (for example
+	// string_view's operator==) have already ruled them out.
+	#if defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION >= 11000)
+		EA_DISABLE_GCC_WARNING(-Wstringop-overread)
+	#else
+		EA_DISABLE_GCC_WARNING(-Wstringop-overflow)
+	#endif
 	constexpr int Compare(const char* p1, const char* p2, size_t n) { return __builtin_memcmp(p1, p2, n); }
+	EA_RESTORE_GCC_WARNING()
 
 #if !defined(EA_COMPILER_GNUC)
 	// GCC doesn't offer __builtin_wmemcmp.
@@ -353,12 +361,20 @@ namespace eastl
 #endif
 
 	// If either pDestination or pSource is an invalid or null pointer, the behavior is undefined, even if (pSourceEnd - pSource) is zero.
+	// GCC 12 to 15 report reads past short string literals, on string reallocation paths that need a longer
+	// source; GCC can't tell, because CharStrlen doesn't use __builtin_strlen with GCC.
+	#if defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION >= 11000)
+		EA_DISABLE_GCC_WARNING(-Wstringop-overread)
+	#endif
 	template <typename T>
 	inline T* CharStringUninitializedCopy(const T* pSource, const T* pSourceEnd, T* pDestination)
 	{
 		memmove(pDestination, pSource, (size_t)(pSourceEnd - pSource) * sizeof(T));
 		return pDestination + (pSourceEnd - pSource);
 	}
+	#if defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION >= 11000)
+		EA_RESTORE_GCC_WARNING()
+	#endif
 
 
 	// CharTypeStringFindEnd

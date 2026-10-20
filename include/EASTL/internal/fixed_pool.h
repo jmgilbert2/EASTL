@@ -1401,11 +1401,14 @@ namespace eastl
 			return mOverflowAllocator.allocate(n, alignment, offset, flags);
 		}
 
+		// GCC 11 to 15 report that the overflow allocator may free the fixed buffer, which the test rules out.
+		EA_DISABLE_GCC_WARNING(-Wfree-nonheap-object)
 		void deallocate(void* p, size_t n)
 		{
 			if(p != mpPoolBegin)
 				mOverflowAllocator.deallocate(p, n); // Can't do this to our own allocation.
 		}
+		EA_RESTORE_GCC_WARNING()
 
 		const char* get_name() const
 		{
