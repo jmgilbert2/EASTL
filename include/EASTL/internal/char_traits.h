@@ -97,64 +97,80 @@ namespace eastl
 		bool DecodePart(const wchar_t*& pSrc, const wchar_t* pSrcEnd, char8_t*& pDest, char8_t* pDestEnd);
 	#endif
 
+	namespace details
+	{
+		// Calls the DecodePart overload for SrcT2 and DestT2 on the same memory. The pointers are converted by value
+		// and written back, because accessing them through references to another pointer type breaks strict aliasing.
+		template <typename SrcT2, typename DestT2, typename SrcT, typename DestT>
+		inline bool DecodePartAs(const SrcT*& pSrc, const SrcT* pSrcEnd, DestT*& pDest, DestT* pDestEnd)
+		{
+			const SrcT2* pSrc2  = reinterpret_cast<const SrcT2*>(pSrc);
+			DestT2*      pDest2 = reinterpret_cast<DestT2*>(pDest);
+			const bool   result = DecodePart(pSrc2, reinterpret_cast<const SrcT2*>(pSrcEnd), pDest2, reinterpret_cast<DestT2*>(pDestEnd));
+			pSrc  = reinterpret_cast<const SrcT*>(pSrc2);
+			pDest = reinterpret_cast<DestT*>(pDest2);
+			return result;
+		}
+	}
+
 
 	#if EA_WCHAR_UNIQUE
 		inline bool DecodePart(const wchar_t*& pSrc, const wchar_t* pSrcEnd, wchar_t*& pDest, wchar_t* pDestEnd)
 		{
-			return DecodePart(reinterpret_cast<const char*&>(pSrc), reinterpret_cast<const char*>(pSrcEnd), reinterpret_cast<char*&>(pDest), reinterpret_cast<char*&>(pDestEnd));
+			return details::DecodePartAs<char, char>(pSrc, pSrcEnd, pDest, pDestEnd);
 		}
 
 		inline bool DecodePart(const wchar_t*& pSrc, const wchar_t* pSrcEnd, char*& pDest, char* pDestEnd)
 		{
 		#if (EA_WCHAR_SIZE == 2)
-			return DecodePart(reinterpret_cast<const char16_t*&>(pSrc), reinterpret_cast<const char16_t*>(pSrcEnd), pDest, pDestEnd);
+			return details::DecodePartAs<char16_t, char>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#elif (EA_WCHAR_SIZE == 4)
-			return DecodePart(reinterpret_cast<const char32_t*&>(pSrc), reinterpret_cast<const char32_t*>(pSrcEnd), pDest, pDestEnd);
+			return details::DecodePartAs<char32_t, char>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#endif
 		}
 
 		inline bool DecodePart(const wchar_t*& pSrc, const wchar_t* pSrcEnd, char16_t*& pDest, char16_t* pDestEnd)
 		{
 		#if (EA_WCHAR_SIZE == 2)
-			return DecodePart(reinterpret_cast<const char16_t*&>(pSrc), reinterpret_cast<const char16_t*>(pSrcEnd), pDest, pDestEnd);
+			return details::DecodePartAs<char16_t, char16_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#elif (EA_WCHAR_SIZE == 4)
-			return DecodePart(reinterpret_cast<const char32_t*&>(pSrc), reinterpret_cast<const char32_t*>(pSrcEnd), pDest, pDestEnd);
+			return details::DecodePartAs<char32_t, char16_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#endif
 		}
 
 		inline bool DecodePart(const wchar_t*& pSrc, const wchar_t* pSrcEnd, char32_t*& pDest, char32_t* pDestEnd)
 		{
 		#if (EA_WCHAR_SIZE == 2)
-			return DecodePart(reinterpret_cast<const char16_t*&>(pSrc), reinterpret_cast<const char16_t*>(pSrcEnd), pDest, pDestEnd);
+			return details::DecodePartAs<char16_t, char32_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#elif (EA_WCHAR_SIZE == 4)
-			return DecodePart(reinterpret_cast<const char32_t*&>(pSrc), reinterpret_cast<const char32_t*>(pSrcEnd), pDest, pDestEnd);
+			return details::DecodePartAs<char32_t, char32_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#endif
 		}
 
 		inline bool DecodePart(const char*& pSrc, const char* pSrcEnd, wchar_t*& pDest, wchar_t* pDestEnd)
 		{
 		#if (EA_WCHAR_SIZE == 2)
-			return DecodePart(pSrc, pSrcEnd, reinterpret_cast<char16_t*&>(pDest), reinterpret_cast<char16_t*>(pDestEnd));
+			return details::DecodePartAs<char, char16_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#elif (EA_WCHAR_SIZE == 4)
-			return DecodePart(pSrc, pSrcEnd, reinterpret_cast<char32_t*&>(pDest), reinterpret_cast<char32_t*>(pDestEnd));
+			return details::DecodePartAs<char, char32_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#endif
 		}
 
 		inline bool DecodePart(const char16_t*& pSrc, const char16_t* pSrcEnd, wchar_t*& pDest, wchar_t* pDestEnd)
 		{
 		#if (EA_WCHAR_SIZE == 2)
-			return DecodePart(pSrc, pSrcEnd, reinterpret_cast<char16_t*&>(pDest), reinterpret_cast<char16_t*>(pDestEnd));
+			return details::DecodePartAs<char16_t, char16_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#elif (EA_WCHAR_SIZE == 4)
-			return DecodePart(pSrc, pSrcEnd, reinterpret_cast<char32_t*&>(pDest), reinterpret_cast<char32_t*>(pDestEnd));
+			return details::DecodePartAs<char16_t, char32_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#endif
 		}
 
 		inline bool DecodePart(const char32_t*& pSrc, const char32_t* pSrcEnd, wchar_t*& pDest, wchar_t* pDestEnd)
 		{
 		#if (EA_WCHAR_SIZE == 2)
-			return DecodePart(pSrc, pSrcEnd, reinterpret_cast<char16_t*&>(pDest), reinterpret_cast<char16_t*>(pDestEnd));
+			return details::DecodePartAs<char32_t, char16_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#elif (EA_WCHAR_SIZE == 4)
-			return DecodePart(pSrc, pSrcEnd, reinterpret_cast<char32_t*&>(pDest), reinterpret_cast<char32_t*>(pDestEnd));
+			return details::DecodePartAs<char32_t, char32_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#endif
 		}
 	#endif
@@ -162,37 +178,37 @@ namespace eastl
 	#if EA_CHAR8_UNIQUE
 	    inline bool DecodePart(const char8_t*& pSrc, const char8_t* pSrcEnd, char8_t*& pDest, char8_t* pDestEnd)
 	    {
-		    return DecodePart(reinterpret_cast<const char*&>(pSrc), reinterpret_cast<const char*>(pSrcEnd), reinterpret_cast<char*&>(pDest), reinterpret_cast<char*&>(pDestEnd));
+		    return details::DecodePartAs<char, char>(pSrc, pSrcEnd, pDest, pDestEnd);
 	    }
 
 	    inline bool DecodePart(const char8_t*& pSrc, const char8_t* pSrcEnd, char*& pDest, char* pDestEnd)
 	    {
-		    return DecodePart(reinterpret_cast<const char*&>(pSrc), reinterpret_cast<const char*>(pSrcEnd), pDest, pDestEnd);
+		    return details::DecodePartAs<char, char>(pSrc, pSrcEnd, pDest, pDestEnd);
 	    }
 
 	    inline bool DecodePart(const char8_t*& pSrc, const char8_t* pSrcEnd, char16_t*& pDest, char16_t* pDestEnd)
 	    {
-		    return DecodePart(reinterpret_cast<const char*&>(pSrc), reinterpret_cast<const char*>(pSrcEnd), pDest, pDestEnd);
+		    return details::DecodePartAs<char, char16_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 	    }
 
 	    inline bool DecodePart(const char8_t*& pSrc, const char8_t* pSrcEnd, char32_t*& pDest, char32_t* pDestEnd)
 	    {
-		    return DecodePart(reinterpret_cast<const char*&>(pSrc), reinterpret_cast<const char*>(pSrcEnd), pDest, pDestEnd);
+		    return details::DecodePartAs<char, char32_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 	    }
 
 		inline bool DecodePart(const char*& pSrc, const char* pSrcEnd, char8_t*& pDest, char8_t* pDestEnd)
 		{
-			return DecodePart(pSrc, pSrcEnd, reinterpret_cast<char*&>(pDest), reinterpret_cast<char*&>(pDestEnd));
+			return details::DecodePartAs<char, char>(pSrc, pSrcEnd, pDest, pDestEnd);
 		}
 
 		inline bool DecodePart(const char16_t*& pSrc, const char16_t* pSrcEnd, char8_t*& pDest, char8_t* pDestEnd)
 		{
-			return DecodePart(pSrc, pSrcEnd, reinterpret_cast<char*&>(pDest), reinterpret_cast<char*&>(pDestEnd));
+			return details::DecodePartAs<char16_t, char>(pSrc, pSrcEnd, pDest, pDestEnd);
 		}
 
 		inline bool DecodePart(const char32_t*& pSrc, const char32_t* pSrcEnd, char8_t*& pDest, char8_t* pDestEnd)
 		{
-			return DecodePart(pSrc, pSrcEnd, reinterpret_cast<char*&>(pDest), reinterpret_cast<char*&>(pDestEnd));
+			return details::DecodePartAs<char32_t, char>(pSrc, pSrcEnd, pDest, pDestEnd);
 		}
     #endif
 
@@ -200,18 +216,18 @@ namespace eastl
 		inline bool DecodePart(const char8_t*&  pSrc, const char8_t*  pSrcEnd, wchar_t*&  pDest, wchar_t*  pDestEnd)
 		{
 		#if (EA_WCHAR_SIZE == 2)
-		    return DecodePart(pSrc, pSrcEnd, reinterpret_cast<char16_t*&>(pDest), reinterpret_cast<char16_t*>(pDestEnd));
+		    return details::DecodePartAs<char8_t, char16_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#elif (EA_WCHAR_SIZE == 4)
-		    return DecodePart(pSrc, pSrcEnd, reinterpret_cast<char32_t*&>(pDest), reinterpret_cast<char32_t*>(pDestEnd));
+		    return details::DecodePartAs<char8_t, char32_t>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#endif
 		}
 
 		inline bool DecodePart(const wchar_t*&  pSrc, const wchar_t*  pSrcEnd, char8_t*&  pDest, char8_t*  pDestEnd)
 		{
 		#if (EA_WCHAR_SIZE == 2)
-			return DecodePart(reinterpret_cast<const char16_t*&>(pSrc), reinterpret_cast<const char16_t*>(pSrcEnd), reinterpret_cast<char*&>(pDest), reinterpret_cast<char*>(pDestEnd));
+			return details::DecodePartAs<char16_t, char>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#elif (EA_WCHAR_SIZE == 4)
-			return DecodePart(reinterpret_cast<const char32_t*&>(pSrc), reinterpret_cast<const char32_t*>(pSrcEnd), reinterpret_cast<char*&>(pDest), reinterpret_cast<char*>(pDestEnd));
+			return details::DecodePartAs<char32_t, char>(pSrc, pSrcEnd, pDest, pDestEnd);
 		#endif
 		}
 	#endif
