@@ -858,7 +858,9 @@ namespace eastl
 // Defined as 0 or 1.
 //
 #ifndef EASTL_INT128_SUPPORTED
-	#if defined(EA_COMPILER_INTMAX_SIZE) && (EA_COMPILER_INTMAX_SIZE >= 16)
+	// __SIZEOF_INT128__ covers compilers whose intmax_t is still 64 bits but that provide
+	// __int128 anyway, such as clang-cl, whose atomics use __uint128_t for 128-bit operations.
+	#if (defined(EA_COMPILER_INTMAX_SIZE) && (EA_COMPILER_INTMAX_SIZE >= 16)) || defined(__SIZEOF_INT128__)
 		#define EASTL_INT128_SUPPORTED 1
 	#else
 		#define EASTL_INT128_SUPPORTED 0

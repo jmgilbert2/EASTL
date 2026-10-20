@@ -35,12 +35,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pointer-bool-conversion -Wno-unknown-warning-option")
 endif()
 
-# Parts of the test suite fail to compile if char8_t is enabled, so we
-# disable it and only enable for specific source files later on.
-if (EASTL_NO_CHAR8T_FLAG)
-    add_compile_options(${EASTL_NO_CHAR8T_FLAG})
-endif()
-
 #-------------------------------------------------------------------------------------------
 # Source files
 #-------------------------------------------------------------------------------------------

@@ -248,9 +248,9 @@ int TestFixedString()
 		EATEST_VERIFY(fswc2Hash == fswc3Hash);
 
 		// char8_t
-		fixed_string<char8_t, 64> fsc81("frost");
-		fixed_string<char8_t, 64> fsc82("bite");
-		fixed_string<char8_t, 64> fsc83("bite");
+		fixed_string<char8_t, 64> fsc81(EA_CHAR8("frost"));
+		fixed_string<char8_t, 64> fsc82(EA_CHAR8("bite"));
+		fixed_string<char8_t, 64> fsc83(EA_CHAR8("bite"));
 
 		size_t fsc81Hash = eastl::hash<fixed_string<char8_t, 64>>{}(fsc81);
 		size_t fsc82Hash = eastl::hash<fixed_string<char8_t, 64>>{}(fsc82);
