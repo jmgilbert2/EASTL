@@ -452,6 +452,7 @@ namespace eastl
 		typedef eastl::reverse_iterator<const_iterator>                                         const_reverse_iterator;
 
 		typedef Allocator                                                                       allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator);
 		typedef Compare                                                                         key_compare;
 		typedef typename conditional<bUniqueKeys, eastl::pair<iterator, bool>, iterator>::type  insert_return_type;  // map/set::insert return a pair, multimap/multiset::iterator return an iterator.
 		typedef rbtree<Key, Value, Compare, Allocator, 

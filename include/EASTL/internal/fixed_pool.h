@@ -379,6 +379,7 @@ namespace eastl
 	{
 	public:
 		typedef OverflowAllocator overflow_allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(OverflowAllocator);
 
 
 		fixed_pool_with_overflow(void* pMemory = NULL)
@@ -609,6 +610,7 @@ namespace eastl
 		typedef typename conditional<bEnableOverflow, fixed_pool_with_overflow<OverflowAllocator>, fixed_pool>::type  pool_type;
 		typedef fixed_node_allocator<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, OverflowAllocator>   this_type;
 		typedef OverflowAllocator overflow_allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(OverflowAllocator);
 
 		enum
 		{
@@ -760,6 +762,7 @@ namespace eastl
 		typedef fixed_pool pool_type;
 		typedef fixed_node_allocator<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, false, OverflowAllocator>   this_type;
 		typedef OverflowAllocator overflow_allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(OverflowAllocator);
 
 		enum
 		{
@@ -941,6 +944,7 @@ namespace eastl
 		typedef typename conditional<bEnableOverflow, fixed_pool_with_overflow<OverflowAllocator>, fixed_pool>::type                                 pool_type;
 		typedef fixed_hashtable_allocator<bucketCount, nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, OverflowAllocator>  this_type;
 		typedef OverflowAllocator overflow_allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(OverflowAllocator);
 
 		enum
 		{
@@ -1121,6 +1125,7 @@ namespace eastl
 		typedef fixed_pool pool_type;
 		typedef fixed_hashtable_allocator<bucketCount, nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, false, OverflowAllocator>  this_type;
 		typedef OverflowAllocator overflow_allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(OverflowAllocator);
 
 		enum
 		{
@@ -1330,6 +1335,7 @@ namespace eastl
 	public:
 		typedef fixed_vector_allocator<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, bEnableOverflow, OverflowAllocator>  this_type;
 		typedef OverflowAllocator overflow_allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(OverflowAllocator);
 
 		enum
 		{
@@ -1440,6 +1446,7 @@ namespace eastl
 	public:
 		typedef fixed_vector_allocator<nodeSize, nodeCount, nodeAlignment, nodeAlignmentOffset, false, OverflowAllocator>  this_type;
 		typedef OverflowAllocator overflow_allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(OverflowAllocator);
 
 		enum
 		{

@@ -293,6 +293,7 @@ namespace eastl
 		typedef eastl_size_t                                    size_type;          // See config.h for the definition of eastl_size_t, which defaults to size_t.
 		typedef ptrdiff_t                                       difference_type;
 		typedef Allocator                                       allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator);
 
 	static const EA_CONSTEXPR size_type npos     = (size_type)-1;      /// 'npos' means non-valid position or simply non-position.
 

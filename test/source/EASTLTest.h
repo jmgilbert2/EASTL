@@ -1160,7 +1160,7 @@ to_random_access_iterator(const Iterator& i)
 class MallocAllocator
 {
 public:
-	MallocAllocator(const char* = EASTL_NAME_VAL("MallocAllocator"))
+	EASTL_ALLOCATOR_EXPLICIT MallocAllocator(const char* = EASTL_NAME_VAL("MallocAllocator"))
 		: mAllocCount(0), mFreeCount(0), mAllocVolume(0) {}
 
 	MallocAllocator(const MallocAllocator& x)
@@ -1218,7 +1218,7 @@ inline bool operator!=(const MallocAllocator&, const MallocAllocator&) { return 
 class CustomAllocator
 {
 public:
-	CustomAllocator(const char* = NULL) {}
+	EASTL_ALLOCATOR_EXPLICIT CustomAllocator(const char* = NULL) {}
 	CustomAllocator(const CustomAllocator&) {}
 	CustomAllocator(const CustomAllocator&, const char*) {}
 	CustomAllocator& operator=(const CustomAllocator&) { return *this; }
@@ -1489,7 +1489,7 @@ template <bool initialShouldThrow = true>
 class ThrowingAllocator
 {
 public:
-	ThrowingAllocator(const char* = EASTL_NAME_VAL("ThrowingAllocator")) : mbShouldThrow(initialShouldThrow) {}
+	EASTL_ALLOCATOR_EXPLICIT ThrowingAllocator(const char* = EASTL_NAME_VAL("ThrowingAllocator")) : mbShouldThrow(initialShouldThrow) {}
 	ThrowingAllocator(const ThrowingAllocator& x) : mbShouldThrow(x.mbShouldThrow) {}
 	ThrowingAllocator(const ThrowingAllocator& x, const char*) : mbShouldThrow(x.mbShouldThrow) {}
 
@@ -1566,7 +1566,7 @@ struct StompDetectAllocator
 	StompDetectAllocator() { Validate(); }
 	~StompDetectAllocator() { Validate(); }
 
-	StompDetectAllocator(const char*) { Validate(); }
+	EASTL_ALLOCATOR_EXPLICIT StompDetectAllocator(const char*) { Validate(); }
 
 	void* allocate(size_t n, int = 0) { return mMallocAllocator.allocate(n); }
 	void* allocate(size_t n, size_t, size_t, int = 0) { return mMallocAllocator.allocate(n); }

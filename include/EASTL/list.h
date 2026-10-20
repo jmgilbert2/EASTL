@@ -178,6 +178,7 @@ namespace eastl
 	public:
 		typedef T                                    value_type;
 		typedef Allocator                            allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator);
 		typedef ListNode<T>                          node_type;
 		typedef eastl_size_t                         size_type;     // See config.h for the definition of eastl_size_t, which defaults to size_t.
 		typedef ptrdiff_t                            difference_type;

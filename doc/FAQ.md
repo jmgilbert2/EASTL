@@ -1428,13 +1428,13 @@ There are two ways of doing this:
 
 For item #1, EASTL expects that you provide an instance of an allocator of the type that EASTL recognizes. This is simple but has the disadvantage that all such allocators must be of the same class. The class would need to have C++ virtual functions in order to allow a given instance to act differently from another instance.
 
-For item #2, you specify that the container use your own allocator class. The advantage of this is that your class can be implemented any way you want and doesn't require virtual functions for differentiation from other instances. Due to the way C++ works your class would necessarily have to use the same member function names as the default allocator class type. In order to make things easier, we provide a skeleton allocator here which you can copy and fill in with your own implementation.
+For item #2, you specify that the container use your own allocator class. The advantage of this is that your class can be implemented any way you want and doesn't require virtual functions for differentiation from other instances. Due to the way C++ works your class would necessarily have to use the same member function names as the default allocator class type. In order to make things easier, we provide a skeleton allocator here which you can copy and fill in with your own implementation. Declare the const char* constructor with EASTL_ALLOCATOR_EXPLICIT: when EASTL_ALLOCATOR_EXPLICIT_ENABLED is 1 (the default), containers reject an allocator that converts implicitly from a string, because a string could otherwise silently become the container's allocator name.
 
 ```cpp
 class custom_allocator
 {
 public:
-    custom_allocator(const char* pName = EASTL_NAME_VAL("custom allocator"))
+    EASTL_ALLOCATOR_EXPLICIT custom_allocator(const char* pName = EASTL_NAME_VAL("custom allocator"))
     {
         #if EASTL_NAME_ENABLED
             mpName = pName ? pName : EASTL_ALLOCATOR_DEFAULT_NAME;

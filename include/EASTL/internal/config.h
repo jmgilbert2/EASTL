@@ -1518,6 +1518,9 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 // vector<int> v("name"), instead of vector<int> v(allocator("name")).
 // This option enables the allocator ctor to be explicit, which avoids
 // some undesirable silent conversions, especially with the string class.
+// Containers also use EASTL_ALLOCATOR_EXPLICIT_CHECK to reject a user
+// allocator whose name ctor isn't explicit, because such an allocator
+// would bring the silent conversions back.
 //
 // Example usage:
 //     class allocator
@@ -1534,8 +1537,12 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 
 #if EASTL_ALLOCATOR_EXPLICIT_ENABLED
 	#define EASTL_ALLOCATOR_EXPLICIT explicit
+	#define EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator) \
+		static_assert(!eastl::is_convertible<const char*, Allocator>::value, \
+			"The allocator converts implicitly from const char*, so a string could silently become the container's allocator. Declare its const char* ctor with EASTL_ALLOCATOR_EXPLICIT, or set EASTL_ALLOCATOR_EXPLICIT_ENABLED to 0.")
 #else
 	#define EASTL_ALLOCATOR_EXPLICIT
+	#define EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator) static_assert(true, "")
 #endif
 
 

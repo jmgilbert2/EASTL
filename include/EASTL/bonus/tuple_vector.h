@@ -460,6 +460,7 @@ template <typename Allocator, eastl_size_t... Indices, typename... Ts>
 class TupleVecImpl<Allocator, index_sequence<Indices...>, Ts...> : public TupleVecLeaf<Indices, Ts>...
 {
 	typedef Allocator	allocator_type;
+	EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator);
 	typedef index_sequence<Indices...> index_sequence_type;
 	typedef TupleVecImpl<Allocator, index_sequence_type, Ts...> this_type;
 	typedef TupleVecImpl<Allocator, index_sequence_type, const Ts...> const_this_type;

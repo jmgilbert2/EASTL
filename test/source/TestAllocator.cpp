@@ -38,7 +38,7 @@
 struct fixed_pool_reference
 {
 public:
-	fixed_pool_reference(const char* = NULL)
+	EASTL_ALLOCATOR_EXPLICIT fixed_pool_reference(const char* = NULL)
 	{
 		mpFixedPool = NULL;
 	}

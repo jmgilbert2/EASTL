@@ -22,7 +22,7 @@ int TEST_STRING_NAME()
 	struct Failocator
 	{
 		Failocator() = default;
-		Failocator(const char*) {}
+		EASTL_ALLOCATOR_EXPLICIT Failocator(const char*) {}
 
 		void* allocate(size_t) { EA_FAIL(); return nullptr; }
 		void deallocate(void*, size_t) { EA_FAIL(); }

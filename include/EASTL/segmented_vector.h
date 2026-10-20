@@ -112,6 +112,7 @@ namespace eastl
 		typedef segmented_vector<T, Count, Allocator>						this_type;
 		typedef segment<T, Count, Allocator>								segment_type;
         typedef Allocator													allocator_type;
+        EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator);
 		typedef segmented_vector_iterator<const T, Count, Allocator>		const_iterator;
 		typedef segmented_vector_iterator<T, Count, Allocator>				iterator;
 		typedef T															value_type;
