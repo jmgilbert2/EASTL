@@ -357,7 +357,18 @@ namespace eastl
 		///
 		/// Default constructor.
 		/// 
-		explicit hash_multiset(const allocator_type& allocator = EASTL_HASH_MULTISET_DEFAULT_ALLOCATOR)
+		hash_multiset()
+			: this_type(EASTL_HASH_MULTISET_DEFAULT_ALLOCATOR)
+		{
+			// Empty
+		}
+
+
+		/// hash_multiset
+		///
+		/// Constructor which creates an empty container with allocator.
+		///
+		explicit hash_multiset(const allocator_type& allocator)
 			: base_type(0, Hash(), mod_range_hashing(), default_ranged_hash(), Predicate(), eastl::use_self<Value>(), allocator)
 		{
 			// Empty

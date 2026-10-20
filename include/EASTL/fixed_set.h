@@ -89,7 +89,7 @@ namespace eastl
 
 	public:
 		fixed_set();
-		fixed_set(const overflow_allocator_type& overflowAllocator);
+		explicit fixed_set(const overflow_allocator_type& overflowAllocator);
 		explicit fixed_set(const Compare& compare);
 		fixed_set(const this_type& x);
 		fixed_set(this_type&& x);
@@ -157,7 +157,7 @@ namespace eastl
 
 	public:
 		fixed_multiset();
-		fixed_multiset(const overflow_allocator_type& overflowAllocator);
+		explicit fixed_multiset(const overflow_allocator_type& overflowAllocator);
 		explicit fixed_multiset(const Compare& compare);
 		fixed_multiset(const this_type& x);
 		fixed_multiset(this_type&& x);

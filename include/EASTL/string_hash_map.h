@@ -57,7 +57,8 @@ public:
 	typedef typename base::base_type::value_type value_type;
 	typedef typename base::mapped_type mapped_type;
 
-	string_hash_map(const allocator_type& allocator = allocator_type()) : base(allocator) {}
+	string_hash_map() : base(allocator_type()) {}
+	explicit string_hash_map(const allocator_type& allocator) : base(allocator) {}
 
 	// Note/warning: the copy constructor does not copy the underlying allocator instance. This
 	// is different from what hash_map does.

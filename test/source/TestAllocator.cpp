@@ -9,6 +9,24 @@
 #include <EASTL/fixed_allocator.h>
 #include <EASTL/core_allocator_adapter.h>
 #include <EASTL/list.h>
+#include <EASTL/slist.h>
+#include <EASTL/vector.h>
+#include <EASTL/map.h>
+#include <EASTL/set.h>
+#include <EASTL/hash_map.h>
+#include <EASTL/hash_set.h>
+#include <EASTL/string.h>
+#include <EASTL/string_map.h>
+#include <EASTL/string_hash_map.h>
+#include <EASTL/fixed_string.h>
+#include <EASTL/fixed_vector.h>
+#include <EASTL/fixed_list.h>
+#include <EASTL/fixed_map.h>
+#include <EASTL/fixed_set.h>
+#include <EASTL/fixed_hash_map.h>
+#include <EASTL/bonus/list_map.h>
+#include <EASTL/bonus/tuple_vector.h>
+#include <EASTL/bonus/fixed_tuple_vector.h>
 #include <EAStdC/EAString.h>
 #include <EAStdC/EAAlignment.h>
 
@@ -20,7 +38,7 @@
 struct fixed_pool_reference
 {
 public:
-	fixed_pool_reference(const char* = NULL)
+	EASTL_ALLOCATOR_EXPLICIT fixed_pool_reference(const char* = NULL)
 	{
 		mpFixedPool = NULL;
 	}
@@ -237,6 +255,94 @@ static int TestAllocatorMalloc()
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+// EASTL_ALLOCATOR_EXPLICIT_ENABLED
+//
+// A string must not silently become a container's allocator name.
+//
+#if EASTL_ALLOCATOR_EXPLICIT_ENABLED
+	static_assert(!eastl::is_convertible<const char*, eastl::allocator>::value, "allocator must not convert from const char*");
+	static_assert(!eastl::is_convertible<const char*, eastl::dummy_allocator>::value, "dummy_allocator must not convert from const char*");
+	static_assert(!eastl::is_convertible<const char*, eastl::allocator_malloc>::value, "allocator_malloc must not convert from const char*");
+	static_assert(!eastl::is_convertible<const char*, eastl::fixed_allocator>::value, "fixed_allocator must not convert from const char*");
+	static_assert(!eastl::is_convertible<const char*, eastl::fixed_allocator_with_overflow>::value, "fixed_allocator_with_overflow must not convert from const char*");
+	#if EASTL_CORE_ALLOCATOR_ENABLED
+		static_assert(!eastl::is_convertible<const char*, EA::Allocator::EASTLCoreAllocatorAdapter>::value, "CoreAllocatorAdapter must not convert from const char*");
+	#endif
+
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_vector<int, 4>::fixed_allocator_type>::value, "fixed_vector_allocator must not convert from void*");
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_vector<int, 4, false>::fixed_allocator_type>::value, "fixed_vector_allocator must not convert from void*");
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_list<int, 4>::fixed_allocator_type>::value, "fixed_node_allocator must not convert from void*");
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_list<int, 4, false>::fixed_allocator_type>::value, "fixed_node_allocator must not convert from void*");
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_hash_map<int, int, 4>::fixed_allocator_type>::value, "fixed_hashtable_allocator must not convert from void*");
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_hash_map<int, int, 4, 5, false>::fixed_allocator_type>::value, "fixed_hashtable_allocator must not convert from void*");
+
+	static_assert(!eastl::is_constructible<eastl::list<int>, const char*>::value, "list<int>(\"name\") must not compile");
+	static_assert(!eastl::is_constructible<eastl::list<int, eastl::allocator_malloc>, const char*>::value, "list<int, allocator_malloc>(\"name\") must not compile");
+	static_assert(!eastl::is_constructible<eastl::vector<eastl::string>, const char*>::value, "vector<string>(\"text\") must not compile");
+	static_assert(eastl::is_constructible<eastl::list<int>, eastl::allocator>::value, "list<int>(allocator(\"name\")) must compile");
+
+	#if EA_CHAR8_UNIQUE
+		static_assert(!eastl::is_constructible<eastl::u8string, const char*>::value, "u8string(\"text\") must not compile");
+		static_assert(!eastl::is_constructible<eastl::fixed_string<char8_t, 64>, const char*>::value, "fixed_string<char8_t>(\"text\") must not compile");
+	#endif
+#endif
+
+
+///////////////////////////////////////////////////////////////////////////////
+// TestContainerAllocatorConstructors
+//
+// As in the C++ standard library, a container doesn't convert implicitly from
+// an allocator, but its default constructor stays implicit, so {} still works.
+//
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::list<int>>::value, "list must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::slist<int>>::value, "slist must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::map<int, int>>::value, "map must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::multimap<int, int>>::value, "multimap must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::set<int>>::value, "set must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::multiset<int>>::value, "multiset must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::hash_multimap<int, int>>::value, "hash_multimap must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::hash_multiset<int>>::value, "hash_multiset must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::list_map<int, int>>::value, "list_map must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::string_map<int>>::value, "string_map must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::string_hash_map<int>>::value, "string_hash_map must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::tuple_vector<int, float>>::value, "tuple_vector must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::fixed_set<int, 4>>::value, "fixed_set must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::fixed_multiset<int, 4>>::value, "fixed_multiset must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::fixed_multimap<int, int, 4>>::value, "fixed_multimap must not convert from an allocator");
+static_assert(!eastl::is_convertible<eastl::allocator, eastl::fixed_tuple_vector<4, true, int, float>>::value, "fixed_tuple_vector must not convert from an allocator");
+
+template <typename Container>
+static Container MakeEmpty()
+{
+	return {};
+}
+
+static int TestContainerAllocatorConstructors()
+{
+	int nErrorCount = 0;
+
+	EATEST_VERIFY((MakeEmpty<eastl::map<int, int>>().empty()));
+	EATEST_VERIFY((MakeEmpty<eastl::multimap<int, int>>().empty()));
+	EATEST_VERIFY((MakeEmpty<eastl::set<int>>().empty()));
+	EATEST_VERIFY((MakeEmpty<eastl::multiset<int>>().empty()));
+	EATEST_VERIFY((MakeEmpty<eastl::hash_multimap<int, int>>().empty()));
+	EATEST_VERIFY((MakeEmpty<eastl::hash_multiset<int>>().empty()));
+	EATEST_VERIFY((MakeEmpty<eastl::list_map<int, int>>().empty()));
+	EATEST_VERIFY((MakeEmpty<eastl::string_map<int>>().empty()));
+	EATEST_VERIFY((MakeEmpty<eastl::string_hash_map<int>>().empty()));
+
+	#if EASTL_NAME_ENABLED
+	{
+		eastl::map<int, int> m(eastl::allocator("named map"));
+		EATEST_VERIFY(EA::StdC::Strcmp(m.get_allocator().get_name(), "named map") == 0);
+	}
+	#endif
+
+	return nErrorCount;
+}
+
+
 
 #if EASTL_DLL
 	void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line);
@@ -388,6 +494,7 @@ int TestAllocator()
 	nErrorCount += TestAllocatorMalloc();
 	nErrorCount += TestCoreAllocatorAdapter();
 	nErrorCount += TestSwapAllocator();
+	nErrorCount += TestContainerAllocatorConstructors();
 
 	return nErrorCount;
 }

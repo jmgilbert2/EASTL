@@ -496,7 +496,18 @@ namespace eastl
 		///
 		/// Default constructor.
 		///
-		explicit hash_multimap(const allocator_type& allocator = EASTL_HASH_MULTIMAP_DEFAULT_ALLOCATOR)
+		hash_multimap()
+			: this_type(EASTL_HASH_MULTIMAP_DEFAULT_ALLOCATOR)
+		{
+			// Empty
+		}
+
+
+		/// hash_multimap
+		///
+		/// Constructor which creates an empty container with allocator.
+		///
+		explicit hash_multimap(const allocator_type& allocator)
 			: base_type(0, Hash(), mod_range_hashing(), default_ranged_hash(), 
 						Predicate(), eastl::use_first<eastl::pair<const Key, T> >(), allocator)
 		{

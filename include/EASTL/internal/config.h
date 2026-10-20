@@ -802,10 +802,9 @@ namespace eastl
 	// Defined as 0 or 1. Default is 0.
 	// Defines if we should implement explicity in constructors where the C++
 	// standard string does not. The advantage of enabling explicit constructors
-	// is that you can do this: string s = "hello"; in addition to string s("hello");
-	// The disadvantage of enabling explicity constructors is that there can be
-	// silent conversions done which impede performance if the user isn't paying
-	// attention.
+	// is that a char* can't silently convert to a temporary string, which
+	// impedes performance if the user isn't paying attention. The disadvantage
+	// is that you can no longer do this: string s = "hello"; only string s("hello");
 	// C++ standard string ctors are not explicit.
 	#define EASTL_STRING_OPT_EXPLICIT_CTORS 0
 #endif
@@ -1512,10 +1511,15 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 ///////////////////////////////////////////////////////////////////////////////
 // EASTL_ALLOCATOR_EXPLICIT_ENABLED
 //
-// Defined as 0 or 1. Default is 0 for now but ideally would be changed to
-// 1 some day. It's 0 because setting it to 1 breaks some existing code.
+// Defined as 0 or 1. Default is 1, which matches the C++ standard library,
+// where a string never converts implicitly to an allocator. Set it to 0 for
+// code that names a container with a bare string, such as
+// vector<int> v("name"), instead of vector<int> v(allocator("name")).
 // This option enables the allocator ctor to be explicit, which avoids
 // some undesirable silent conversions, especially with the string class.
+// Containers also use EASTL_ALLOCATOR_EXPLICIT_CHECK to reject a user
+// allocator whose name ctor isn't explicit, because such an allocator
+// would bring the silent conversions back.
 //
 // Example usage:
 //     class allocator
@@ -1527,13 +1531,17 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_ALLOCATOR_EXPLICIT_ENABLED
-	#define EASTL_ALLOCATOR_EXPLICIT_ENABLED 0
+	#define EASTL_ALLOCATOR_EXPLICIT_ENABLED 1
 #endif
 
 #if EASTL_ALLOCATOR_EXPLICIT_ENABLED
 	#define EASTL_ALLOCATOR_EXPLICIT explicit
+	#define EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator) \
+		static_assert(!eastl::is_convertible<const char*, Allocator>::value, \
+			"The allocator converts implicitly from const char*, so a string could silently become the container's allocator. Declare its const char* ctor with EASTL_ALLOCATOR_EXPLICIT, or set EASTL_ALLOCATOR_EXPLICIT_ENABLED to 0.")
 #else
 	#define EASTL_ALLOCATOR_EXPLICIT
+	#define EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator) static_assert(true, "")
 #endif
 
 

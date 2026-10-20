@@ -88,7 +88,7 @@ namespace eastl
 		/// Default constructor. The user usually will need to call init() after  
 		/// constructing via this constructor. 
 		///
-		fixed_allocator(const char* /*pName*/ = EASTL_FIXED_POOL_DEFAULT_NAME)
+		EASTL_ALLOCATOR_EXPLICIT fixed_allocator(const char* /*pName*/ = EASTL_FIXED_POOL_DEFAULT_NAME)
 			: fixed_pool_base(NULL)
 		{
 		}
@@ -266,7 +266,7 @@ namespace eastl
 		/// Default constructor. The user usually will need to call init() after  
 		/// constructing via this constructor. 
 		///
-		fixed_allocator_with_overflow(const char* pName = EASTL_FIXED_POOL_DEFAULT_NAME)
+		EASTL_ALLOCATOR_EXPLICIT fixed_allocator_with_overflow(const char* pName = EASTL_FIXED_POOL_DEFAULT_NAME)
 			: fixed_pool_base(NULL)
 			, mOverflowAllocator(pName)
 			, mpPoolBegin(nullptr)

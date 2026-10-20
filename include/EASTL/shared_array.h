@@ -111,6 +111,7 @@ namespace eastl
 
 		/// allocator_type
 		typedef Allocator allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator);
 
 		/// deleter_type
 		typedef Deleter deleter_type;

@@ -70,7 +70,7 @@ namespace eastl
 	class allocator_malloc
 	{
 	public:
-		allocator_malloc(const char* = NULL)
+		EASTL_ALLOCATOR_EXPLICIT allocator_malloc(const char* = NULL)
 			{ }
 
 		allocator_malloc(const allocator_malloc&)

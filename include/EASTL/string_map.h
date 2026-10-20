@@ -32,7 +32,8 @@ public:
 	typedef typename base::base_type::value_type             value_type;
 	typedef typename base::mapped_type                       mapped_type;
 
-		                string_map(const allocator_type& allocator = allocator_type()) : base(allocator) {}
+		                string_map() : base(allocator_type()) {}
+		       explicit string_map(const allocator_type& allocator) : base(allocator) {}
 						string_map(const string_map& src, const allocator_type& allocator = allocator_type());
 						~string_map();
 	void				clear();

@@ -1496,8 +1496,8 @@ int TestHash()
 
 		{
 			StringStringHashMap myMap(5); // construct map with 5 buckets, so we don't rehash on insert
-			String key("mykey01234567890000000000000000000000000000");
-			String value("myvalue01234567890000000000000000000000000000");
+			String key(EA_CHAR8("mykey01234567890000000000000000000000000000"));
+			String value(EA_CHAR8("myvalue01234567890000000000000000000000000000"));
 			AllocatorType::resetCount();
 
 			myMap.insert(eastl::make_pair(eastl::move(key), eastl::move(value)));
@@ -1505,8 +1505,8 @@ int TestHash()
 		}
 		{
 			StringStringHashMap myMap(5); // construct map with 5 buckets, so we don't rehash on insert
-			String key("mykey01234567890000000000000000000000000000");
-			String value("myvalue01234567890000000000000000000000000000");
+			String key(EA_CHAR8("mykey01234567890000000000000000000000000000"));
+			String value(EA_CHAR8("myvalue01234567890000000000000000000000000000"));
 			AllocatorType::resetCount();
 
 			myMap.emplace(eastl::move(key), eastl::move(value));
@@ -1514,8 +1514,8 @@ int TestHash()
 		}
 		{
 			StringStringMap myMap;
-			String key("mykey01234567890000000000000000000000000000");
-			String value("myvalue01234567890000000000000000000000000000");
+			String key(EA_CHAR8("mykey01234567890000000000000000000000000000"));
+			String value(EA_CHAR8("myvalue01234567890000000000000000000000000000"));
 			AllocatorType::resetCount();
 
 			myMap.insert(eastl::make_pair(eastl::move(key), eastl::move(value)));
@@ -1523,8 +1523,8 @@ int TestHash()
 		}
 		{
 			StringStringMap myMap;
-			String key("mykey01234567890000000000000000000000000000");
-			String value("myvalue01234567890000000000000000000000000000");
+			String key(EA_CHAR8("mykey01234567890000000000000000000000000000"));
+			String value(EA_CHAR8("myvalue01234567890000000000000000000000000000"));
 			AllocatorType::resetCount();
 
 			myMap.emplace(eastl::move(key), eastl::move(value));
