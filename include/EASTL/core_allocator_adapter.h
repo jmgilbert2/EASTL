@@ -127,7 +127,7 @@ namespace EA
 		/// Provides a standardized typedef for ICoreAllocator;
 		/// 
 		/// Example usage:
-		///     eastl::list<Widget, EASTLICoreAllocator> widgetList("UI/WidgetList", pSomeCoreAllocator);
+		///     eastl::list<Widget, EASTLICoreAllocator> widgetList(EASTLICoreAllocator("UI/WidgetList", pSomeCoreAllocator));
 		///     widgetList.push_back(Widget());
 		///
 		class ICoreAllocator;

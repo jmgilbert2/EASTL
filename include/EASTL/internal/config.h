@@ -802,10 +802,9 @@ namespace eastl
 	// Defined as 0 or 1. Default is 0.
 	// Defines if we should implement explicity in constructors where the C++
 	// standard string does not. The advantage of enabling explicit constructors
-	// is that you can do this: string s = "hello"; in addition to string s("hello");
-	// The disadvantage of enabling explicity constructors is that there can be
-	// silent conversions done which impede performance if the user isn't paying
-	// attention.
+	// is that a char* can't silently convert to a temporary string, which
+	// impedes performance if the user isn't paying attention. The disadvantage
+	// is that you can no longer do this: string s = "hello"; only string s("hello");
 	// C++ standard string ctors are not explicit.
 	#define EASTL_STRING_OPT_EXPLICIT_CTORS 0
 #endif
