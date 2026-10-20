@@ -178,6 +178,7 @@ namespace eastl
 	public:
 		typedef T                                    value_type;
 		typedef Allocator                            allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator);
 		typedef ListNode<T>                          node_type;
 		typedef eastl_size_t                         size_type;     // See config.h for the definition of eastl_size_t, which defaults to size_t.
 		typedef ptrdiff_t                            difference_type;
@@ -281,7 +282,7 @@ namespace eastl
 
 	public:
 		list();
-		list(const allocator_type& allocator);
+		explicit list(const allocator_type& allocator);
 		explicit list(size_type n, const allocator_type& allocator = EASTL_LIST_DEFAULT_ALLOCATOR);
 		list(size_type n, const value_type& value, const allocator_type& allocator = EASTL_LIST_DEFAULT_ALLOCATOR);
 		list(const this_type& x);

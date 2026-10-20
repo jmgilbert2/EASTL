@@ -112,7 +112,8 @@ namespace eastl
 		using base_type::get_compare;
 
 	public:
-		set(const allocator_type& allocator = EASTL_SET_DEFAULT_ALLOCATOR);
+		set();
+		explicit set(const allocator_type& allocator);
 		// some differences with the standard in what is marked as explicit in these constructors:
 		set(const Compare& compare, const allocator_type& allocator = EASTL_SET_DEFAULT_ALLOCATOR);
 		set(const this_type& x);
@@ -257,7 +258,8 @@ namespace eastl
 		using base_type::get_compare;
 
 	public:
-		multiset(const allocator_type& allocator = EASTL_MULTISET_DEFAULT_ALLOCATOR);
+		multiset();
+		explicit multiset(const allocator_type& allocator);
 		multiset(const Compare& compare, const allocator_type& allocator = EASTL_MULTISET_DEFAULT_ALLOCATOR);
 		multiset(const this_type& x);
 		multiset(this_type&& x);
@@ -352,6 +354,13 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	// set
 	///////////////////////////////////////////////////////////////////////
+
+	template <typename Key, typename Compare, typename Allocator>
+	inline set<Key, Compare, Allocator>::set()
+		: this_type(EASTL_SET_DEFAULT_ALLOCATOR)
+	{
+	}
+
 
 	template <typename Key, typename Compare, typename Allocator>
 	inline set<Key, Compare, Allocator>::set(const allocator_type& allocator)
@@ -557,6 +566,13 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	// multiset
 	///////////////////////////////////////////////////////////////////////
+
+	template <typename Key, typename Compare, typename Allocator>
+	inline multiset<Key, Compare, Allocator>::multiset()
+		: this_type(EASTL_MULTISET_DEFAULT_ALLOCATOR)
+	{
+	}
+
 
 	template <typename Key, typename Compare, typename Allocator>
 	inline multiset<Key, Compare, Allocator>::multiset(const allocator_type& allocator)

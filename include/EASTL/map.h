@@ -122,7 +122,8 @@ namespace eastl
 		};
 
 	public:
-		map(const allocator_type& allocator = EASTL_MAP_DEFAULT_ALLOCATOR);
+		map();
+		explicit map(const allocator_type& allocator);
 		map(const Compare& compare, const allocator_type& allocator = EASTL_MAP_DEFAULT_ALLOCATOR);
 		map(const this_type& x);
 		map(this_type&& x);
@@ -298,7 +299,8 @@ namespace eastl
 		};
 
 	public:
-		multimap(const allocator_type& allocator = EASTL_MULTIMAP_DEFAULT_ALLOCATOR);
+		multimap();
+		explicit multimap(const allocator_type& allocator);
 		multimap(const Compare& compare, const allocator_type& allocator = EASTL_MULTIMAP_DEFAULT_ALLOCATOR);
 		multimap(const this_type& x);
 		multimap(this_type&& x);
@@ -396,6 +398,13 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	// map
 	///////////////////////////////////////////////////////////////////////
+
+	template <typename Key, typename T, typename Compare, typename Allocator>
+	inline map<Key, T, Compare, Allocator>::map()
+		: this_type(EASTL_MAP_DEFAULT_ALLOCATOR)
+	{
+	}
+
 
 	template <typename Key, typename T, typename Compare, typename Allocator>
 	inline map<Key, T, Compare, Allocator>::map(const allocator_type& allocator)
@@ -704,6 +713,13 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	// multimap
 	///////////////////////////////////////////////////////////////////////
+
+	template <typename Key, typename T, typename Compare, typename Allocator>
+	inline multimap<Key, T, Compare, Allocator>::multimap()
+		: this_type(EASTL_MULTIMAP_DEFAULT_ALLOCATOR)
+	{
+	}
+
 
 	template <typename Key, typename T, typename Compare, typename Allocator>
 	inline multimap<Key, T, Compare, Allocator>::multimap(const allocator_type& allocator)

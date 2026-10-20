@@ -893,6 +893,7 @@ namespace eastl
 		typedef hash_code_base<Key, Value, ExtractKey, Equal, H1, H2, H, bCacheHashCode>            hash_code_base_type;
 		typedef typename hash_code_base_type::hash_code_t                                           hash_code_t;
 		typedef Allocator                                                                           allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator);
 		typedef Equal                                                                               key_equal;
 		typedef ptrdiff_t                                                                           difference_type;
 		typedef eastl_size_t                                                                        size_type;     // See config.h for the definition of eastl_size_t, which defaults to size_t.

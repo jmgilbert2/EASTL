@@ -35,7 +35,7 @@ By design, map operator[] creates a value for you if it isn't already present. T
 
 The string class has a non-explicit constructor that takes char* as an argument. Thus if you pass char* to a function that takes a string object, a temporary string will be created. In some cases this is undesirable behavior but the user may not notice it right away, as the compiler gives no warnings. The reason that the string constructor from char* is not declared explicit is that doing so would prevent the user from expressions such as: string s = "hello". In this example, no temporary string object is created, but the syntax is not possible if the char* constructor is declared explicit. Thus a decision to make the string char* constructor explicit involves tradeoffs.
 
-There is an EASTL configuration option called EASTL_STRING_EXPLICIT which makes the string char* ctor explicit and avoids the behaviour described above.
+There is an EASTL configuration option called EASTL_STRING_OPT_EXPLICIT_CTORS which makes the string char* ctor explicit and avoids the behaviour described above.
 
 ### char* is compared by ptr and not by contents.
 

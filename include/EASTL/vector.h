@@ -145,6 +145,7 @@ namespace eastl
 	struct VectorBase
 	{
 		typedef Allocator    allocator_type;
+		EASTL_ALLOCATOR_EXPLICIT_CHECK(Allocator);
 		typedef eastl_size_t size_type;
 		typedef ptrdiff_t    difference_type;
 

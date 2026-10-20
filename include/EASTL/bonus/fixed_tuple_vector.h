@@ -59,7 +59,7 @@ public:
 		: base_type(fixed_allocator_type(mBuffer.buffer), mBuffer.buffer, nodeCount, fixed_allocator_type::kNodeSize)
 	{ }
 
-	fixed_tuple_vector(const overflow_allocator_type& allocator)
+	explicit fixed_tuple_vector(const overflow_allocator_type& allocator)
 		: base_type(fixed_allocator_type(mBuffer.buffer, allocator), mBuffer.buffer, nodeCount, fixed_allocator_type::kNodeSize)
 	{ }
 

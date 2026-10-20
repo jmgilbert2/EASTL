@@ -156,7 +156,7 @@ namespace eastl
 
 	public:
 		fixed_multimap();
-		fixed_multimap(const overflow_allocator_type& overflowAllocator);
+		explicit fixed_multimap(const overflow_allocator_type& overflowAllocator);
 		explicit fixed_multimap(const Compare& compare);
 		fixed_multimap(const this_type& x);
 		fixed_multimap(this_type&& x);
