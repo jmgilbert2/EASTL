@@ -87,11 +87,15 @@ struct TupleVecLeaf;
 template <typename Indices, typename... Ts>
 struct TupleVecIter;
 
+// Always false, but dependent on I, so that a static_assert using it only fires on instantiation.
+template <eastl_size_t I>
+struct tuplevec_index_out_of_range : public false_type {};
+
 // tuplevec_element helper to be able to isolate a type given an index
 template <eastl_size_t I>
 struct tuplevec_element<I>
 {
-	static_assert(I != I, "tuplevec_element index out of range");
+	static_assert(tuplevec_index_out_of_range<I>::value, "tuplevec_element index out of range");
 };
 
 template <typename T, typename... Ts>
@@ -313,7 +317,8 @@ void swallow(Ts&&...) { }
 
 inline bool variadicAnd(bool cond) { return cond; }
 
-inline bool variadicAnd(bool cond, bool conds...) { return cond && variadicAnd(conds); }
+template <typename... Bools>
+inline bool variadicAnd(bool cond, Bools... conds) { return cond && variadicAnd(conds...); }
 
 // Helper struct to check for strict compatibility between two iterators, whilst still allowing for
 // conversion between TupleVecImpl<Ts...>::iterator and TupleVecImpl<Ts...>::const_iterator. 
