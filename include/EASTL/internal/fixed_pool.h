@@ -630,7 +630,7 @@ namespace eastl
 		//}
 
 
-		fixed_node_allocator(void* pNodeBuffer)
+		EASTL_ALLOCATOR_EXPLICIT fixed_node_allocator(void* pNodeBuffer)
 			: mPool(pNodeBuffer, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset)
 		{
 		}
@@ -775,7 +775,7 @@ namespace eastl
 		pool_type mPool;
 
 	public:
-		fixed_node_allocator(void* pNodeBuffer)
+		EASTL_ALLOCATOR_EXPLICIT fixed_node_allocator(void* pNodeBuffer)
 			: mPool(pNodeBuffer, kNodesSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset)
 		{
 		}
@@ -966,7 +966,7 @@ namespace eastl
 		//    mPool.set_name(pName);
 		//}
 
-		fixed_hashtable_allocator(void* pNodeBuffer)
+		EASTL_ALLOCATOR_EXPLICIT fixed_hashtable_allocator(void* pNodeBuffer)
 			: mPool(pNodeBuffer, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset),
 			  mpBucketBuffer(NULL)
 		{
@@ -1146,7 +1146,7 @@ namespace eastl
 		//    mPool.set_name(pName);
 		//}
 
-		fixed_hashtable_allocator(void* pNodeBuffer)
+		EASTL_ALLOCATOR_EXPLICIT fixed_hashtable_allocator(void* pNodeBuffer)
 			: mPool(pNodeBuffer, kBufferSize, kNodeSize, kNodeAlignment, kNodeAlignmentOffset),
 			  mpBucketBuffer(NULL)
 		{
@@ -1352,7 +1352,12 @@ namespace eastl
 		//    mOverflowAllocator.set_name(pName);
 		//}
 
-		fixed_vector_allocator(void* pNodeBuffer = nullptr)
+		fixed_vector_allocator()
+			: mpPoolBegin(nullptr)
+		{
+		}
+
+		EASTL_ALLOCATOR_EXPLICIT fixed_vector_allocator(void* pNodeBuffer)
 			: mpPoolBegin(pNodeBuffer)
 		{
 		}
@@ -1455,7 +1460,7 @@ namespace eastl
 		{
 		}
 
-		fixed_vector_allocator(void* /*pNodeBuffer*/)
+		EASTL_ALLOCATOR_EXPLICIT fixed_vector_allocator(void* /*pNodeBuffer*/)
 		{
 		}
 

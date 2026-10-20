@@ -270,6 +270,13 @@ static int TestAllocatorMalloc()
 		static_assert(!eastl::is_convertible<const char*, EA::Allocator::EASTLCoreAllocatorAdapter>::value, "CoreAllocatorAdapter must not convert from const char*");
 	#endif
 
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_vector<int, 4>::fixed_allocator_type>::value, "fixed_vector_allocator must not convert from void*");
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_vector<int, 4, false>::fixed_allocator_type>::value, "fixed_vector_allocator must not convert from void*");
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_list<int, 4>::fixed_allocator_type>::value, "fixed_node_allocator must not convert from void*");
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_list<int, 4, false>::fixed_allocator_type>::value, "fixed_node_allocator must not convert from void*");
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_hash_map<int, int, 4>::fixed_allocator_type>::value, "fixed_hashtable_allocator must not convert from void*");
+	static_assert(!eastl::is_convertible<void*, eastl::fixed_hash_map<int, int, 4, 5, false>::fixed_allocator_type>::value, "fixed_hashtable_allocator must not convert from void*");
+
 	static_assert(!eastl::is_constructible<eastl::list<int>, const char*>::value, "list<int>(\"name\") must not compile");
 	static_assert(!eastl::is_constructible<eastl::list<int, eastl::allocator_malloc>, const char*>::value, "list<int, allocator_malloc>(\"name\") must not compile");
 	static_assert(!eastl::is_constructible<eastl::vector<eastl::string>, const char*>::value, "vector<string>(\"text\") must not compile");
