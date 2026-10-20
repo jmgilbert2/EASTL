@@ -508,25 +508,21 @@ namespace eastl
 	inline typename segmented_vector<T, Count, Allocator>::const_iterator
 	segmented_vector<T, Count, Allocator>::begin() const noexcept
 	{
-		iterator i;
-		i.mSegment = mFirstSegment;
+		const_iterator i{};
+		i.mSegment = reinterpret_cast<typename const_iterator::segment_type*>(mFirstSegment);
 		if (mFirstSegment)
 		{
 			i.mCurrent = mFirstSegment->begin();
 			i.mEnd = mFirstSegment->end();
 		}
-		else
-		{
-			i.mCurrent = nullptr;
-		}
-		return (const_iterator&)i;
+		return i;
 	}
 
 	template <typename T, size_t Count, typename Allocator>
 	inline typename segmented_vector<T, Count, Allocator>::iterator
 	segmented_vector<T, Count, Allocator>::begin() noexcept
 	{
-		iterator i;
+		iterator i{};
 		i.mSegment = mFirstSegment;
 		if (mFirstSegment)
 		{
@@ -542,16 +538,14 @@ namespace eastl
 	inline typename segmented_vector<T, Count, Allocator>::const_iterator
 	segmented_vector<T, Count, Allocator>::end() const noexcept
 	{
-		iterator i;
-		i.mCurrent = nullptr;
-		return (const_iterator&)i;
+		return const_iterator{};
 	}
 
 	template <typename T, size_t Count, typename Allocator>
 	inline typename segmented_vector<T, Count, Allocator>::iterator
 	segmented_vector<T, Count, Allocator>::end() noexcept
 	{
-		iterator i;
+		iterator i{};
 		i.mCurrent = nullptr;
 		return i;
 	}
