@@ -597,8 +597,8 @@ namespace eastl
 		// NOTE(rparolin): Internal constructor used to expand the index_sequence required to expand the tuple elements.
 		template <class... Args1, class... Args2, size_t... I1, size_t... I2>
 		pair(eastl::piecewise_construct_t,
-			 eastl::tuple<Args1...> first_args,
-			 eastl::tuple<Args2...> second_args,
+			 EA_MAYBE_UNUSED eastl::tuple<Args1...> first_args,
+			 EA_MAYBE_UNUSED eastl::tuple<Args2...> second_args,
 			 eastl::index_sequence<I1...>,
 			 eastl::index_sequence<I2...>)
 			: first(eastl::forward<Args1>(eastl::get<I1>(first_args))...)

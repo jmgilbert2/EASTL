@@ -667,7 +667,8 @@ namespace eastl
 		                            eastl::forward_as_tuple(eastl::forward<Args>(args)...));
 		// the key might be moved above, so we can't re-use it,
 		// we need to get it back from the node's value.
-		const auto& k = extract_key{}(pNodeNew->mValue);
+		extract_key extractKey;
+		const auto& k = extractKey(pNodeNew->mValue);
 		const iterator itResult(base_type::DoInsertValueImpl(pPosition, false, k, pNodeNew));
 		return pair<iterator, bool>(itResult, true);
 	}

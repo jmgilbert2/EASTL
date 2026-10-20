@@ -102,7 +102,9 @@ namespace eastl
 			EA_UNUSED(assertMessage);
 
 			EA_CONSTEXPR_IF (eastl::is_signed_v<IntSourceType>)
+			{
 				EASTL_ASSERT_MSG(n >= 0, "Attempting to initialize/insert a vector with a negative number of elements!");
+			}
 
 			[[maybe_unused]] constexpr bool kSizeTypeMaxIsEnough =
 			    static_cast<uintmax_t>(eastl::numeric_limits<IntSourceType>::max()) <=
