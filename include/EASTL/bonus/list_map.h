@@ -234,7 +234,8 @@ namespace eastl
 		list_map_data_base mNode;
 
 	public:
-		list_map(const allocator_type& allocator = EASTL_LIST_MAP_DEFAULT_ALLOCATOR);
+		list_map();
+		explicit list_map(const allocator_type& allocator);
 		list_map(const Compare& compare, const allocator_type& allocator = EASTL_MAP_DEFAULT_ALLOCATOR);
 
 		// To do: Implement the following:
@@ -522,6 +523,13 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	// list_map
 	///////////////////////////////////////////////////////////////////////
+
+	template <typename Key, typename T, typename Compare, typename Allocator>
+	inline list_map<Key, T, Compare, Allocator>::list_map()
+		: this_type(EASTL_LIST_MAP_DEFAULT_ALLOCATOR)
+	{
+	}
+
 
 	template <typename Key, typename T, typename Compare, typename Allocator>
 	inline list_map<Key, T, Compare, Allocator>::list_map(const allocator_type& allocator)

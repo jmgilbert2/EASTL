@@ -281,7 +281,7 @@ namespace eastl
 
 	public:
 		list();
-		list(const allocator_type& allocator);
+		explicit list(const allocator_type& allocator);
 		explicit list(size_type n, const allocator_type& allocator = EASTL_LIST_DEFAULT_ALLOCATOR);
 		list(size_type n, const value_type& value, const allocator_type& allocator = EASTL_LIST_DEFAULT_ALLOCATOR);
 		list(const this_type& x);

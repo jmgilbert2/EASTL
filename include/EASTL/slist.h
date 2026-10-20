@@ -246,7 +246,7 @@ namespace eastl
 
 	public:
 		slist();
-		slist(const allocator_type& allocator);
+		explicit slist(const allocator_type& allocator);
 		explicit slist(size_type n, const allocator_type& allocator = EASTL_SLIST_DEFAULT_ALLOCATOR);
 		slist(size_type n, const value_type& value, const allocator_type& allocator = EASTL_SLIST_DEFAULT_ALLOCATOR);
 		slist(const this_type& x);

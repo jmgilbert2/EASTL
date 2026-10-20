@@ -481,7 +481,7 @@ public:
 		: mDataSizeAndAllocator(0, EASTL_TUPLE_VECTOR_DEFAULT_ALLOCATOR)
 	{}
 
-	TupleVecImpl(const allocator_type& allocator)
+	explicit TupleVecImpl(const allocator_type& allocator)
 		: mDataSizeAndAllocator(0, allocator)
 	{}
 
