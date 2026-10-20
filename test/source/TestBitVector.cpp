@@ -221,9 +221,9 @@ static int TestBitVectorHelper(eastl_size_t startCapacity = 0)
 			for (int resize = 0; resize < 2; ++resize)
 			{
 				bv0.resize(decltype(bv0)::kBitCount * 2);
-				for (int i = 0; i < EAArrayCount(boundsTest); ++i)
+				for (size_t i = 0; i < EAArrayCount(boundsTest); ++i)
 				{
-					for (int j = 0; j < EAArrayCount(boundsTest); ++j)
+					for (size_t j = 0; j < EAArrayCount(boundsTest); ++j)
 					{
 						ElementType comp0 = boundsTest[i];
 						ElementType comp1 = boundsTest[j];
@@ -265,7 +265,7 @@ static int TestBitVectorHelper(eastl_size_t startCapacity = 0)
 						bv0.get_container().data()[1] = comp1;
 
 						EATEST_VERIFY(bv0.any() || (comp0 == 0 && comp1 == 0));
-						EATEST_VERIFY(bv0.all() && comp0 == maxComp0 && comp1 == maxComp1 || !bv0.all());
+						EATEST_VERIFY((bv0.all() && comp0 == maxComp0 && comp1 == maxComp1) || !bv0.all());
 
 						bool any = false;
 						bool all = true;
@@ -275,8 +275,8 @@ static int TestBitVectorHelper(eastl_size_t startCapacity = 0)
 							all = all && x;
 						}
 
-						EATEST_VERIFY(all && bv0.all() || !all && !bv0.all());
-						EATEST_VERIFY(any && bv0.any() || !any && !bv0.any());
+						EATEST_VERIFY((all && bv0.all()) || (!all && !bv0.all()));
+						EATEST_VERIFY((any && bv0.any()) || (!any && !bv0.any()));
 					}
 				}
 			}

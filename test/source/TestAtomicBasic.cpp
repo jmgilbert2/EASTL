@@ -254,7 +254,7 @@ void AtomicFlagBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 
-		BoolType ret = atomic.test();
+		EA_MAYBE_UNUSED BoolType ret = atomic.test();
 
 		ret = atomic.test(eastl::memory_order_relaxed);
 
@@ -269,7 +269,7 @@ void AtomicFlagBasicTest::TestAtomicFlagStandalone()
 	{
 		AtomicType atomic;
 
-		BoolType ret = atomic_flag_test_and_set(&atomic);
+		EA_MAYBE_UNUSED BoolType ret = atomic_flag_test_and_set(&atomic);
 
 		ret = atomic_flag_test_and_set_explicit(&atomic, eastl::memory_order_relaxed);
 
@@ -297,7 +297,7 @@ void AtomicFlagBasicTest::TestAtomicFlagStandalone()
 	{
 		AtomicType atomic;
 
-	    BoolType ret = atomic_flag_test(&atomic);
+	    EA_MAYBE_UNUSED BoolType ret = atomic_flag_test(&atomic);
 
 		ret = atomic_flag_test_explicit(&atomic, eastl::memory_order_relaxed);
 
@@ -529,7 +529,7 @@ void AtomicVoidPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 
-		PtrType ret = atomic.load();
+		EA_MAYBE_UNUSED PtrType ret = atomic.load();
 
 		ret = atomic.load(eastl::memory_order_relaxed);
 
@@ -543,7 +543,7 @@ void AtomicVoidPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 
-		PtrType ret = atomic.exchange((PtrType)0x4);
+		EA_MAYBE_UNUSED PtrType ret = atomic.exchange((PtrType)0x4);
 
 		ret = atomic.exchange((PtrType)0x4, eastl::memory_order_relaxed);
 
@@ -560,7 +560,7 @@ void AtomicVoidPointerBasicTest::TestAllMemoryOrders()
 		AtomicType atomic;
 		PtrType observed = (PtrType)0x0;
 
-		bool ret = atomic.compare_exchange_weak(observed, (PtrType)0x4);
+		EA_MAYBE_UNUSED bool ret = atomic.compare_exchange_weak(observed, (PtrType)0x4);
 
 		ret = atomic.compare_exchange_weak(observed, (PtrType)0x4, eastl::memory_order_relaxed);
 
@@ -577,7 +577,7 @@ void AtomicVoidPointerBasicTest::TestAllMemoryOrders()
 		AtomicType atomic;
 		PtrType observed = (PtrType)0x0;
 
-		bool ret = atomic.compare_exchange_strong(observed, (PtrType)0x4);
+		EA_MAYBE_UNUSED bool ret = atomic.compare_exchange_strong(observed, (PtrType)0x4);
 
 		ret = atomic.compare_exchange_strong(observed, (PtrType)0x4, eastl::memory_order_relaxed);
 
@@ -593,7 +593,7 @@ void AtomicVoidPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 		PtrType observed = (PtrType)0x0;
-		bool ret;
+		EA_MAYBE_UNUSED bool ret;
 
 		ret = atomic.compare_exchange_weak(observed, (PtrType)0x4, eastl::memory_order_relaxed, eastl::memory_order_relaxed);
 
@@ -617,7 +617,7 @@ void AtomicVoidPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 		PtrType observed = (PtrType)0x0;
-		bool ret;
+		EA_MAYBE_UNUSED bool ret;
 
 		ret = atomic.compare_exchange_strong(observed, (PtrType)0x4, eastl::memory_order_relaxed, eastl::memory_order_relaxed);
 
@@ -958,7 +958,7 @@ void AtomicPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 
-		PtrType ret = atomic.load();
+		EA_MAYBE_UNUSED PtrType ret = atomic.load();
 
 		ret = atomic.load(eastl::memory_order_relaxed);
 
@@ -972,7 +972,7 @@ void AtomicPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 
-		PtrType ret = atomic.fetch_add(0);
+		EA_MAYBE_UNUSED PtrType ret = atomic.fetch_add(0);
 
 		ret = atomic.fetch_add(0, eastl::memory_order_relaxed);
 
@@ -988,7 +988,7 @@ void AtomicPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 
-		PtrType ret = atomic.fetch_sub(0);
+		EA_MAYBE_UNUSED PtrType ret = atomic.fetch_sub(0);
 
 		ret = atomic.fetch_sub(0, eastl::memory_order_relaxed);
 
@@ -1004,7 +1004,7 @@ void AtomicPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 
-		PtrType ret = atomic.add_fetch(0);
+		EA_MAYBE_UNUSED PtrType ret = atomic.add_fetch(0);
 
 		ret = atomic.add_fetch(0, eastl::memory_order_relaxed);
 
@@ -1020,7 +1020,7 @@ void AtomicPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 
-		PtrType ret = atomic.sub_fetch(0);
+		EA_MAYBE_UNUSED PtrType ret = atomic.sub_fetch(0);
 
 		ret = atomic.sub_fetch(0, eastl::memory_order_relaxed);
 
@@ -1036,7 +1036,7 @@ void AtomicPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 
-		PtrType ret = atomic.exchange((PtrType)0x4);
+		EA_MAYBE_UNUSED PtrType ret = atomic.exchange((PtrType)0x4);
 
 		ret = atomic.exchange((PtrType)0x4, eastl::memory_order_relaxed);
 
@@ -1053,7 +1053,7 @@ void AtomicPointerBasicTest::TestAllMemoryOrders()
 		AtomicType atomic;
 		PtrType observed = (PtrType)0x0;
 
-		bool ret = atomic.compare_exchange_weak(observed, (PtrType)0x4);
+		EA_MAYBE_UNUSED bool ret = atomic.compare_exchange_weak(observed, (PtrType)0x4);
 
 		ret = atomic.compare_exchange_weak(observed, (PtrType)0x4, eastl::memory_order_relaxed);
 
@@ -1070,7 +1070,7 @@ void AtomicPointerBasicTest::TestAllMemoryOrders()
 		AtomicType atomic;
 		PtrType observed = (PtrType)0x0;
 
-		bool ret = atomic.compare_exchange_strong(observed, (PtrType)0x4);
+		EA_MAYBE_UNUSED bool ret = atomic.compare_exchange_strong(observed, (PtrType)0x4);
 
 		ret = atomic.compare_exchange_strong(observed, (PtrType)0x4, eastl::memory_order_relaxed);
 
@@ -1086,7 +1086,7 @@ void AtomicPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 		PtrType observed = (PtrType)0x0;
-		bool ret;
+		EA_MAYBE_UNUSED bool ret;
 
 		ret = atomic.compare_exchange_weak(observed, (PtrType)0x4, eastl::memory_order_relaxed, eastl::memory_order_relaxed);
 
@@ -1110,7 +1110,7 @@ void AtomicPointerBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 		PtrType observed = (PtrType)0x0;
-		bool ret;
+		EA_MAYBE_UNUSED bool ret;
 
 		ret = atomic.compare_exchange_strong(observed, (PtrType)0x4, eastl::memory_order_relaxed, eastl::memory_order_relaxed);
 
@@ -1852,7 +1852,7 @@ void AtomicUserTypeBasicTest<T>::TestAllMemoryOrders()
 
 		UserType observed{0, 0};
 
-		bool ret = atomic.compare_exchange_weak(observed, {0, 0});
+		EA_MAYBE_UNUSED bool ret = atomic.compare_exchange_weak(observed, {0, 0});
 
 		ret = atomic.compare_exchange_weak(observed, {0, 0}, eastl::memory_order_relaxed);
 
@@ -1870,7 +1870,7 @@ void AtomicUserTypeBasicTest<T>::TestAllMemoryOrders()
 
 		UserType observed{0, 0};
 
-		bool ret = atomic.compare_exchange_strong(observed, {0, 0});
+		EA_MAYBE_UNUSED bool ret = atomic.compare_exchange_strong(observed, {0, 0});
 
 		ret = atomic.compare_exchange_strong(observed, {0, 0}, eastl::memory_order_relaxed);
 
@@ -1887,7 +1887,7 @@ void AtomicUserTypeBasicTest<T>::TestAllMemoryOrders()
 		AtomicType atomic;
 
 		UserType observed{0, 0};
-		bool ret;
+		EA_MAYBE_UNUSED bool ret;
 
 		ret = atomic.compare_exchange_weak(observed, {0, 0}, eastl::memory_order_relaxed, eastl::memory_order_relaxed);
 
@@ -1912,7 +1912,7 @@ void AtomicUserTypeBasicTest<T>::TestAllMemoryOrders()
 		AtomicType atomic;
 
 		UserType observed{0, 0};
-		bool ret;
+		EA_MAYBE_UNUSED bool ret;
 
 		ret = atomic.compare_exchange_strong(observed, {0, 0}, eastl::memory_order_relaxed, eastl::memory_order_relaxed);
 
@@ -2197,7 +2197,7 @@ void AtomicBoolBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 
-		BoolType ret = atomic.load();
+		EA_MAYBE_UNUSED BoolType ret = atomic.load();
 
 		ret = atomic.load(eastl::memory_order_relaxed);
 
@@ -2209,7 +2209,7 @@ void AtomicBoolBasicTest::TestAllMemoryOrders()
 	{
 		AtomicType atomic;
 
-		BoolType ret = atomic.exchange(true);
+		EA_MAYBE_UNUSED BoolType ret = atomic.exchange(true);
 
 		ret = atomic.exchange(true, eastl::memory_order_relaxed);
 
@@ -2226,7 +2226,7 @@ void AtomicBoolBasicTest::TestAllMemoryOrders()
 		AtomicType atomic;
 
 		BoolType observed = false;
-		bool ret = atomic.compare_exchange_weak(observed, true);
+		EA_MAYBE_UNUSED bool ret = atomic.compare_exchange_weak(observed, true);
 
 		ret = atomic.compare_exchange_weak(observed, true, eastl::memory_order_relaxed);
 
@@ -2243,7 +2243,7 @@ void AtomicBoolBasicTest::TestAllMemoryOrders()
 		AtomicType atomic;
 
 		BoolType observed = false;
-		bool ret = atomic.compare_exchange_strong(observed, true);
+		EA_MAYBE_UNUSED bool ret = atomic.compare_exchange_strong(observed, true);
 
 		ret = atomic.compare_exchange_strong(observed, true, eastl::memory_order_relaxed);
 
@@ -2260,7 +2260,7 @@ void AtomicBoolBasicTest::TestAllMemoryOrders()
 		AtomicType atomic;
 
 		BoolType observed = false;
-		bool ret = atomic.compare_exchange_weak(observed, true, eastl::memory_order_relaxed, eastl::memory_order_relaxed);
+		EA_MAYBE_UNUSED bool ret = atomic.compare_exchange_weak(observed, true, eastl::memory_order_relaxed, eastl::memory_order_relaxed);
 
 		ret = atomic.compare_exchange_weak(observed, true, eastl::memory_order_acquire, eastl::memory_order_relaxed);
 
@@ -2283,7 +2283,7 @@ void AtomicBoolBasicTest::TestAllMemoryOrders()
 		AtomicType atomic;
 
 		BoolType observed = false;
-		bool ret = atomic.compare_exchange_strong(observed, true, eastl::memory_order_relaxed, eastl::memory_order_relaxed);
+		EA_MAYBE_UNUSED bool ret = atomic.compare_exchange_strong(observed, true, eastl::memory_order_relaxed, eastl::memory_order_relaxed);
 
 		ret = atomic.compare_exchange_strong(observed, true, eastl::memory_order_acquire, eastl::memory_order_relaxed);
 
@@ -3165,7 +3165,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.load();
+		EA_MAYBE_UNUSED IntegralType ret = atomic.load();
 
 		ret = atomic.load(eastl::memory_order_relaxed);
 
@@ -3177,7 +3177,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.exchange(1);
+		EA_MAYBE_UNUSED IntegralType ret = atomic.exchange(1);
 
 		ret = atomic.exchange(1, eastl::memory_order_relaxed);
 
@@ -3193,7 +3193,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.fetch_add(1);
+		EA_MAYBE_UNUSED IntegralType ret = atomic.fetch_add(1);
 
 		ret = atomic.fetch_add(1, eastl::memory_order_relaxed);
 
@@ -3209,7 +3209,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.add_fetch(1);
+		EA_MAYBE_UNUSED IntegralType ret = atomic.add_fetch(1);
 
 		ret = atomic.add_fetch(1, eastl::memory_order_relaxed);
 
@@ -3225,7 +3225,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.fetch_sub(1);
+		EA_MAYBE_UNUSED IntegralType ret = atomic.fetch_sub(1);
 
 		ret = atomic.fetch_sub(1, eastl::memory_order_relaxed);
 
@@ -3241,7 +3241,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.sub_fetch(1);
+		EA_MAYBE_UNUSED IntegralType ret = atomic.sub_fetch(1);
 
 		ret = atomic.sub_fetch(1, eastl::memory_order_relaxed);
 
@@ -3257,7 +3257,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.fetch_and(1);
+		EA_MAYBE_UNUSED IntegralType ret = atomic.fetch_and(1);
 
 		ret = atomic.fetch_and(1, eastl::memory_order_relaxed);
 
@@ -3273,7 +3273,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.and_fetch(1);
+		EA_MAYBE_UNUSED IntegralType ret = atomic.and_fetch(1);
 
 		ret = atomic.and_fetch(1, eastl::memory_order_relaxed);
 
@@ -3289,7 +3289,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.fetch_or(1);
+		EA_MAYBE_UNUSED IntegralType ret = atomic.fetch_or(1);
 
 		ret = atomic.fetch_or(1, eastl::memory_order_relaxed);
 
@@ -3305,7 +3305,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.or_fetch(1);
+		EA_MAYBE_UNUSED IntegralType ret = atomic.or_fetch(1);
 
 		ret = atomic.or_fetch(1, eastl::memory_order_relaxed);
 
@@ -3321,7 +3321,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.fetch_xor(1);
+		EA_MAYBE_UNUSED IntegralType ret = atomic.fetch_xor(1);
 
 		ret = atomic.fetch_xor(1, eastl::memory_order_relaxed);
 
@@ -3337,7 +3337,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 	{
 		AtomicType atomic{};
 
-		IntegralType ret = atomic.xor_fetch(1);
+		EA_MAYBE_UNUSED IntegralType ret = atomic.xor_fetch(1);
 
 		ret = atomic.xor_fetch(1, eastl::memory_order_relaxed);
 
@@ -3354,7 +3354,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 		AtomicType atomic{};
 
 		IntegralType observed = 0;
-		bool ret;
+		EA_MAYBE_UNUSED bool ret;
 
 		ret = atomic.compare_exchange_weak(observed, 1);
 
@@ -3373,7 +3373,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 		AtomicType atomic{};
 
 		IntegralType observed = 0;
-		bool ret;
+		EA_MAYBE_UNUSED bool ret;
 
 		ret = atomic.compare_exchange_strong(observed, 1);
 
@@ -3392,7 +3392,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 		AtomicType atomic{};
 
 		IntegralType observed = 0;
-		bool ret;
+		EA_MAYBE_UNUSED bool ret;
 
 		ret = atomic.compare_exchange_weak(observed, 1,
 										   eastl::memory_order_relaxed,
@@ -3435,7 +3435,7 @@ void AtomicIntegralBasicTest<T>::TestAllMemoryOrders()
 		AtomicType atomic{};
 
 		IntegralType observed = 0;
-		bool ret;
+		EA_MAYBE_UNUSED bool ret;
 
 		ret = atomic.compare_exchange_strong(observed, 1,
 											 eastl::memory_order_relaxed,

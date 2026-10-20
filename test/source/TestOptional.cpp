@@ -244,7 +244,7 @@ static int TestOptional_MonadicOperations()
 
 		{
 			optional<unique_ptr<int>> o = eastl::make_unique<int>(42);
-			auto result = eastl::move(o).and_then([](auto ptr) -> optional<string> { return nullopt; });
+			auto result = eastl::move(o).and_then([](auto /*ptr*/) -> optional<string> { return nullopt; });
 			VERIFY(!result.has_value());
 			VERIFY(o.has_value());
 			VERIFY(o.value() == nullptr); // o should be moved-from.
@@ -404,7 +404,7 @@ static int TestOptional_MonadicOperations()
 			eastl::string externalString = "Jean Guegant was here";
 
 			optional<unique_ptr<int>> o = eastl::make_unique<int>(42);
-			auto result = eastl::move(o).transform([&externalString](auto ptr) -> const eastl::string&
+			auto result = eastl::move(o).transform([&externalString](auto /*ptr*/) -> const eastl::string&
 												   { return externalString; });
 
 			static_assert(eastl::is_same_v<decltype(result), optional<eastl::string>>,

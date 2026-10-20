@@ -1083,12 +1083,13 @@ int TestVariantVisitor()
 			bool&& operator()(unsigned) { return eastl::move(bVisited); }
 		};
 
-		bool&& ret = visit(MyVisitor{}, v);
+		MyVisitor visitor; // A named visitor: GCC 13 takes a temporary one for a dangling reference.
+		bool&& ret = visit(visitor, v);
 		ret = true;
 		VERIFY(bVisited);
 
 		bVisited = false;
-		bool&& ret2 = visit<bool&&>(MyVisitor{}, v);
+		bool&& ret2 = visit<bool&&>(visitor, v);
 		ret2 = true;
 		VERIFY(bVisited);
 	}
@@ -1195,7 +1196,7 @@ int TestVariantVisitor()
 		struct ReturningVisitor
 		{
 			int operator()(int i) {return i;}
-			int operator()(string s) {return 0;}
+			int operator()(string /*s*/) {return 0;}
 		};
 
 		VERIFY(visit(ReturningVisitor{}, v) == 42);

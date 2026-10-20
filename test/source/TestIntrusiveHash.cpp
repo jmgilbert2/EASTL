@@ -14,7 +14,7 @@
 using namespace eastl;
 
 
-namespace
+namespace TestIntrusiveHashTypes // Named, not anonymous: the explicit instantiations below would otherwise leave unused internal-linkage member functions (GCC -Wunused-function).
 {
 	struct SetWidget : public intrusive_hash_node
 	{
@@ -104,7 +104,8 @@ namespace
 		}
 	};
 
-} // namespace
+} // namespace TestIntrusiveHashTypes
+using namespace TestIntrusiveHashTypes;
 
 
 

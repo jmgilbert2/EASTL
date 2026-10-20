@@ -1707,11 +1707,11 @@ int TestVector()
 		{
 			struct iterator
 			{
-				typedef eastl::input_iterator_tag iterator_category;
-				typedef int value_type;
-				typedef ptrdiff_t difference_type;
-				typedef int* pointer;
-				typedef int& reference;
+				EA_MAYBE_UNUSED typedef eastl::input_iterator_tag iterator_category;
+				EA_MAYBE_UNUSED typedef int value_type;
+				EA_MAYBE_UNUSED typedef ptrdiff_t difference_type;
+				EA_MAYBE_UNUSED typedef int* pointer;
+				EA_MAYBE_UNUSED typedef int& reference;
 
 				bool operator!=(const iterator&) const { return false; }
 				iterator& operator++()                 { return *this; }
