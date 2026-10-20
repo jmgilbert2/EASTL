@@ -237,7 +237,7 @@ int TestSegmentedVector()
 		int i = 0;
 		for (auto it = sv.begin(); it != sv.end(); ++it, ++i)
 		{
-			EATEST_VERIFY(*it == (i < 55) ? 0 : 5);
+			EATEST_VERIFY(*it == ((i < 55) ? 0 : 5));
 		}
 
 		sv.resize(10);
