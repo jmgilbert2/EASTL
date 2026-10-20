@@ -85,8 +85,7 @@ namespace EA
 			typedef CoreAllocatorAdapter<AllocatorType> this_type;
 
 		public:
-			// To do: Make this constructor explicit, when there is no known code dependent on it being otherwise.
-			CoreAllocatorAdapter(const char* pName = EASTL_NAME_VAL(EASTL_ALLOCATOR_DEFAULT_NAME), AllocatorType* pAllocator = EASTL_CORE_ALLOCATOR_ADAPTER_GET_DEFAULT_CORE_ALLOCATOR());
+			EASTL_ALLOCATOR_EXPLICIT CoreAllocatorAdapter(const char* pName = EASTL_NAME_VAL(EASTL_ALLOCATOR_DEFAULT_NAME), AllocatorType* pAllocator = EASTL_CORE_ALLOCATOR_ADAPTER_GET_DEFAULT_CORE_ALLOCATOR());
 			CoreAllocatorAdapter(const char* pName, AllocatorType* pAllocator, int flags);
 			CoreAllocatorAdapter(const CoreAllocatorAdapter& x);
 			CoreAllocatorAdapter(const CoreAllocatorAdapter& x, const char* pName);

@@ -9,6 +9,9 @@
 #include <EASTL/fixed_allocator.h>
 #include <EASTL/core_allocator_adapter.h>
 #include <EASTL/list.h>
+#include <EASTL/vector.h>
+#include <EASTL/string.h>
+#include <EASTL/fixed_string.h>
 #include <EAStdC/EAString.h>
 #include <EAStdC/EAAlignment.h>
 
@@ -235,6 +238,33 @@ static int TestAllocatorMalloc()
 
 	return nErrorCount;
 }
+
+
+///////////////////////////////////////////////////////////////////////////////
+// EASTL_ALLOCATOR_EXPLICIT_ENABLED
+//
+// A string must not silently become a container's allocator name.
+//
+#if EASTL_ALLOCATOR_EXPLICIT_ENABLED
+	static_assert(!eastl::is_convertible<const char*, eastl::allocator>::value, "allocator must not convert from const char*");
+	static_assert(!eastl::is_convertible<const char*, eastl::dummy_allocator>::value, "dummy_allocator must not convert from const char*");
+	static_assert(!eastl::is_convertible<const char*, eastl::allocator_malloc>::value, "allocator_malloc must not convert from const char*");
+	static_assert(!eastl::is_convertible<const char*, eastl::fixed_allocator>::value, "fixed_allocator must not convert from const char*");
+	static_assert(!eastl::is_convertible<const char*, eastl::fixed_allocator_with_overflow>::value, "fixed_allocator_with_overflow must not convert from const char*");
+	#if EASTL_CORE_ALLOCATOR_ENABLED
+		static_assert(!eastl::is_convertible<const char*, EA::Allocator::EASTLCoreAllocatorAdapter>::value, "CoreAllocatorAdapter must not convert from const char*");
+	#endif
+
+	static_assert(!eastl::is_constructible<eastl::list<int>, const char*>::value, "list<int>(\"name\") must not compile");
+	static_assert(!eastl::is_constructible<eastl::list<int, eastl::allocator_malloc>, const char*>::value, "list<int, allocator_malloc>(\"name\") must not compile");
+	static_assert(!eastl::is_constructible<eastl::vector<eastl::string>, const char*>::value, "vector<string>(\"text\") must not compile");
+	static_assert(eastl::is_constructible<eastl::list<int>, eastl::allocator>::value, "list<int>(allocator(\"name\")) must compile");
+
+	#if EA_CHAR8_UNIQUE
+		static_assert(!eastl::is_constructible<eastl::u8string, const char*>::value, "u8string(\"text\") must not compile");
+		static_assert(!eastl::is_constructible<eastl::fixed_string<char8_t, 64>, const char*>::value, "fixed_string<char8_t>(\"text\") must not compile");
+	#endif
+#endif
 
 
 

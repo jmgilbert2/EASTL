@@ -1512,8 +1512,10 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 ///////////////////////////////////////////////////////////////////////////////
 // EASTL_ALLOCATOR_EXPLICIT_ENABLED
 //
-// Defined as 0 or 1. Default is 0 for now but ideally would be changed to
-// 1 some day. It's 0 because setting it to 1 breaks some existing code.
+// Defined as 0 or 1. Default is 1, which matches the C++ standard library,
+// where a string never converts implicitly to an allocator. Set it to 0 for
+// code that names a container with a bare string, such as
+// vector<int> v("name"), instead of vector<int> v(allocator("name")).
 // This option enables the allocator ctor to be explicit, which avoids
 // some undesirable silent conversions, especially with the string class.
 //
@@ -1527,7 +1529,7 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_ALLOCATOR_EXPLICIT_ENABLED
-	#define EASTL_ALLOCATOR_EXPLICIT_ENABLED 0
+	#define EASTL_ALLOCATOR_EXPLICIT_ENABLED 1
 #endif
 
 #if EASTL_ALLOCATOR_EXPLICIT_ENABLED
