@@ -7,6 +7,7 @@
 #include <EASTL/memory.h>
 #include <EASTL/utility.h>
 #include <EASTL/vector.h>
+#include <EASTL/deque.h>
 #include <EAStdC/EAMemory.h>
 #include <EAStdC/EAAlignment.h>
 
@@ -149,6 +150,22 @@ namespace eastl
 		inline static constexpr int a = 42;
 	};
 }
+
+
+// A type whose copy assignment is trivial but whose copy constructor isn't: filling uninitialized memory
+// with it must run the copy constructor, not assign (upstream #485).
+struct CopyConstructCounted
+{
+	static int sCopyCount;
+	int mValue;
+
+	CopyConstructCounted(int value = 0) : mValue(value) {}
+	CopyConstructCounted(const CopyConstructCounted& x) : mValue(x.mValue) { ++sCopyCount; }
+	CopyConstructCounted& operator=(const CopyConstructCounted&) = default;
+};
+int CopyConstructCounted::sCopyCount = 0;
+static_assert(eastl::is_trivially_copy_assignable<CopyConstructCounted>::value, "CopyConstructCounted must have a trivial copy assignment");
+static_assert(!eastl::is_trivially_copyable<CopyConstructCounted>::value, "CopyConstructCounted must not be trivially copyable");
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -428,6 +445,31 @@ int TestMemory()
 		int intArray[] = { 3, 2, 6, 5, 4, 1 };
 		uninitialized_fill_n(intArray, 6, 5);
 		EATEST_VERIFY(VerifySequence(intArray, intArray + 6, int(), "uninitialized_fill_n", 5, 5, 5, 5, 5, 5, -1));
+	}
+
+
+	{
+		// Filling uninitialized memory copy-constructs, even when copy assignment is trivial (upstream #485).
+		alignas(CopyConstructCounted) unsigned char buffer[sizeof(CopyConstructCounted) * 6];
+		CopyConstructCounted* const p = reinterpret_cast<CopyConstructCounted*>(buffer);
+		const CopyConstructCounted value(7);
+
+		CopyConstructCounted::sCopyCount = 0;
+		eastl::uninitialized_fill(p, p + 6, value);
+		EATEST_VERIFY(CopyConstructCounted::sCopyCount == 6);
+
+		CopyConstructCounted::sCopyCount = 0;
+		eastl::uninitialized_fill_n(p, 6, value);
+		EATEST_VERIFY(CopyConstructCounted::sCopyCount == 6);
+
+		CopyConstructCounted::sCopyCount = 0;
+		eastl::vector<CopyConstructCounted> v(5, value);
+		EATEST_VERIFY(CopyConstructCounted::sCopyCount == 5);
+
+		CopyConstructCounted::sCopyCount = 0;
+		eastl::deque<CopyConstructCounted> d;
+		d.insert(d.begin(), 5, value);
+		EATEST_VERIFY(CopyConstructCounted::sCopyCount == 5);
 	}
 
 
