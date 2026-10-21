@@ -973,6 +973,9 @@ namespace eastl
 	}
 
 
+	// GCC 11 reports out of bounds subscripts and writes at -O3; bitset::set only calls this with i < N.
+	EA_DISABLE_GCC_WARNING(-Warray-bounds)
+	EA_DISABLE_GCC_WARNING(-Wstringop-overflow)
 	template <size_t NW, typename WordType>
 	inline void BitsetBase<NW, WordType>::set(size_type i, bool value)
 	{
@@ -981,6 +984,8 @@ namespace eastl
 		else
 			mWord[i >> kBitsPerWordShift] &= ~(static_cast<word_type>(1) << (i & kBitsPerWordMask));
 	}
+	EA_RESTORE_GCC_WARNING()
+	EA_RESTORE_GCC_WARNING()
 
 
 	template <size_t NW, typename WordType>
