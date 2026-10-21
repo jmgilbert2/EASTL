@@ -78,8 +78,8 @@ namespace TestSDListLocal
 			if (next == -1 || next != *it)
 			{
 				const int value = *it;
-				const char* const pString = IntListToString8(cont).c_str();
-				EASTLTest_Printf("intrusive_list[%s] Mismatch at index %d: expected %d, found %d; contents: %s\n", testname, index, next, value, pString);
+				const eastl::string sContents = IntListToString8(cont);
+				EASTLTest_Printf("intrusive_list[%s] Mismatch at index %d: expected %d, found %d; contents: %s\n", testname, index, next, value, sContents.c_str());
 				va_end(val);
 				return false;
 			}
@@ -95,8 +95,8 @@ namespace TestSDListLocal
 			} while(va_arg(val, int) != -1);
 
 			const int countainerSize = (int)cont.size();
-			const char* const pString = IntListToString8(cont).c_str();
-			EASTLTest_Printf("intrusive_list[%s] Too many elements: expected %d, found %d; contents: %s\n", testname, index, countainerSize, pString);
+			const eastl::string sContents = IntListToString8(cont);
+			EASTLTest_Printf("intrusive_list[%s] Too many elements: expected %d, found %d; contents: %s\n", testname, index, countainerSize, sContents.c_str());
 			va_end(val);
 			return false;
 		}

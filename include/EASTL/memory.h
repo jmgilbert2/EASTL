@@ -298,7 +298,7 @@ namespace eastl
 				typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
 
 				for (; first != last; ++first, ++dest)
-					memmove(eastl::addressof(*dest), eastl::addressof(*first), sizeof(value_type));
+					memmove(static_cast<void*>(eastl::addressof(*dest)), eastl::addressof(*first), sizeof(value_type));
 
 				return dest;
 			}
@@ -316,7 +316,7 @@ namespace eastl
 					return dest;
 
 				auto count = (last - first);
-				memmove(eastl::addressof(*dest), eastl::addressof(*first), sizeof(value_type) * count);
+				memmove(static_cast<void*>(eastl::addressof(*dest)), eastl::addressof(*first), sizeof(value_type) * count);
 				return dest + count;
 			}
 		};

@@ -39,6 +39,10 @@ namespace Internal
 {
 	template <typename TupleIndices, typename... Ts>
 	struct TupleImpl;
+
+	// Always false, but dependent on I, so that a static_assert using it only fires on instantiation.
+	template <size_t I>
+	struct tuple_index_out_of_range : public false_type {};
 } // namespace Internal
 
 template <typename Indices, typename... Ts>
@@ -56,7 +60,7 @@ template <size_t I>
 struct tuple_element<I, TupleTypes<>>
 {
 public:
-	static_assert(I != I, "tuple_element index out of range");
+	static_assert(Internal::tuple_index_out_of_range<I>::value, "tuple_element index out of range");
 };
 
 template <typename H, typename... Ts>

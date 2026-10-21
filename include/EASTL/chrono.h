@@ -731,27 +731,27 @@ namespace chrono
 				///////////////////////////////////////////////////////////////////////////////
 				// integer chrono literals
 				///////////////////////////////////////////////////////////////////////////////
-				EA_CONSTEXPR chrono::hours operator"" h(unsigned long long h) { return chrono::hours(h); }
-				EA_CONSTEXPR chrono::minutes operator"" min(unsigned long long m) { return chrono::minutes(m); }
-				EA_CONSTEXPR chrono::seconds operator"" s(unsigned long long s) { return chrono::seconds(s); }
-				EA_CONSTEXPR chrono::milliseconds operator"" ms(unsigned long long ms) { return chrono::milliseconds(ms); }
-				EA_CONSTEXPR chrono::microseconds operator"" us(unsigned long long us) { return chrono::microseconds(us); }
-				EA_CONSTEXPR chrono::nanoseconds operator"" ns(unsigned long long ns) { return chrono::nanoseconds(ns); }
+				EA_CONSTEXPR chrono::hours operator""h(unsigned long long h) { return chrono::hours(h); }
+				EA_CONSTEXPR chrono::minutes operator""min(unsigned long long m) { return chrono::minutes(m); }
+				EA_CONSTEXPR chrono::seconds operator""s(unsigned long long s) { return chrono::seconds(s); }
+				EA_CONSTEXPR chrono::milliseconds operator""ms(unsigned long long ms) { return chrono::milliseconds(ms); }
+				EA_CONSTEXPR chrono::microseconds operator""us(unsigned long long us) { return chrono::microseconds(us); }
+				EA_CONSTEXPR chrono::nanoseconds operator""ns(unsigned long long ns) { return chrono::nanoseconds(ns); }
 
 				///////////////////////////////////////////////////////////////////////////////
 				// float chrono literals
 				///////////////////////////////////////////////////////////////////////////////
-				EA_CONSTEXPR chrono::duration<long double, ratio<3600, 1>> operator"" h(long double h)
+				EA_CONSTEXPR chrono::duration<long double, ratio<3600, 1>> operator""h(long double h)
 					{ return chrono::duration<long double, ratio<3600, 1>>(h); }
-				EA_CONSTEXPR chrono::duration<long double, ratio<60, 1>> operator"" min(long double m)
+				EA_CONSTEXPR chrono::duration<long double, ratio<60, 1>> operator""min(long double m)
 					{ return chrono::duration<long double, ratio<60, 1>>(m); }
-				EA_CONSTEXPR chrono::duration<long double> operator"" s(long double s)
+				EA_CONSTEXPR chrono::duration<long double> operator""s(long double s)
 					{ return chrono::duration<long double>(s); }
-				EA_CONSTEXPR chrono::duration<float, milli> operator"" ms(long double ms)
+				EA_CONSTEXPR chrono::duration<float, milli> operator""ms(long double ms)
 					{ return chrono::duration<long double, milli>(ms); }
-				EA_CONSTEXPR chrono::duration<float, micro> operator"" us(long double us)
+				EA_CONSTEXPR chrono::duration<float, micro> operator""us(long double us)
 					{ return chrono::duration<long double, micro>(us); }
-				EA_CONSTEXPR chrono::duration<float, nano> operator"" ns(long double ns)
+				EA_CONSTEXPR chrono::duration<float, nano> operator""ns(long double ns)
 					{ return chrono::duration<long double, nano>(ns); }
 
 			} // namespace chrono_literals

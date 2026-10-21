@@ -1405,7 +1405,8 @@ namespace eastl
 		// and set is to return a pair and not just an iterator.
 
 		node_type* pNodeNew = DoCreateNode(eastl::forward<Args>(args)...); // Note that pNodeNew->mpLeft, mpRight, mpParent, will be uninitialized.
-		const key_type& key = extract_key{}(pNodeNew->mValue);
+		extract_key extractKey;
+		const key_type& key = extractKey(pNodeNew->mValue);
 
 		bool        canInsert;
 		rbtree_node_base*  pPosition = DoGetKeyInsertionPositionUniqueKeys(canInsert, key);
@@ -1431,7 +1432,8 @@ namespace eastl
 		// key, and make DoInsertValueImpl take that node as an argument. That way there is no value created on the stack.
 
 		node_type* const pNodeNew = DoCreateNode(eastl::forward<Args>(args)...); // Note that pNodeNew->mpLeft, mpRight, mpParent, will be uninitialized.
-		const key_type& key = extract_key{}(pNodeNew->mValue);
+		extract_key extractKey;
+		const key_type& key = extractKey(pNodeNew->mValue);
 
 		rbtree_node_base* pPosition = DoGetKeyInsertionPositionNonuniqueKeys(key);
 
@@ -1611,7 +1613,8 @@ namespace eastl
 		// a forced insertion position for the value when possible.
 
 		node_type* pNodeNew = DoCreateNode(eastl::forward<Args>(args)...); // Note that pNodeNew->mpLeft, mpRight, mpParent, will be uninitialized.
-		const key_type& key(extract_key{}(pNodeNew->mValue));
+		extract_key extractKey;
+		const key_type& key(extractKey(pNodeNew->mValue));
 
 		bool       bForceToLeft;
 		rbtree_node_base* pPosition = DoGetKeyInsertionPositionUniqueKeysHint(position, bForceToLeft, key);
@@ -1645,7 +1648,8 @@ namespace eastl
 		// a forced insertion position for the value when possible.
 
 		node_type* pNodeNew = DoCreateNode(eastl::forward<Args>(args)...); // Note that pNodeNew->mpLeft, mpRight, mpParent, will be uninitialized.
-		const key_type& key(extract_key{}(pNodeNew->mValue));
+		extract_key extractKey;
+		const key_type& key(extractKey(pNodeNew->mValue));
 
 		bool        bForceToLeft;
 		rbtree_node_base*  pPosition = DoGetKeyInsertionPositionNonuniqueKeysHint(position, bForceToLeft, key);

@@ -1257,6 +1257,9 @@ namespace eastl
 	template <bool isMove>
 	struct move_and_copy_backward_helper<eastl::random_access_iterator_tag, isMove, true>
 	{
+		// GCC 10 to 15 report null pointers from vector::insert into an empty vector, on the path for ranges
+		// that fit in the capacity, which a non-empty range can't take there.
+		EA_DISABLE_GCC_WARNING(-Wnonnull)
 		template <typename T>
 		static T* move_or_copy_backward(const T* first, const T* last, T* resultEnd)
 		{
@@ -1267,6 +1270,7 @@ namespace eastl
 			else
 				return resultEnd;
 		}
+		EA_RESTORE_GCC_WARNING()
 	};
 
 	template <bool isMove, typename BidirectionalIterator1, typename BidirectionalIterator2>

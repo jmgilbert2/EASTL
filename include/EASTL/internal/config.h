@@ -676,11 +676,16 @@ namespace eastl
 // EASTL_CRASH
 //
 // Executes an invalid memory write, which should result in an exception
-// on most platforms.
+// on most platforms. With GCC and clang, it then traps, so the compiler
+// knows that EASTL_CRASH() doesn't return.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#define EASTL_CRASH() *((volatile int*)0) = 0xDEADC0DE;
+#if defined(__GNUC__) || defined(__clang__)
+	#define EASTL_CRASH() do { *((volatile int*)0) = 0xDEADC0DE; __builtin_trap(); } while (0)
+#else
+	#define EASTL_CRASH() *((volatile int*)0) = 0xDEADC0DE;
+#endif
 
 
 ///////////////////////////////////////////////////////////////////////////////

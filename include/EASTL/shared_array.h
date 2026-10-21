@@ -310,11 +310,19 @@ namespace eastl
 		/// unique
 		/// Returns true if the reference count on the owned pointer is one.
 		/// The return value is true if the owned pointer is null.
+		// GCC 12 reports a use after free after operator=, which can't track the reference counts through the
+		// copy-and-swap.
+		#if defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION >= 12000)
+			EA_DISABLE_GCC_WARNING(-Wuse-after-free)
+		#endif
 		bool unique() const
 		{
 			// assert(mpRefCount);
 			return (*mpRefCount == 1);
 		}
+		#if defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION >= 12000)
+			EA_RESTORE_GCC_WARNING()
+		#endif
 
 		/// Implicit operator bool
 		/// Allows for using a scoped_ptr as a boolean. 

@@ -151,7 +151,7 @@ static int TestFixedAllocator()
 
 		// ensure the fixed buffer contains the default value that will be replaced
 		IntListNode buffer1[kBufferCount];
-		for (int i = 0; i < kBufferCount; i++)
+		for (size_t i = 0; i < kBufferCount; i++)
 		{
 			buffer1[i].mValue = DEFAULT_VALUE;
 			EATEST_VERIFY(buffer1[i].mValue == DEFAULT_VALUE);
@@ -165,7 +165,7 @@ static int TestFixedAllocator()
 			intList1.push_back(TEST_VALUE);
 
 		// ensure the local buffer has been altered with the contents of the list::push_back
-		for (int i = 0; i < kBufferCount; i++)
+		for (size_t i = 0; i < kBufferCount; i++)
 		{
 			EATEST_VERIFY(buffer1[i].mValue == TEST_VALUE);
 		}

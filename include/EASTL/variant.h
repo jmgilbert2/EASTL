@@ -1410,7 +1410,7 @@ namespace eastl
 	//
 	EA_DISABLE_VC_WARNING(4100) // warning C4100: 't': unreferenced formal parameter
 	template <typename... Variants>
-	static EA_CPP14_CONSTEXPR void visit_throw_bad_variant_access(Variants&&... variants)
+	static EA_CPP14_CONSTEXPR void visit_throw_bad_variant_access(EA_MAYBE_UNUSED Variants&&... variants)
 	{
 	#if EASTL_EXCEPTIONS_ENABLED
 		using bool_array_type = bool[];

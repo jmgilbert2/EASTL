@@ -279,7 +279,7 @@ namespace SmartPtrTest
 		static int mnCount;
 
 		Y() { ++mnCount; }
-		Y(const Y&) { ++mnCount; }
+		Y(const Y&) : eastl::enable_shared_from_this<Y>() { ++mnCount; }
 		Y& operator=(const Y&) { return *this; }
 	   ~Y() { --mnCount; }
 
@@ -302,7 +302,7 @@ namespace SmartPtrTest
 		int a;
 
 		ACLS(int _a_ = 0) : a(_a_) { ++mnCount; }
-		ACLS(const ACLS& x) : a(x.a) { ++mnCount; }
+		ACLS(const ACLS& x) : eastl::enable_shared_from_this<ACLS>(), a(x.a) { ++mnCount; }
 		ACLS& operator=(const ACLS& x) { a = x.a; return *this; }
 	   ~ACLS() { --mnCount; }
 	};

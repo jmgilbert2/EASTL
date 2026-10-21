@@ -1715,8 +1715,12 @@ namespace eastl
 			if (srcFirst != first)
 			{
 				// Copy values back into the expected buffer
+				// GCC 12 to 15 report writes past the end of buffer at -O3; buffer is first here, and the loop
+				// copies last - srcFirst elements into it.
+				EA_DISABLE_GCC_WARNING(-Wstringop-overflow)
 				for (temp = srcFirst; temp != last; ++temp)
 					*buffer++ = *temp;
+				EA_RESTORE_GCC_WARNING()
 			}
 		}
 	} // namespace Internal
