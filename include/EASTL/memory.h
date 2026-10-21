@@ -575,6 +575,13 @@ namespace eastl
 	///
 	namespace Internal
 	{
+		// Assigning into uninitialized memory is only equivalent to copy-constructing there for trivially
+		// copyable types. Other types, such as one with a user copy constructor and a trivial copy assignment,
+		// must be copy-constructed (upstream #485).
+		template <typename T>
+		struct can_fill_uninitialized_by_assignment
+			: public integral_constant<bool, is_trivially_copyable<T>::value && is_trivially_copy_assignable<T>::value> {};
+
 		template <typename ForwardIterator, typename T>
 		inline void uninitialized_fill_impl(ForwardIterator first, ForwardIterator last, const T& value, true_type)
 		{
@@ -609,7 +616,7 @@ namespace eastl
 	inline void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& value)
 	{
 		typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
-		Internal::uninitialized_fill_impl(first, last, value, eastl::is_trivially_copy_assignable<value_type>());
+		Internal::uninitialized_fill_impl(first, last, value, Internal::can_fill_uninitialized_by_assignment<value_type>());
 	}
 
 	/// uninitialized_value_construct
@@ -704,14 +711,13 @@ namespace eastl
 	namespace Internal
 	{
 		template <typename ForwardIterator, typename Count, typename T>
-		inline void uninitialized_fill_n_impl(ForwardIterator first, Count n, const T& value, true_type /* is_trivially_copy_assignable */)
+		inline void uninitialized_fill_n_impl(ForwardIterator first, Count n, const T& value, true_type /* can_fill_uninitialized_by_assignment */)
 		{
-			// todo: implementation uses operator = but should instead be using the copy constructor, as documented.
 			eastl::fill_n(first, n, value);
 		}
 
 		template <typename ForwardIterator, typename Count, typename T>
-		void uninitialized_fill_n_impl(ForwardIterator first, Count n, const T& value, false_type /* is_trivially_copy_assignable */)
+		void uninitialized_fill_n_impl(ForwardIterator first, Count n, const T& value, false_type /* can_fill_uninitialized_by_assignment */)
 		{
 			typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
 			ForwardIterator currentDest(first);
@@ -738,7 +744,7 @@ namespace eastl
 	inline void uninitialized_fill_n(ForwardIterator first, Count n, const T& value)
 	{
 		typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
-		Internal::uninitialized_fill_n_impl(first, n, value, eastl::is_trivially_copy_assignable<value_type>());
+		Internal::uninitialized_fill_n_impl(first, n, value, Internal::can_fill_uninitialized_by_assignment<value_type>());
 	}
 
 
