@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------------------
 # CMake info
 #-------------------------------------------------------------------------------------------
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.11)
 project(EASTLBenchmarks CXX)
 include(CTest)
 
