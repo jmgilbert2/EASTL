@@ -151,6 +151,17 @@ struct NonPod2
 	virtual void Function(){}
 };
 
+// common_type with a user specialization
+struct CommonTypeA {};
+struct CommonTypeB {};
+struct CommonTypeC {};
+
+namespace eastl
+{
+	template <>
+	struct common_type<CommonTypeA, CommonTypeB> { typedef CommonTypeC type; };
+}
+
 struct HasIncrementOperator { HasIncrementOperator& operator++() { return *this; } };
 
 template <class T>
@@ -1365,6 +1376,23 @@ int TestTypeTraits()
 	static_assert((is_same<common_type<int>::type, int>::value), "common_type failure");
 	static_assert((is_same<common_type<void, void>::type, void>::value), "common_type failure");
 	static_assert((is_same<common_type<int, int>::type, int>::value), "common_type failure");
+	static_assert((is_same<common_type<const int>::type, int>::value), "common_type failure");
+	static_assert((is_same<common_type<const int&, long>::type, long>::value), "common_type failure");
+	static_assert((is_same<common_type<int[3], int*>::type, int*>::value), "common_type failure");
+	static_assert((is_same<common_type<char, short, int, double>::type, double>::value), "common_type failure");
+
+	// No member type when there is no common type, so common_type can be used in SFINAE contexts.
+	static_assert(sizeof(common_type<>) > 0, "common_type failure");
+	static_assert(!is_detected<common_type_t>::value, "common_type failure");
+	static_assert(!is_detected<common_type_t, int, void*>::value, "common_type failure");
+	static_assert(!is_detected<common_type_t, void, int>::value, "common_type failure");
+	static_assert(!is_detected<common_type_t, int, NonPod2>::value, "common_type failure");
+	static_assert(!is_detected<common_type_t, int, long, void*>::value, "common_type failure");
+
+	// A specialization for the decayed types is also used for their cv-qualified and reference forms.
+	static_assert((is_same<common_type<CommonTypeA, CommonTypeB>::type, CommonTypeC>::value), "common_type failure");
+	static_assert((is_same<common_type<const CommonTypeA&, CommonTypeB&>::type, CommonTypeC>::value), "common_type failure");
+	static_assert((is_same<common_type<CommonTypeA, CommonTypeB, CommonTypeC>::type, CommonTypeC>::value), "common_type failure");
 
 
 	// rank
