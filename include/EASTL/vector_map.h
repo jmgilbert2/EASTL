@@ -94,6 +94,12 @@ namespace eastl
 		bool operator()(const Key& a, const Key& b) const
 			{ return Compare::operator()(a, b); }
 
+		friend void swap(map_value_compare& a, map_value_compare& b)
+		{
+			using eastl::swap; // The comparator is swapped via argument-dependent lookup, as in the standard containers.
+			swap(static_cast<Compare&>(a), static_cast<Compare&>(b));
+		}
+
 	}; // map_value_compare
 
 
