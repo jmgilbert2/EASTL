@@ -9,8 +9,9 @@ EASTL stands for Electronic Arts Standard Template Library. It is a C++ template
 This is a fork of [electronicarts/EASTL](https://github.com/electronicarts/EASTL) for personal use. It is planned to diverge from upstream in the following ways:
 
 * a focus on C++20 and C++23;
-* performance updates, and changes that can break compilation of existing code, to at least match the MSVC STL;
-* once that is done, more breaks from the STL interface where they make sense.
+* performance at least on par with the MSVC STL;
+* accepting and rejecting the same code as the standard library (for example, SFINAE-friendly type traits such as `common_type`, and `swap` calls that don't clash with `std::swap`), while keeping EASTL's major interface differences and extensions;
+* once those are done, more breaks from the STL interface where they make sense.
 
 The EASTL packages in Conan and vcpkg are built from upstream, not from this fork. Use this fork from source, with the matching [EABase fork](https://github.com/jmgilbert2/EABase).
 
