@@ -823,7 +823,9 @@ namespace eastl
     ///////////////////////////////////////////////////////////////////////////////
 	/// global swap
 	///
-    template <class T>
+	/// Participates in overload resolution only if T is move constructible and swappable.
+	///
+    template <class T, typename eastl::enable_if<eastl::is_move_constructible<T>::value && eastl::is_swappable<T>::value, int>::type = 0>
     void swap(optional<T>& lhs, optional<T>& rhs) EA_NOEXCEPT_IF(EA_NOEXCEPT(lhs.swap(rhs)))
 		{ lhs.swap(rhs); }
 

@@ -185,7 +185,8 @@ namespace Internal
 	template <size_t I, typename ValueType, bool IsEmpty>
 	inline void swap(TupleLeaf<I, ValueType, IsEmpty>& a, TupleLeaf<I, ValueType, IsEmpty>& b)
 	{
-		eastl::swap(a.getInternal(), b.getInternal());
+		using eastl::swap; // Unqualified so that user-defined swaps are found via argument-dependent lookup.
+		swap(a.getInternal(), b.getInternal());
 	}
 
 	template <size_t I, typename ValueType, bool IsEmpty>
@@ -735,7 +736,7 @@ inline T&& get(tuple<Ts...>&& t)
 	return Internal::getImpl<T>(eastl::move(t.mImpl));
 }
 
-template <typename... Ts>
+template <typename... Ts, typename eastl::enable_if<eastl::conjunction<eastl::is_swappable<Ts>...>::value, int>::type = 0>
 inline void swap(tuple<Ts...>& a, tuple<Ts...>& b)
 {
 	a.swap(b);
