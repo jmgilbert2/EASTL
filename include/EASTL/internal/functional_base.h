@@ -80,12 +80,6 @@ namespace eastl
 		return (*eastl::forward<T>(obj)).*member;
 	}
 
-	template <typename F, typename... Args>
-	EA_CONSTEXPR decltype(auto) invoke(F&& func, Args&&... args) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(invoke_impl(eastl::forward<F>(func), eastl::forward<Args>(args)...)))
-	{
-		return invoke_impl(eastl::forward<F>(func), eastl::forward<Args>(args)...);
-	}
-
 	template <typename F, typename = void, typename... Args>
 	struct invoke_result_impl {
 	};
@@ -104,6 +98,37 @@ namespace eastl
 		using invoke_result_t = typename invoke_result<F, Args...>::type;
 	#endif
 
+	// The return type is invoke_result<F, Args...>::type so that invoke doesn't participate in overload resolution
+	// when F isn't invocable with Args (no hard error in SFINAE contexts).
+	template <typename F, typename... Args>
+	EA_CONSTEXPR typename invoke_result<F, Args...>::type invoke(F&& func, Args&&... args) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(invoke_impl(eastl::forward<F>(func), eastl::forward<Args>(args)...)))
+	{
+		return invoke_impl(eastl::forward<F>(func), eastl::forward<Args>(args)...);
+	}
+
+	namespace internal
+	{
+		// INVOKE<R>: the result is implicitly converted to R. invoke_returns_exactly<From>() is a prvalue when From isn't
+		// a reference, so a result of type R needs no copy or move (C++17 guaranteed copy elision).
+		template <typename T>
+		T invoke_returns_exactly() EA_NOEXCEPT;
+
+		template <typename T>
+		void invoke_fake_copy_init(T) EA_NOEXCEPT;
+
+		template <typename From, typename To, typename = void>
+		struct is_invoke_convertible : public eastl::false_type {};
+
+		template <typename From, typename To>
+		struct is_invoke_convertible<From, To, void_t<decltype(invoke_fake_copy_init<To>(invoke_returns_exactly<From>()))>> : public eastl::true_type {};
+
+		template <typename From, typename To, bool = is_invoke_convertible<From, To>::value>
+		struct is_nothrow_invoke_convertible : public eastl::bool_constant<EA_NOEXCEPT_EXPR(invoke_fake_copy_init<To>(invoke_returns_exactly<From>()))> {};
+
+		template <typename From, typename To>
+		struct is_nothrow_invoke_convertible<From, To, false> : public eastl::false_type {};
+	}
+
 	template <typename F, typename = void, typename... Args>
 	struct is_invocable_impl : public eastl::false_type {};
 
@@ -118,8 +143,8 @@ namespace eastl
 
 	template <typename R, typename F, typename... Args>
 	struct is_invocable_r_impl<R, F, void_t<typename invoke_result<F, Args...>::type>, Args...>
-		: public disjunction<is_convertible<typename invoke_result<F, Args...>::type, R>,
-							 is_same<typename remove_cv<R>::type, void>> {};
+		: public disjunction<is_same<typename remove_cv<R>::type, void>,
+							 internal::is_invoke_convertible<typename invoke_result<F, Args...>::type, R>> {};
 
 	template <typename R, typename F, typename... Args>
 	struct is_invocable_r : public is_invocable_r_impl<R, F, void, Args...> {};
@@ -146,15 +171,19 @@ namespace eastl
 	template <typename R, typename F, typename... Args>
 	struct is_nothrow_invocable_r_impl<R, F, void_t<typename eastl::invoke_result<F, Args...>::type>, Args...>
 	{
-		static EA_CONSTEXPR_OR_CONST bool value = eastl::is_convertible<typename eastl::invoke_result<F, Args...>::type, R>::value
-										&& eastl::is_nothrow_invocable<F, Args...>::value;
+		static EA_CONSTEXPR_OR_CONST bool value = eastl::is_nothrow_invocable<F, Args...>::value
+										&& (eastl::is_same<typename eastl::remove_cv<R>::type, void>::value
+										    || internal::is_nothrow_invoke_convertible<typename eastl::invoke_result<F, Args...>::type, R>::value);
 	};
 
 	template <typename R, typename F, typename... Args>
 	struct is_nothrow_invocable_r : public is_nothrow_invocable_r_impl<R, F, void, Args...> {};
 
 	template <typename F, typename... Args>
-	EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR bool is_no_throw_invocable_v = is_nothrow_invocable<F, Args...>::value;
+	EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR bool is_nothrow_invocable_v = is_nothrow_invocable<F, Args...>::value;
+
+	template <typename F, typename... Args>
+	EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR bool is_no_throw_invocable_v = is_nothrow_invocable<F, Args...>::value; // Misspelled name, kept for compatibility.
 
 	template <typename R, typename F, typename... Args>
 	EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<R, F, Args...>::value;
