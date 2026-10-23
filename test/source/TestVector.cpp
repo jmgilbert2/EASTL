@@ -990,7 +990,7 @@ int TestVector()
 									 42, 13, 13, 17, 17, 17, 17, 17, 17, 17, 17, 49, 99, 999, 999, 49, 49, 49, 99, 999,
 									 -1));
 
-#if !defined(EASTL_STD_ITERATOR_CATEGORY_ENABLED) && !defined(EA_COMPILER_NO_STANDARD_CPP_LIBRARY)
+#if EASTL_STD_ITERATOR_CATEGORY_ENABLED && !defined(EA_COMPILER_NO_STANDARD_CPP_LIBRARY)
 		// std::vector / eastl::vector
 		std::vector<TestObject> stdV(10);
 		eastl::vector<TestObject> eastlV(10);

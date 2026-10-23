@@ -19,6 +19,8 @@ add_definitions(-D_CHAR16T)
 add_definitions(-DEASTL_THREAD_SUPPORT_AVAILABLE=0)
 if (EASTL_STD_ITERATOR_CATEGORY_ENABLED)
   add_definitions(-DEASTL_STD_ITERATOR_CATEGORY_ENABLED=1)
+elseif (DEFINED EASTL_STD_ITERATOR_CATEGORY_ENABLED)
+  add_definitions(-DEASTL_STD_ITERATOR_CATEGORY_ENABLED=0)
 endif()
 
 #-------------------------------------------------------------------------------------------
