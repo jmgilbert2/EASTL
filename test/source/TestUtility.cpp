@@ -4,7 +4,27 @@
 
 #include "EASTLTest.h"
 #include <EASTL/utility.h>
+#include <EASTL/algorithm.h>
+#include <EASTL/hash_map.h>
+#include <EASTL/map.h>
+#include <EASTL/optional.h>
+#include <EASTL/sort.h>
+#include <EASTL/tuple.h>
+#include <EASTL/variant.h>
+#include <EASTL/vector.h>
+#include <EASTL/vector_map.h>
 #include <EAStdC/EAString.h>
+
+EA_DISABLE_ALL_VC_WARNINGS()
+#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+	#include <algorithm>
+	#include <chrono>
+	#include <functional>
+	#include <type_traits>
+	#include <utility>
+	#include <vector>
+#endif
+EA_RESTORE_ALL_VC_WARNINGS()
 
 struct BasicObject
 {
@@ -400,6 +420,64 @@ void swap(Swappable1&, Swappable2&) {}
 void swap(Swappable2&, Swappable1&) {} 
 void swap(Swappable1&, Swappable3&) {} // intentionally missing 'swap(Swappable3, Swappable1)'
 
+namespace SwapTest
+{
+	// Neither movable nor swappable.
+	struct NotMovable
+	{
+		NotMovable() = default;
+		NotMovable(NotMovable&&) = delete;
+		NotMovable& operator=(NotMovable&&) = delete;
+	};
+
+	// Not movable, but swappable through argument-dependent lookup.
+	struct AdlSwappable
+	{
+		int mValue = 0;
+
+		AdlSwappable() = default;
+		AdlSwappable(AdlSwappable&&) = delete;
+		AdlSwappable& operator=(AdlSwappable&&) = delete;
+	};
+
+	inline void swap(AdlSwappable& a, AdlSwappable& b) { eastl::swap(a.mValue, b.mValue); }
+
+	// Two equally good swap overloads: swapping is ambiguous.
+	struct AmbiguousSwap {};
+
+	template <typename T> void swap(T&, AmbiguousSwap&) {}
+	template <typename T> void swap(AmbiguousSwap&, T&) {}
+
+	// Function objects that can't be assigned, only swapped through argument-dependent lookup.
+	struct AdlSwappableLess
+	{
+		int mId = 0;
+
+		AdlSwappableLess() = default;
+		explicit AdlSwappableLess(int id) : mId(id) {}
+		AdlSwappableLess(const AdlSwappableLess&) = default;
+		AdlSwappableLess& operator=(const AdlSwappableLess&) = delete;
+
+		bool operator()(int a, int b) const { return a < b; }
+	};
+
+	inline void swap(AdlSwappableLess& a, AdlSwappableLess& b) { eastl::swap(a.mId, b.mId); }
+
+	struct AdlSwappableHash
+	{
+		int mId = 0;
+
+		AdlSwappableHash() = default;
+		explicit AdlSwappableHash(int id) : mId(id) {}
+		AdlSwappableHash(const AdlSwappableHash&) = default;
+		AdlSwappableHash& operator=(const AdlSwappableHash&) = delete;
+
+		size_t operator()(int a) const { return (size_t)a; }
+	};
+
+	inline void swap(AdlSwappableHash& a, AdlSwappableHash& b) { eastl::swap(a.mId, b.mId); }
+}
+
 
 static int TestUtilitySwap()
 {
@@ -416,8 +494,20 @@ static int TestUtilitySwap()
 		static_assert((eastl::is_swappable_v<eastl::vector<int> > == true), "is_swappable failure");
 		static_assert((eastl::is_swappable_v<ThrowSwappable> == true), "is_swappable failure");
 	#endif
-// Need to come up with a class that's not swappable. How do we do that, given the universal swap template?  
-// static_assert((eastl::is_swappable<?>::value  == false), "is_swappable failure");
+	// The generic and array swaps require movable / swappable types; an ambiguous swap gives false, not an error.
+	static_assert(!eastl::is_swappable<SwapTest::NotMovable>::value, "is_swappable failure");
+	static_assert(eastl::is_swappable<SwapTest::AdlSwappable>::value, "is_swappable failure");
+	static_assert(!eastl::is_swappable<SwapTest::AmbiguousSwap>::value, "is_swappable failure");
+	static_assert(eastl::is_swappable<int[3]>::value, "is_swappable failure");
+	static_assert(!eastl::is_swappable<SwapTest::NotMovable[2]>::value, "is_swappable failure");
+	static_assert(eastl::is_swappable<SwapTest::AdlSwappable[2]>::value, "is_swappable failure");
+	static_assert(!eastl::is_swappable<void>::value, "is_swappable failure");
+
+	// pair, optional and variant swaps require swappable (and, for optional and variant, movable) elements.
+	static_assert(!eastl::is_swappable<eastl::pair<SwapTest::NotMovable, int>>::value, "is_swappable failure");
+	static_assert(eastl::is_swappable<eastl::pair<SwapTest::AdlSwappable, int>>::value, "is_swappable failure");
+	static_assert(!eastl::is_swappable<eastl::optional<SwapTest::NotMovable>>::value, "is_swappable failure");
+	static_assert(!eastl::is_swappable<eastl::variant<SwapTest::NotMovable>>::value, "is_swappable failure");
 #endif
 
 #if EASTL_TYPE_TRAIT_is_nothrow_swappable_CONFORMANCE
@@ -504,6 +594,100 @@ static int TestUtilitySwap()
     #endif // EASTL_VARIABLE_TEMPLATES_ENABLED
 #endif
 #endif // EASTL_VARIADIC_TEMPLATES_ENABLED
+
+	{
+		// User-defined swaps found via argument-dependent lookup are used.
+		SwapTest::AdlSwappable a[2], b[2];
+		a[0].mValue = 1;
+		b[0].mValue = 2;
+		eastl::swap(a, b);
+		EATEST_VERIFY(a[0].mValue == 2 && b[0].mValue == 1);
+
+		eastl::pair<SwapTest::AdlSwappable, int> p1, p2;
+		p1.first.mValue = 1; p1.second = 1;
+		p2.first.mValue = 2; p2.second = 2;
+		swap(p1, p2);
+		EATEST_VERIFY(p1.first.mValue == 2 && p1.second == 2 && p2.first.mValue == 1 && p2.second == 1);
+
+		eastl::tuple<SwapTest::AdlSwappable> t1, t2;
+		eastl::get<0>(t1).mValue = 1;
+		eastl::get<0>(t2).mValue = 2;
+		t1.swap(t2);
+		EATEST_VERIFY(eastl::get<0>(t1).mValue == 2 && eastl::get<0>(t2).mValue == 1);
+
+		// Containers swap their comparators and hash functions via argument-dependent lookup.
+		eastl::map<int, int, SwapTest::AdlSwappableLess> m1(SwapTest::AdlSwappableLess(1)), m2(SwapTest::AdlSwappableLess(2));
+		m1[1] = 1;
+		m1.swap(m2);
+		EATEST_VERIFY(m1.key_comp().mId == 2 && m2.key_comp().mId == 1 && m1.empty() && m2.size() == 1);
+
+		eastl::vector_map<int, int, SwapTest::AdlSwappableLess> vm1(SwapTest::AdlSwappableLess(1)), vm2(SwapTest::AdlSwappableLess(2));
+		vm1[1] = 1;
+		vm1.swap(vm2);
+		EATEST_VERIFY(vm1.key_comp().mId == 2 && vm2.key_comp().mId == 1 && vm1.empty() && vm2.size() == 1);
+
+		eastl::hash_map<int, int, SwapTest::AdlSwappableHash> h1(4, SwapTest::AdlSwappableHash(1)), h2(4, SwapTest::AdlSwappableHash(2));
+		h1[1] = 1;
+		h1.swap(h2);
+		EATEST_VERIFY(h1.hash_function().mId == 2 && h2.hash_function().mId == 1 && h1.empty() && h2.size() == 1);
+	}
+
+#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+	{
+		// std code on EASTL types: std::swap and eastl::swap are both found by argument-dependent lookup
+		// and must not be ambiguous.
+		eastl::pair<int, int> x(1, 1), y(2, 2);
+
+		eastl::pair<int, int>* ptrs[2] = { &x, &y };
+		std::reverse(ptrs, ptrs + 2);
+		EATEST_VERIFY(ptrs[0] == &y && ptrs[1] == &x);
+
+		std::vector<eastl::pair<int, int>*> ptrVector = { &y, &x };
+		std::sort(ptrVector.begin(), ptrVector.end(), [](eastl::pair<int, int>* a, eastl::pair<int, int>* b) { return a->first < b->first; });
+		EATEST_VERIFY(ptrVector[0] == &x && ptrVector[1] == &y);
+
+		using std::swap;
+		swap(x, y);
+		EATEST_VERIFY(x.first == 2 && y.first == 1);
+
+		eastl::pair<int, int> xa[2], ya[2];
+		xa[0].first = 1;
+		ya[0].first = 2;
+		swap(xa, ya);
+		EATEST_VERIFY(xa[0].first == 2 && ya[0].first == 1);
+
+		static_assert(std::is_swappable<eastl::pair<int, int>>::value, "std::is_swappable failure");
+		static_assert(std::is_swappable<eastl::pair<int, int>*>::value, "std::is_swappable failure");
+	}
+
+	{
+		// EASTL code on std types.
+		static_assert(eastl::is_swappable<std::chrono::seconds>::value, "is_swappable failure");
+
+		std::chrono::seconds s1(1), s2(2);
+		using eastl::swap;
+		swap(s1, s2);
+		EATEST_VERIFY(s1.count() == 2 && s2.count() == 1);
+
+		eastl::vector<std::chrono::seconds> v;
+		v.push_back(std::chrono::seconds(3));
+		v.push_back(std::chrono::seconds(1));
+		v.push_back(std::chrono::seconds(2));
+		eastl::sort(v.begin(), v.end());
+		EATEST_VERIFY(v[0].count() == 1 && v[1].count() == 2 && v[2].count() == 3);
+		eastl::reverse(v.begin(), v.end());
+		EATEST_VERIFY(v[0].count() == 3 && v[1].count() == 2 && v[2].count() == 1);
+
+		eastl::optional<std::chrono::seconds> o1(std::chrono::seconds(5)), o2;
+		o1.swap(o2);
+		EATEST_VERIFY(!o1 && o2 && o2->count() == 5);
+
+		eastl::vector_map<int, int, std::less<int>> vm1, vm2;
+		vm1[1] = 1;
+		vm1.swap(vm2);
+		EATEST_VERIFY(vm1.empty() && vm2.size() == 1);
+	}
+#endif
 
 	return nErrorCount;
 }
