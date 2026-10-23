@@ -11,7 +11,7 @@ This is a fork of [electronicarts/EASTL](https://github.com/electronicarts/EASTL
 * a focus on C++20 and C++23;
 * performance at least on par with the MSVC STL;
 * accepting and rejecting the same code as the standard library (for example, SFINAE-friendly type traits such as `common_type`, and `swap` calls that don't clash with `std::swap`), while keeping EASTL's major interface differences and extensions;
-* once those are done, new extensions and further breaks from the STL interface where they make sense, so don't expect the same pointer and iterator stability guarantees as the STL.
+* new extensions and further breaks from the STL interface where they make sense, so don't expect the same pointer and iterator stability guarantees as the STL.
 
 The EASTL packages in Conan and vcpkg are built from upstream, not from this fork. Use this fork from source, with the matching [EABase fork](https://github.com/jmgilbert2/EABase).
 
