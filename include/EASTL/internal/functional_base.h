@@ -182,9 +182,6 @@ namespace eastl
 	template <typename F, typename... Args>
 	EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR bool is_nothrow_invocable_v = is_nothrow_invocable<F, Args...>::value;
 
-	template <typename F, typename... Args>
-	EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR bool is_no_throw_invocable_v = is_nothrow_invocable<F, Args...>::value; // Misspelled name, kept for compatibility.
-
 	template <typename R, typename F, typename... Args>
 	EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<R, F, Args...>::value;
 
