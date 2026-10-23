@@ -100,6 +100,22 @@ int TestHashHelper(T val)
 	return nErrorCount;
 }
 
+namespace InvokeTest
+{
+	struct NotMovable
+	{
+		NotMovable() = default;
+		NotMovable(NotMovable&&) = delete;
+		NotMovable& operator=(NotMovable&&) = delete;
+	};
+
+	NotMovable MakeNotMovable();
+	NotMovable& NotMovableRef();
+
+	template <typename F, typename... Args>
+	using invoke_expr = decltype(eastl::invoke(eastl::declval<F>(), eastl::declval<Args>()...));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // TestFunctional
 //
@@ -541,6 +557,19 @@ int TestFunctional()
 			static_assert(eastl::is_invocable_r<B, decltype(&TestStruct::b), TestStruct>::value, "incorrect value for is_invocable_r");
 			static_assert(!eastl::is_nothrow_invocable_r<B, decltype(&TestStruct::b), TestStruct>::value, "incorrect value for is_nothrow_invocable_r");
 			static_assert(eastl::is_nothrow_invocable_r<C, decltype(&TestStruct::c), TestStruct>::value, "incorrect value for is_nothrow_invocable_r");
+			static_assert(eastl::is_nothrow_invocable_r<void, decltype(&TestStruct::c), TestStruct>::value, "incorrect value for is_nothrow_invocable_r");
+			static_assert(!eastl::is_nothrow_invocable_r<void, decltype(&TestStruct::b), TestStruct>::value, "incorrect value for is_nothrow_invocable_r");
+			static_assert(eastl::is_nothrow_invocable_v<decltype(&TestStruct::c), TestStruct>, "incorrect value for is_nothrow_invocable_v");
+
+			// A prvalue result of type R is not copied or moved, so R needn't be movable.
+			static_assert(eastl::is_invocable_r<InvokeTest::NotMovable, decltype(&InvokeTest::MakeNotMovable)>::value, "incorrect value for is_invocable_r");
+			static_assert(!eastl::is_invocable_r<InvokeTest::NotMovable, decltype(&InvokeTest::NotMovableRef)>::value, "incorrect value for is_invocable_r"); // an lvalue would be copied
+		}
+		{
+			// invoke doesn't participate in overload resolution when the function object isn't invocable with the arguments.
+			static_assert(!eastl::is_detected<InvokeTest::invoke_expr, int>::value, "invoke isn't SFINAE-friendly");
+			static_assert(!eastl::is_detected<InvokeTest::invoke_expr, void (*)(int), void*>::value, "invoke isn't SFINAE-friendly");
+			static_assert(eastl::is_detected<InvokeTest::invoke_expr, void (*)(int), int>::value, "invoke failure");
 		}
 	}
 
