@@ -594,8 +594,9 @@ namespace eastl
 		void base_swap(hash_code_base& x)
 		{
 			eastl::swap(mExtractKey, x.mExtractKey);
-			eastl::swap(mEqual,      x.mEqual);
-			eastl::swap(mRangedHash, x.mRangedHash);
+			using eastl::swap; // The predicate and hash functions are swapped via argument-dependent lookup, as in the standard containers.
+			swap(mEqual,      x.mEqual);
+			swap(mRangedHash, x.mRangedHash);
 		}
 
 	}; // hash_code_base
@@ -681,9 +682,10 @@ namespace eastl
 		void base_swap(hash_code_base& x)
 		{
 			eastl::swap(mExtractKey, x.mExtractKey);
-			eastl::swap(mEqual,      x.mEqual);
-			eastl::swap(m_h1,        x.m_h1);
-			eastl::swap(m_h2,        x.m_h2);
+			using eastl::swap; // The predicate and hash functions are swapped via argument-dependent lookup, as in the standard containers.
+			swap(mEqual,      x.mEqual);
+			swap(m_h1,        x.m_h1);
+			swap(m_h2,        x.m_h2);
 		}
 
 	}; // hash_code_base
@@ -752,9 +754,10 @@ namespace eastl
 		void base_swap(hash_code_base& x)
 		{
 			eastl::swap(mExtractKey, x.mExtractKey);
-			eastl::swap(mEqual,      x.mEqual);
-			eastl::swap(m_h1,        x.m_h1);
-			eastl::swap(m_h2,        x.m_h2);
+			using eastl::swap; // The predicate and hash functions are swapped via argument-dependent lookup, as in the standard containers.
+			swap(mEqual,      x.mEqual);
+			swap(m_h1,        x.m_h1);
+			swap(m_h2,        x.m_h2);
 		}
 
 	}; // hash_code_base

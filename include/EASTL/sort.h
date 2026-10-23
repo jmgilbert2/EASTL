@@ -311,7 +311,7 @@ namespace eastl
 					// end(), otherwise we can invoke undefined behaviour. So we need to check we
 					// have enough space before moving the iterator.
 					RandomAccessIterator iSorted = iInsertFirst;
-					while(distance(iSorted, last) > nSpace)
+					while(eastl::distance(iSorted, last) > nSpace)
 					{
 						RandomAccessIterator iLeft = iSorted;
 						iSorted += nSpace;

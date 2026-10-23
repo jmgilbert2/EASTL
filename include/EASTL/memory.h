@@ -695,7 +695,7 @@ namespace eastl
 	template <typename T>
 	EASTL_REMOVE_AT_2024_SEPT inline void uninitialized_fill_ptr(T* first, T* last, const T& value)
 	{
-		uninitialized_fill(first, last, value);
+		eastl::uninitialized_fill(first, last, value);
 	}
 
 	/// uninitialized_fill_n

@@ -20,8 +20,8 @@
 namespace eastl
 {
 	// foward declaration for swap
-	template <typename T>
-	inline void swap(T& a, T& b)
+	template <typename T, typename U, typename eastl::enable_if<eastl::is_same<T, U>::value && eastl::is_move_constructible<T>::value && eastl::is_move_assignable<T>::value, int>::type = 0>
+	inline void swap(T& a, U& b)
 	    EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<T>::value && eastl::is_nothrow_move_assignable<T>::value);
 
 

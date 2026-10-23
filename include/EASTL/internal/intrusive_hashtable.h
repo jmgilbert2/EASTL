@@ -531,8 +531,9 @@ namespace eastl
 			eastl::swap(mBucketArray[i], x.mBucketArray[i]);
 
 		eastl::swap(mnElementCount, x.mnElementCount);
-		eastl::swap(mHash,          x.mHash);
-		eastl::swap(mEqual,         x.mEqual);
+		using eastl::swap; // The hash function and predicate are swapped via argument-dependent lookup, as in the standard containers.
+		swap(mHash,          x.mHash);
+		swap(mEqual,         x.mEqual);
 	}
 
 

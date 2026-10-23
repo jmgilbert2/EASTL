@@ -1043,7 +1043,7 @@ namespace eastl
 			uniform_int_distribution uid;
 
 			for(RandomAccessIterator i = first + 1; i != last; ++i)
-				iter_swap(i, first + uid(urng, uniform_int_distribution_param_type(0, i - first)));
+				eastl::iter_swap(i, first + uid(urng, uniform_int_distribution_param_type(0, i - first)));
 		}
 	}
 
@@ -1080,7 +1080,7 @@ namespace eastl
 		for (difference_type swapIter = 1; swapIter < swapMax; ++swapIter)
 		{
 			RandomAccessIterator i = first + swapIter;
-			iter_swap(i, first + (difference_type)rng((eastl_size_t)((i - first) + 1)));
+			eastl::iter_swap(i, first + (difference_type)rng((eastl_size_t)((i - first) + 1)));
 		}
 	}
 
@@ -2427,22 +2427,6 @@ namespace eastl
 	///
 	/// Effects: Finds the largest subrange [i, j) such that the value can be inserted
 	/// at any iterator k in it without violating the ordering. k satisfies the
-	/// corresponding conditions: !(*k < value) && !(value < *k).
-	///
-	/// Complexity: At most '2 * log(last - first) + 1' comparisons.
-	///
-	template <typename ForwardIterator, typename T>
-	pair<ForwardIterator, ForwardIterator>
-	equal_range(ForwardIterator first, ForwardIterator last, const T& value)
-	{
-		return equal_range(first, last, value, eastl::less<>{});
-	}
-
-
-	/// equal_range
-	///
-	/// Effects: Finds the largest subrange [i, j) such that the value can be inserted
-	/// at any iterator k in it without violating the ordering. k satisfies the
 	/// corresponding conditions: compare(*k, value) == false && compare(value, *k) == false.
 	///
 	/// Complexity: At most '2 * log(last - first) + 1' comparisons.
@@ -2484,6 +2468,22 @@ namespace eastl
 			}
 		}
 		return ResultType(first, first);
+	}
+
+
+	/// equal_range
+	///
+	/// Effects: Finds the largest subrange [i, j) such that the value can be inserted
+	/// at any iterator k in it without violating the ordering. k satisfies the
+	/// corresponding conditions: !(*k < value) && !(value < *k).
+	///
+	/// Complexity: At most '2 * log(last - first) + 1' comparisons.
+	///
+	template <typename ForwardIterator, typename T>
+	pair<ForwardIterator, ForwardIterator>
+	equal_range(ForwardIterator first, ForwardIterator last, const T& value)
+	{
+		return eastl::equal_range(first, last, value, eastl::less<>{});
 	}
 
 
@@ -2696,7 +2696,7 @@ namespace eastl
 		if (first != last)
 		{
 			function(*first);
-			for (auto i = next(first); i != last; ++i)
+			for (auto i = eastl::next(first); i != last; ++i)
 			{
 				if (predicate(*i))
 				{
@@ -2740,7 +2740,7 @@ namespace eastl
 		if (first != last)
 		{
 			function(*first);
-			for (auto i = next(first); i != last; ++i)
+			for (auto i = eastl::next(first); i != last; ++i)
 			{
 				if (value == *i)
 				{
