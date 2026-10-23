@@ -1,5 +1,7 @@
 ## Contributing
 
+Note: this fork of [electronicarts/EASTL](https://github.com/electronicarts/EASTL) will never be merged upstream, and the Contributor License Agreement (CLA) described below has not been signed.
+
 Before you can contribute, EA must have a Contributor License Agreement (CLA) on file that has been signed by each contributor.
 You can sign here: [Go to CLA](https://electronicarts.na1.echosign.com/public/esignWidget?wid=CBFCIBAA3AAABLblqZhByHRvZqmltGtliuExmuV-WNzlaJGPhbSRg2ufuPsM3P0QmILZjLpkGslg24-UJtek*)
 
