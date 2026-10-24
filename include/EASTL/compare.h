@@ -9,6 +9,13 @@
 
 #include <EABase/eabase.h>
 
+#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+	EA_DISABLE_ALL_VC_WARNINGS()
+	#include <compare>
+	#include <concepts>
+	EA_RESTORE_ALL_VC_WARNINGS()
+#endif
+
 namespace eastl
 {
 
