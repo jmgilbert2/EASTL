@@ -76,7 +76,7 @@ int TestIterator_advance()
 
 		// Exercise advance with an signed Distance type.
 		it = intList.begin();
-		eastl::advance(it, (ssize_t)intList.size());
+		eastl::advance(it, (eastl_ssize_t)intList.size());
 		EATEST_VERIFY(it == intList.end());
 
 
@@ -92,7 +92,7 @@ int TestIterator_advance()
 
 		// Exercise advance with an signed Distance type.
 		its = intSlist.begin();
-		eastl::advance(its, (ssize_t)intSlist.size());
+		eastl::advance(its, (eastl_ssize_t)intSlist.size());
 		EATEST_VERIFY(its == intSlist.end());
 	}
 
