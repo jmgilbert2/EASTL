@@ -595,10 +595,10 @@ namespace Internal
 
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	template <typename... T1s, typename... T2s, size_t... Is>
-	constexpr auto TupleThreeWay(const tuple<T1s...>& t1, const tuple<T2s...>& t2, index_sequence<Is...> is)
+	constexpr auto TupleThreeWay(const tuple<T1s...>& t1, const tuple<T2s...>& t2, index_sequence<Is...>)
 	{
 		std::common_comparison_category_t<synth_three_way_result<T1s, T2s>...> result = std::strong_ordering::equal;
-		((result = synth_three_way{}(get<Is>(t1), get<Is>(t2)), result != 0) || ...);
+		(void)((result = synth_three_way{}(get<Is>(t1), get<Is>(t2)), result != 0) || ...);
 		return result;
 	}
 #endif

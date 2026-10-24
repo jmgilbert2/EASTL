@@ -799,9 +799,14 @@ static int Test_unique_ptr()
 
 		#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 			{
-				unique_ptr<int> pT1(new int(5));
-				unique_ptr<int> pT2(new int(10));
-				unique_ptr<int> pT3(new int(0));
+				// operator<=> compares the stored pointers, as std::unique_ptr does. The objects live in arrays
+				// so that their addresses are ordered like their values.
+				struct NoOpDeleter { void operator()(int*) const {} void operator()(A*) const {} };
+
+				int ints[3] = { 0, 5, 10 };
+				unique_ptr<int, NoOpDeleter> pT1(&ints[1]);
+				unique_ptr<int, NoOpDeleter> pT2(&ints[2]);
+				unique_ptr<int, NoOpDeleter> pT3(&ints[0]);
 
 				EATEST_VERIFY((pT1 <=> pT2) != 0);
 				EATEST_VERIFY((pT2 <=> pT1) != 0);
@@ -816,8 +821,9 @@ static int Test_unique_ptr()
 				EATEST_VERIFY((pT1 <=> pT3) > 0);
 				EATEST_VERIFY((pT2 <=> pT3) > 0);
 
-				unique_ptr<A> pT4(new A(5));
-				unique_ptr<A> pT5(new A(10));
+				A as[2] = { A(5), A(10) };
+				unique_ptr<A, NoOpDeleter> pT4(&as[0]);
+				unique_ptr<A, NoOpDeleter> pT5(&as[1]);
 
 				EATEST_VERIFY((pT4 <=> pT5) != 0);
 				EATEST_VERIFY((pT5 <=> pT4) != 0);
