@@ -987,7 +987,16 @@ namespace eastl
 		{ return !(value < opt);  }
 
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
-    template <class T, class U=T> requires std::three_way_comparable_with<T, U>
+	namespace Internal
+	{
+		// Declared only: the requires-expression below uses it to detect optional<X> and classes derived from it.
+		template <class T>
+		void accepts_optional(const optional<T>&);
+	}
+
+    // U must not be an optional (as in the standard, LWG 3566): otherwise checking three_way_comparable_with<T, U>
+    // for U = optional<X> considers this operator again, and the constraint depends on itself.
+    template <class T, class U=T> requires (!requires(const U& u) { Internal::accepts_optional(u); }) && std::three_way_comparable_with<T, U>
     inline EA_CONSTEXPR std::compare_three_way_result_t<T, U> operator<=>(const optional<T>& opt, const U& value)
 		{ return (opt.has_value()) ? *opt <=> value : std::strong_ordering::less; }
 #endif
