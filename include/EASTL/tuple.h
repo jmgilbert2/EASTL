@@ -913,7 +913,7 @@ namespace Internal
 		ignore_t() = default;
 
 		template <typename T>
-		const ignore_t& operator=(const T&) const
+		EA_CONSTEXPR const ignore_t& operator=(const T&) const EA_NOEXCEPT
 		{
 			return *this;
 		}
