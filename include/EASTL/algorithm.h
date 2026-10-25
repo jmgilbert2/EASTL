@@ -129,6 +129,7 @@
 //      lexicographical_compare
 //      lexicographical_compare<Compare>
 //      lexicographical_compare_three_way
+//      lexicographical_compare_three_way<Compare>
 //      lower_bound
 //      lower_bound<Compare>
 //      make_heap                                   Found in heap.h
@@ -2176,6 +2177,18 @@ namespace eastl
 		return (first1 != last1) ? std::strong_ordering::greater :
 		       (first2 != last2) ? std::strong_ordering::less :
 				std::strong_ordering::equal;
+	}
+
+	/// lexicographical_compare_three_way
+	///
+	/// Compares the elements with std::compare_three_way: the same as
+	/// lexicographical_compare_three_way(first1, last1, first2, last2, std::compare_three_way()).
+	///
+	template <typename InputIterator1, typename InputIterator2>
+	constexpr auto lexicographical_compare_three_way(InputIterator1 first1, InputIterator1 last1,
+	                                                 InputIterator2 first2, InputIterator2 last2)
+	{
+		return eastl::lexicographical_compare_three_way(first1, last1, first2, last2, std::compare_three_way{});
 	}
 #endif
 
