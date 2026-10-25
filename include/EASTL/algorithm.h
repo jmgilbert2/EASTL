@@ -1023,27 +1023,123 @@ namespace eastl
 	/// Complexity: Exactly '(last - first) - 1' swaps.
 	///
 	/// Example usage:
-	///     struct Rand{ eastl_size_t operator()(eastl_size_t n) { return (eastl_size_t)(rand() % n); } }; // Note: The C rand function is poor and slow.
-	///     Rand randInstance;
-	///     shuffle(pArrayBegin, pArrayEnd, randInstance);
+	///     std::mt19937 rng(seed); // Or any other uniform random bit generator.
+	///     shuffle(pArrayBegin, pArrayEnd, rng);
 	///
 	// See the C++11 Standard, 26.5.1.3, Uniform random number generator requirements.
 	// Also http://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
+
+	namespace Internal
+	{
+		// The largest n where [0, 2^n) fits in [0, range].
+		template <typename T>
+		constexpr int urng_bit_count(T range)
+		{
+			int n = (int)(sizeof(T) * 8);
+			for(T mask = (T)~T(0); range < mask; mask = (T)(mask >> 1))
+				--n;
+			return n;
+		}
+
+		// urng_bits
+		//
+		// Draws kBits uniformly distributed random bits per get() from a uniform random bit generator.
+		// A standard generator returns values in [URNG::min(), URNG::max()]: like the MSVC STL's
+		// _Rng_from_urng_v2, get() uses the largest power-of-two range that fits and rejects the values
+		// above it (std::minstd_rand gives 30 bits). A generator without min() and max(), such as
+		// EASTLTest_Rand, is assumed to return any value of its result type, as uniform_int_distribution does.
+		template <typename URNG, typename = void>
+		struct urng_bits
+		{
+			typedef typename eastl::make_unsigned<typename eastl::decay<decltype(eastl::declval<URNG&>()())>::type>::type result_type;
+
+			static const int kBits = (int)(sizeof(result_type) * 8);
+
+			static result_type get(URNG& urng) { return (result_type)urng(); }
+		};
+
+		template <typename URNG>
+		struct urng_bits<URNG, eastl::void_t<decltype((URNG::min)()), decltype((URNG::max)())>>
+		{
+			typedef typename eastl::make_unsigned<typename eastl::decay<decltype(eastl::declval<URNG&>()())>::type>::type result_type;
+
+			static const int         kBits = urng_bit_count((result_type)((URNG::max)() - (URNG::min)()));
+			static const result_type kMask = (result_type)((result_type)~result_type(0) >> ((int)(sizeof(result_type) * 8) - kBits));
+
+			static result_type get(URNG& urng)
+			{
+				result_type value = (result_type)(urng() - (URNG::min)());
+				while(value > kMask) // Only when max() - min() + 1 isn't a power of two.
+					value = (result_type)(urng() - (URNG::min)());
+				return value;
+			}
+		};
+
+		// Returns sizeof(UInt) * 8 uniformly distributed random bits, from several calls if the generator gives fewer.
+		template <typename UInt, typename URNG>
+		inline UInt urng_get_bits(URNG& urng)
+		{
+			typedef urng_bits<URNG> urng_bits_type;
+			const int kShift = urng_bits_type::kBits % (int)(sizeof(UInt) * 8); // kBits whenever the loop runs; avoids an oversized shift otherwise.
+
+			UInt value = (UInt)urng_bits_type::get(urng);
+			for(int n = urng_bits_type::kBits; n < (int)(sizeof(UInt) * 8); n += urng_bits_type::kBits)
+				value = (UInt)((value << kShift) | (UInt)urng_bits_type::get(urng));
+			return value;
+		}
+
+		// The rare rejection step of urng_index below, out of line so that the common case doesn't pay for it.
+		template <typename URNG>
+		EA_NO_INLINE uint64_t urng_index_reject(URNG& urng, uint32_t n, uint64_t product)
+		{
+			const uint32_t threshold = (uint32_t)(0 - n) % n; // (2^32 - n) % n == 2^32 % n
+			while((uint32_t)product < threshold)
+				product = (uint64_t)urng_get_bits<uint32_t>(urng) * n;
+			return product;
+		}
+
+		// Returns a uniformly distributed random value in [0, n), n > 0. Like the MSVC STL's _Rng_from_urng_v2, uses
+		// Lemire's multiply-shift method with rejection ("Fast Random Integer Generation in an Interval", 2019):
+		// one 32-bit draw and a 32x32->64 multiply per value, and almost never a division.
+		template <typename URNG>
+		inline uint32_t urng_index(URNG& urng, uint32_t n)
+		{
+			uint64_t product = (uint64_t)urng_get_bits<uint32_t>(urng) * n;
+
+			if((uint32_t)product < n) // Only then can the low half be below 2^32 % n, the values to reject.
+				product = urng_index_reject(urng, n, product);
+
+			return (uint32_t)(product >> 32);
+		}
+
+		template <typename URNG>
+		inline uint64_t urng_index(URNG& urng, uint64_t n)
+		{
+			if(n <= 0xffffffffu)
+				return urng_index(urng, (uint32_t)n);
+
+			// More than 2^32 values: draw 64 bits and reject those outside the smallest power-of-two range that holds n.
+			uint64_t mask = n - 1;
+			mask |= mask >> 1; mask |= mask >> 2; mask |= mask >> 4; mask |= mask >> 8; mask |= mask >> 16; mask |= mask >> 32;
+
+			uint64_t value;
+			do
+				value = urng_get_bits<uint64_t>(urng) & mask;
+			while(value >= n);
+			return value;
+		}
+	}
 
 	template <typename RandomAccessIterator, typename UniformRandomNumberGenerator>
 	void shuffle(RandomAccessIterator first, RandomAccessIterator last, UniformRandomNumberGenerator&& urng)
 	{
 		if(first != last)
 		{
-			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
-			typedef typename eastl::make_unsigned<difference_type>::type                   unsigned_difference_type;
-			typedef typename eastl::uniform_int_distribution<unsigned_difference_type>     uniform_int_distribution;
-			typedef typename uniform_int_distribution::param_type                          uniform_int_distribution_param_type;
-
-			uniform_int_distribution uid;
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type   difference_type;
+			typedef typename eastl::conditional<(sizeof(difference_type) <= 4), uint32_t, uint64_t>::type index_type; // 32-bit indexes don't need the 64-bit path.
 
 			for(RandomAccessIterator i = first + 1; i != last; ++i)
-				eastl::iter_swap(i, first + uid(urng, uniform_int_distribution_param_type(0, i - first)));
+				eastl::iter_swap(i, first + (difference_type)Internal::urng_index(urng, (index_type)((i - first) + 1)));
 		}
 	}
 

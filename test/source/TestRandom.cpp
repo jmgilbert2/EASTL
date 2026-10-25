@@ -13,6 +13,12 @@
 #include <EASTL/set.h>
 #include <EASTL/random.h>
 
+EA_DISABLE_ALL_VC_WARNINGS()
+#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+	#include <random>
+#endif
+EA_RESTORE_ALL_VC_WARNINGS()
+
 
 struct GeneratorUint8
 {
@@ -34,6 +40,59 @@ struct GeneratorUint32
 	GeneratorUint32() : mValue(0) {}
 	uint32_t operator()(){ return mValue++; }
 };
+
+
+// Verifies that shuffle with the given uniform random bit generator gives permutations, with each
+// order equally likely, and that its indexes above 2^32 (for ranges that large) are uniform too.
+template <typename URNG>
+static int TestShuffle(URNG&& urng)
+{
+	int nErrorCount = 0;
+
+	int intArray[] = { 3, 2, 6, 5, 4, 1 };
+
+	eastl::shuffle(intArray, intArray + 0, urng);
+	eastl::shuffle(intArray, intArray + 1, urng);
+	EATEST_VERIFY(VerifySequence(intArray, intArray + 6, int(), "shuffle", 3, 2, 6, 5, 4, 1, -1));
+
+	eastl::vector<eastl_size_t> rngArray, sortedArray;
+
+	for(eastl_size_t i = 0; i < 200; ++i)
+		sortedArray.push_back(i);
+
+	rngArray = sortedArray;
+	eastl::shuffle(rngArray.begin(), rngArray.end(), urng);
+	EATEST_VERIFY(rngArray != sortedArray);
+	EATEST_VERIFY(eastl::is_permutation(rngArray.begin(), rngArray.end(), sortedArray.begin()));
+
+	// Each of the 6 orders of { 0, 1, 2 } should come out about 1000 times in 6000 (standard deviation 29).
+	int counts[9] = {}; // Indexed by values[0] * 3 + values[1]; 0, 4 and 8 can't happen.
+	int values[3] = { 0, 1, 2 };
+
+	for(int i = 0; i < 6000; ++i)
+	{
+		eastl::shuffle(values, values + 3, urng);
+		++counts[values[0] * 3 + values[1]];
+	}
+
+	for(int i = 0; i < 9; ++i)
+		EATEST_VERIFY((i % 4 == 0) ? (counts[i] == 0) : ((counts[i] > 800) && (counts[i] < 1200)));
+
+	// An index in a range of more than 2^32 elements needs 64 random bits.
+	const uint64_t n = (UINT64_C(1) << 40) + 3;
+	uint64_t minIndex = n, maxIndex = 0;
+
+	for(int i = 0; i < 64; ++i)
+	{
+		const uint64_t index = eastl::Internal::urng_index(urng, n);
+		minIndex = (index < minIndex) ? index : minIndex;
+		maxIndex = (index > maxIndex) ? index : maxIndex;
+	}
+
+	EATEST_VERIFY((maxIndex < n) && (maxIndex > n / 2) && (minIndex < n / 2));
+
+	return nErrorCount;
+}
 
 
 
@@ -149,6 +208,28 @@ int TestRandom()
 
 		// If the shuffled array is unique, then a set of its values should be the same size as the array.
 		EATEST_VERIFY(intSet.size() == rngArray.size());
+	}
+
+	{
+		// template <typename RandomAccessIterator, typename UniformRandomNumberGenerator>
+		// void shuffle(RandomAccessIterator first, RandomAccessIterator last, UniformRandomNumberGenerator&& urng)
+
+		// EASTL's generators have no min() and max() and return any value of their result type:
+		// eastl_size_t (64 bits on 64-bit platforms) and 8 bits.
+		nErrorCount += TestShuffle(EASTLTest_Rand(EA::UnitTest::GetRandSeed()));
+		nErrorCount += TestShuffle(RandGenT<uint8_t>(EA::UnitTest::GetRandSeed()));
+
+		#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+			std::mt19937 rng32(EA::UnitTest::GetRandSeed());
+			nErrorCount += TestShuffle(rng32);
+			nErrorCount += TestShuffle(std::mt19937_64(EA::UnitTest::GetRandSeed()));
+			nErrorCount += TestShuffle(std::minstd_rand(EA::UnitTest::GetRandSeed())); // Its range, [1, 2^31 - 2], isn't a power of two.
+
+			int intArray[] = { 3, 2, 6, 5, 4, 1 };
+			const int sortedArray[] = { 1, 2, 3, 4, 5, 6 };
+			eastl::shuffle(intArray, intArray + 6, std::mt19937());
+			EATEST_VERIFY(eastl::is_permutation(intArray, intArray + 6, sortedArray));
+		#endif
 	}
 
 
