@@ -59,7 +59,7 @@ namespace eastl
 		EA_CONSTEXPR nullopt_t(nullopt_tag_t) {}
 	};
 
-	EA_CONSTEXPR nullopt_t nullopt{nullopt_tag_t{}};
+	EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR nullopt_t nullopt{nullopt_tag_t{}};
 
 
     ///////////////////////////////////////////////////////////////////////////////

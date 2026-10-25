@@ -512,6 +512,12 @@ static int TestOptional_MonadicOperations()
 		
 
 
+#if defined(EASTL_OPTIONAL_ENABLED) && EASTL_OPTIONAL_ENABLED && EASTL_INLINE_VARIABLE_ENABLED
+// TestUtility.cpp checks that it sees the same nullopt object as this translation unit.
+const void* TestOptionalNulloptAddress() { return &eastl::nullopt; }
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 // TestOptional
 //

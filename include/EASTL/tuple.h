@@ -920,7 +920,7 @@ namespace Internal
 	};
 }// namespace Internal
 
-static const Internal::ignore_t ignore;
+EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR Internal::ignore_t ignore{};
 
 
 // tie 

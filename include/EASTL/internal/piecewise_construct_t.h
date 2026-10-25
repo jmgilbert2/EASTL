@@ -32,7 +32,7 @@ namespace eastl
 	///
 	/// http://en.cppreference.com/w/cpp/utility/piecewise_construct
 	///
-	EA_CONSTEXPR piecewise_construct_t piecewise_construct = eastl::piecewise_construct_t();
+	EASTL_CPP17_INLINE_VARIABLE EA_CONSTEXPR piecewise_construct_t piecewise_construct = eastl::piecewise_construct_t();
 
 } // namespace eastl
 

@@ -78,6 +78,12 @@ int OperationCountingType::mDestructorCalls = 0;
 
 }  // namespace TestTupleInternal
 
+#if EASTL_INLINE_VARIABLE_ENABLED
+// TestUtility.cpp checks that it sees the same ignore and piecewise_construct objects as this translation unit.
+const void* TestTupleIgnoreAddress() { return &eastl::ignore; }
+const void* TestTuplePiecewiseConstructAddress() { return &eastl::piecewise_construct; }
+#endif
+
 int TestTuple()
 {
 	using namespace eastl;
