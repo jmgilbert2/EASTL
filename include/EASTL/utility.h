@@ -495,6 +495,20 @@ namespace eastl
 		EA_CPP14_CONSTEXPR pair& operator=(const pair&) = default;
 		EA_CPP14_CONSTEXPR pair& operator=(pair&&) = default;
 
+	#if defined(__cpp_concepts) && __cpp_concepts >= 202002L
+		// The defaulted copy assignment is deleted when T1 or T2 is a reference, but std::pair assigns through the
+		// reference. Being more constrained, this one is then used instead, and the defaulted one stays trivial for
+		// other types (P0848). C++17 can't do this without making every pair's copy assignment non-trivial.
+		EA_CPP14_CONSTEXPR pair& operator=(const pair& p)
+			requires (eastl::is_reference_v<T1> || eastl::is_reference_v<T2>) &&
+			         eastl::is_copy_assignable_v<T1> && eastl::is_copy_assignable_v<T2>
+		{
+			first = p.first;
+			second = p.second;
+			return *this;
+		}
+	#endif
+
 		template <typename U,
 		          typename V,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, const U&> && eastl::is_constructible_v<T2, const V&> &&

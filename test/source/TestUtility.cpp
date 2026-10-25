@@ -39,6 +39,7 @@ inline bool operator<(const BasicObject& t1, const BasicObject& t2) { return t1.
 static_assert(eastl::is_trivially_copyable_v<eastl::pair<int, int>>, "EASTL extension, pair is trivially copyable.");
 static_assert(eastl::is_trivially_copyable_v<eastl::pair<float, int>>, "EASTL extension, pair is trivially copyable.");
 static_assert(eastl::is_trivially_copyable_v<eastl::pair<int, float>>, "EASTL extension, pair is trivially copyable.");
+static_assert(eastl::is_trivially_copy_assignable_v<eastl::pair<int, int>>, "EASTL extension, pair's copy assignment is trivial.");
 
 ///////////////////////////////////////////////////////////////////////////////
 // TestUtilityPair
@@ -334,6 +335,20 @@ static int TestUtilityPair()
 		pair<long, double> p4 = {1, 2.f};
 		EATEST_VERIFY((p4.first == 1) && (p4.second == 2.0));
 	}
+
+#if defined(__cpp_concepts) && __cpp_concepts >= 202002L
+	// pair<T&, U> is copy assignable and assigns through the reference, like std::pair.
+	{
+		static_assert(eastl::is_copy_assignable_v<pair<int&, int>>, "pair<int&, int> is copy assignable");
+		static_assert(!eastl::is_copy_assignable_v<pair<const int&, int>>, "pair<const int&, int> is not copy assignable");
+
+		int a = 1, b = 2;
+		pair<int&, int> p1(a, 3);
+		const pair<int&, int> p2(b, 4);
+		p1 = p2;
+		EATEST_VERIFY((a == 2) && (&p1.first == &a) && (p1.second == 4));
+	}
+#endif
 
 #ifndef EA_COMPILER_NO_STRUCTURED_BINDING
 	// pair structured bindings test 
