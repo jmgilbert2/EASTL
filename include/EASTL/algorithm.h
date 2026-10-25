@@ -1755,7 +1755,7 @@ namespace eastl
 	EA_CPP14_CONSTEXPR inline InputIterator
 	for_each_n(InputIterator first, Size n, Function function)
 	{
-		for (Size i = 0; i < n; ++first, i++)
+		for (Size i = 0; i < n; ++first, (void)i++)
 			function(*first);
 		return first;
 	}
@@ -1790,7 +1790,7 @@ namespace eastl
 	inline OutputIterator
 	generate_n(OutputIterator first, Size n, Generator generator)
 	{
-		for(; n > 0; --n, ++first)
+		for(; n > 0; --n, (void)++first)
 			*first = generator();
 		return first;
 	}
@@ -1816,7 +1816,7 @@ namespace eastl
 	inline OutputIterator
 	transform(InputIterator first, InputIterator last, OutputIterator result, UnaryOperation unaryOperation)
 	{
-		for(; first != last; ++first, ++result)
+		for(; first != last; ++first, (void)++result)
 			*result = unaryOperation(*first);
 		return result;
 	}
@@ -1842,7 +1842,7 @@ namespace eastl
 	inline OutputIterator
 	transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, BinaryOperation binaryOperation)
 	{
-		for(; first1 != last1; ++first1, ++first2, ++result)
+		for(; first1 != last1; ++first1, (void)++first2, (void)++result)
 			*result = binaryOperation(*first1, *first2);
 		return result;
 	}
@@ -1863,7 +1863,7 @@ namespace eastl
 	template <typename InputIterator1, typename InputIterator2>
 	EA_CPP14_CONSTEXPR inline bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 	{
-		for(; first1 != last1; ++first1, ++first2)
+		for(; first1 != last1; ++first1, (void)++first2)
 		{
 			if(!(*first1 == *first2)) // Note that we always express value comparisons in terms of < or ==.
 				return false;
@@ -1924,7 +1924,7 @@ namespace eastl
 	inline bool
 	equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate predicate)
 	{
-		for(; first1 != last1; ++first1, ++first2)
+		for(; first1 != last1; ++first1, (void)++first2)
 		{
 			if(!predicate(*first1, *first2))
 				return false;
@@ -2003,7 +2003,7 @@ namespace eastl
 	inline bool
 	lexicographical_compare(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2)
 	{
-		for(; (first1 != last1) && (first2 != last2); ++first1, ++first2)
+		for(; (first1 != last1) && (first2 != last2); ++first1, (void)++first2)
 		{
 			if(*first1 < *first2)
 				return true;
@@ -2128,7 +2128,7 @@ namespace eastl
 	lexicographical_compare(InputIterator1 first1, InputIterator1 last1,
 							InputIterator2 first2, InputIterator2 last2, Compare compare)
 	{
-		for(; (first1 != last1) && (first2 != last2); ++first1, ++first2)
+		for(; (first1 != last1) && (first2 != last2); ++first1, (void)++first2)
 		{
 			if(compare(*first1, *first2))
 				return true;
@@ -2166,7 +2166,7 @@ namespace eastl
 		static_assert(!eastl::is_void_v<std::common_comparison_category_t<decltype(compare(*first1, *first2))>>,
 		              "lexicographical_compare_three_way: the comparator must return a comparison category type.");
 
-		for (; (first1 != last1) && (first2 != last2); ++first1, ++first2)
+		for (; (first1 != last1) && (first2 != last2); ++first1, (void)++first2)
 		{
 			if (auto c = compare(*first1, *first2); c != 0)
 				return c;
@@ -2785,7 +2785,7 @@ namespace eastl
 	inline OutputIterator
 	replace_copy(InputIterator first, InputIterator last, OutputIterator result, const T& old_value, const T& new_value)
 	{
-		for(; first != last; ++first, ++result)
+		for(; first != last; ++first, (void)++result)
 			*result = (*first == old_value) ? new_value : *first;
 		return result;
 	}
@@ -2810,7 +2810,7 @@ namespace eastl
 	inline OutputIterator
 	replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate predicate, const T& new_value)
 	{
-		for(; first != last; ++first, ++result)
+		for(; first != last; ++first, (void)++result)
 			*result = predicate(*first) ? new_value : *first;
 		return result;
 	}
@@ -3041,11 +3041,11 @@ namespace eastl
 		if(count > d1)                                // ForwardIterator may not be a true iterator but instead something like a pointer.
 			return last;
 
-		for(; d1 >= count; ++first, --d1)
+		for(; d1 >= count; ++first, (void)--d1)
 		{
 			ForwardIterator i(first);
 
-			for(Size n = 0; n < count; ++n, ++i, --d1)
+			for(Size n = 0; n < count; ++n, (void)++i, (void)--d1)
 			{
 				if(!(*i == value)) // Note that we always express value comparisons in terms of < or ==.
 					goto not_found;

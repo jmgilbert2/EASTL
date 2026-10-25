@@ -591,7 +591,7 @@ namespace eastl
 	{
 		int counter = 0;
 
-		for(RandomAccessIterator child = first + 1; child < last; ++child, counter ^= 1)
+		for(RandomAccessIterator child = first + 1; child < last; ++child, (void)(counter ^= 1))
 		{
 			if(*first < *child)  // We must use operator <, and are not allowed to use > or >= here.
 				return child;
@@ -612,7 +612,7 @@ namespace eastl
 	{
 		int counter = 0;
 
-		for(RandomAccessIterator child = first + 1; child < last; ++child, counter ^= 1)
+		for(RandomAccessIterator child = first + 1; child < last; ++child, (void)(counter ^= 1))
 		{
 			if(compare(*first, *child))
 				return child;
