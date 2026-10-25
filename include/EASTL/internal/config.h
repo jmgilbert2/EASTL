@@ -1809,8 +1809,9 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 /// EASTL_CONSTEXPR_BIT_CAST_SUPPORTED
 /// eastl::bit_cast, in order to be implemented as constexpr, requires explicit compiler support.
 /// This macro defines whether it's possible for bit_cast to be constexpr.
+/// MSVC has __builtin_bit_cast since VS2019 16.6 (_MSC_VER 1926), but no __has_builtin to detect it.
 ///
-#if (defined(EA_COMPILER_MSVC) && defined(EA_COMPILER_MSVC_VERSION_14_26) && EA_COMPILER_VERSION >= EA_COMPILER_MSVC_VERSION_14_26) \
+#if (defined(EA_COMPILER_MSVC) && (EA_COMPILER_VERSION >= 1926)) \
 	|| EA_COMPILER_HAS_BUILTIN(__builtin_bit_cast)
 	#define EASTL_CONSTEXPR_BIT_CAST_SUPPORTED 1
 #else
