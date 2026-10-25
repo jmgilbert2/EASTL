@@ -2168,6 +2168,9 @@ namespace eastl
 	                                                 InputIterator2 first2, InputIterator2 last2,
 	                                                 Compare compare) -> decltype(compare(*first1, *first2))
 	{
+		static_assert(!eastl::is_void_v<std::common_comparison_category_t<decltype(compare(*first1, *first2))>>,
+		              "lexicographical_compare_three_way: the comparator must return a comparison category type.");
+
 		for (; (first1 != last1) && (first2 != last2); ++first1, ++first2)
 		{
 			if (auto c = compare(*first1, *first2); c != 0)
