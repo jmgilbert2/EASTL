@@ -928,7 +928,7 @@ int TestSList()
 
 			struct weak_ordering_slist
 			{
-				slist<int> slist;
+				eastl::slist<int> slist;
 				inline std::weak_ordering operator<=>(const weak_ordering_slist& b) const { return slist <=> b.slist; }
 			};
 
@@ -940,7 +940,7 @@ int TestSList()
 
 			struct strong_ordering_slist
 			{
-				slist<int> slist;
+				eastl::slist<int> slist;
 				inline std::strong_ordering operator<=>(const strong_ordering_slist& b) const { return slist <=> b.slist; }
 			};
 

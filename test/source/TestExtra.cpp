@@ -442,7 +442,7 @@ static int TestQueue()
 
 		struct weak_ordering_queue
 		{
-			queue<TestObject, list<TestObject>> queue;
+			eastl::queue<TestObject, list<TestObject>> queue;
 		    inline std::weak_ordering operator<=>(const weak_ordering_queue& b) const { return queue <=> b.queue; }
 		};
 
@@ -845,7 +845,7 @@ static int TestStack()
 
 		struct weak_ordering_stack
 		{
-			stack<TestObject, list<TestObject> > stack;
+			eastl::stack<TestObject, list<TestObject> > stack;
 		    inline std::weak_ordering operator<=>(const weak_ordering_stack& b) const { return stack <=> b.stack; }
 		};
 
