@@ -157,8 +157,8 @@ namespace eastl
 		typedef ptrdiff_t                                                 difference_type;
 		typedef eastl::random_access_iterator_tag                  iterator_category;
 		typedef T                                                         value_type;
-		typedef T*                                                        pointer;
-		typedef T&                                                        reference;
+		typedef Pointer                                                   pointer;
+		typedef Reference                                                 reference;
 
 	public:
 		DequeIterator();

@@ -1052,6 +1052,34 @@ int TestDeque()
 		#endif
 	}
 
+	{
+		// const_iterator gives const access, like std::deque's.
+		typedef TestObjectDeque::iterator       Iterator;
+		typedef TestObjectDeque::const_iterator ConstIterator;
+
+		static_assert(eastl::is_same<ConstIterator::reference, const TestObject&>::value, "deque const_iterator::reference");
+		static_assert(eastl::is_same<ConstIterator::pointer, const TestObject*>::value, "deque const_iterator::pointer");
+		static_assert(eastl::is_same<eastl::iterator_traits<ConstIterator>::reference, const TestObject&>::value, "deque const_iterator traits");
+		static_assert(eastl::is_same<decltype(*eastl::declval<ConstIterator&>()), const TestObject&>::value, "deque const_iterator::operator*");
+		static_assert(eastl::is_same<decltype(eastl::declval<ConstIterator&>()[0]), const TestObject&>::value, "deque const_iterator::operator[]");
+		static_assert(eastl::is_same<decltype(eastl::declval<ConstIterator&>().operator->()), const TestObject*>::value, "deque const_iterator::operator->");
+		static_assert(!eastl::is_assignable<decltype(*eastl::declval<ConstIterator&>()), TestObject>::value, "deque const_iterator writes");
+
+		static_assert(eastl::is_same<Iterator::reference, TestObject&>::value, "deque iterator::reference");
+		static_assert(eastl::is_same<Iterator::pointer, TestObject*>::value, "deque iterator::pointer");
+		static_assert(eastl::is_assignable<decltype(*eastl::declval<Iterator&>()), TestObject>::value, "deque iterator writes");
+
+		#if defined(EA_COMPILER_CPP20_ENABLED) && defined(__cpp_lib_ranges)
+			static_assert(eastl::is_same<std::iter_reference_t<ConstIterator>, const TestObject&>::value, "iter_reference_t");
+			static_assert(eastl::is_same<std::iter_reference_t<Iterator>, TestObject&>::value, "iter_reference_t");
+		#endif
+
+		TestObjectDeque d(3);
+		d[1].mX = 7;
+		const TestObjectDeque& cd = d;
+		EATEST_VERIFY((cd.begin()[1].mX == 7) && ((cd.begin() + 1)->mX == 7) && ((*(cd.end() - 2)).mX == 7));
+	}
+
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 
 	{ // Test <=>
