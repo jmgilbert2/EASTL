@@ -336,7 +336,7 @@ int TestAtomicAPIForInts()
 	nError += TestAtomicIntAPI<size_t>();
 	nError += TestAtomicIntAPI<eastl_size_t>();
 
-	nError += TestAtomicIntAPI<ssize_t>();
+	nError += TestAtomicIntAPI<ptrdiff_t>();
 	nError += TestAtomicIntAPI<eastl_ssize_t>();
 
 	nError += TestAtomicIntAPI<uintptr_t>();
