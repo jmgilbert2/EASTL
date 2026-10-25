@@ -42,6 +42,34 @@ struct GeneratorUint32
 };
 
 
+// Verifies that uniform_int_distribution<IntType>(a, a + 9) with the given uniform random bit generator
+// gives values in range, each of the 10 about equally often.
+template <typename IntType, typename URNG>
+static int TestUniformIntDistribution(URNG&& urng, IntType a)
+{
+	int nErrorCount = 0;
+
+	const IntType b = (IntType)(a + 9);
+	eastl::uniform_int_distribution<IntType> uid(a, b);
+	int counts[10] = {};
+
+	for(int i = 0; i < 10000; ++i)
+	{
+		const IntType value = uid(urng);
+		const bool inRange = (value >= a) && (value <= b);
+
+		EATEST_VERIFY(inRange);
+		if(inRange)
+			++counts[(int)(value - a)];
+	}
+
+	for(int i = 0; i < 10; ++i)
+		EATEST_VERIFY((counts[i] > 800) && (counts[i] < 1200)); // About 1000 each (standard deviation 30).
+
+	return nErrorCount;
+}
+
+
 // Verifies that shuffle with the given uniform random bit generator gives permutations, with each
 // order equally likely, and that its indexes above 2^32 (for ranges that large) are uniform too.
 template <typename URNG>
@@ -84,7 +112,7 @@ static int TestShuffle(URNG&& urng)
 
 	for(int i = 0; i < 64; ++i)
 	{
-		const uint64_t index = eastl::Internal::urng_index(urng, n);
+		const uint64_t index = eastl::Internal::urng_value(urng, n - 1);
 		minIndex = (index < minIndex) ? index : minIndex;
 		maxIndex = (index > maxIndex) ? index : maxIndex;
 	}
@@ -158,6 +186,70 @@ int TestRandom()
 			EATEST_VERIFY(uid == uid2);
 			EATEST_VERIFY((uid.a() == 1) && (uid.b() == 6) && (uid.min() == 1) && (uid.max() == 6));
 		}
+	}
+
+	{
+		// uniform_int_distribution with signed and 64-bit types, generators narrower or wider than the
+		// result type, and generators whose range isn't a power of two.
+		EASTLTest_Rand rng(EA::UnitTest::GetRandSeed());
+
+		nErrorCount += TestUniformIntDistribution<int>(rng, -5);
+		nErrorCount += TestUniformIntDistribution<uint64_t>(rng, UINT64_C(1) << 40);
+		nErrorCount += TestUniformIntDistribution<uint8_t>(RandGenT<uint8_t>(EA::UnitTest::GetRandSeed()), 200);
+
+		#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+			std::mt19937 rng32(EA::UnitTest::GetRandSeed());
+			std::mt19937_64 rng64(EA::UnitTest::GetRandSeed());
+
+			nErrorCount += TestUniformIntDistribution<short>(rng32, SHRT_MIN);
+			nErrorCount += TestUniformIntDistribution<long long>(rng64, LLONG_MIN);
+			nErrorCount += TestUniformIntDistribution<unsigned long long>(rng32, ULLONG_MAX - 9);
+			nErrorCount += TestUniformIntDistribution<unsigned>(std::minstd_rand(EA::UnitTest::GetRandSeed()), 100u); // Its range, [1, 2^31 - 2], isn't a power of two.
+
+			// Full ranges, which use every random bit, and ranges wider than 32 bits.
+			int64_t  minInt64 = INT64_MAX, maxInt64 = INT64_MIN;
+			uint32_t minUint32 = UINT32_MAX, maxUint32 = 0;
+			uint64_t maxUint64 = 0;
+
+			eastl::uniform_int_distribution<int64_t>  uidInt64(INT64_MIN, INT64_MAX);
+			eastl::uniform_int_distribution<uint32_t> uidUint32;
+			eastl::uniform_int_distribution<uint64_t> uidUint64(0, (UINT64_C(1) << 40) + 2);
+
+			for(int i = 0; i < 64; ++i)
+			{
+				const int64_t valueInt64 = uidInt64(rng32);
+				minInt64 = (valueInt64 < minInt64) ? valueInt64 : minInt64;
+				maxInt64 = (valueInt64 > maxInt64) ? valueInt64 : maxInt64;
+
+				const uint32_t valueUint32 = uidUint32(rng64);
+				minUint32 = (valueUint32 < minUint32) ? valueUint32 : minUint32;
+				maxUint32 = (valueUint32 > maxUint32) ? valueUint32 : maxUint32;
+
+				const uint64_t valueUint64 = uidUint64(rng32);
+				EATEST_VERIFY(valueUint64 <= (UINT64_C(1) << 40) + 2);
+				maxUint64 = (valueUint64 > maxUint64) ? valueUint64 : maxUint64;
+			}
+
+			EATEST_VERIFY((minInt64 < INT64_MIN / 2) && (maxInt64 > INT64_MAX / 2));
+			EATEST_VERIFY((minUint32 < UINT32_MAX / 2) && (maxUint32 > UINT32_MAX / 2));
+			EATEST_VERIFY(maxUint64 > (UINT64_C(1) << 39));
+
+			// The interface: a(), b(), min(), max(), param() and drawing with other parameters.
+			eastl::uniform_int_distribution<long long> uid(-10, 10);
+			const eastl::uniform_int_distribution<long long>::param_type params(100, 105);
+
+			EATEST_VERIFY((uid.a() == -10) && (uid.b() == 10) && (uid.min() == -10) && (uid.max() == 10));
+
+			const long long value = uid(rng32, params);
+			EATEST_VERIFY((value >= 100) && (value <= 105));
+
+			uid.param(params);
+			uid.reset();
+			EATEST_VERIFY((uid.param() == params) && (uid.a() == 100) && (uid.b() == 105));
+
+			eastl::uniform_int_distribution<int> uidSingle(5, 5);
+			EATEST_VERIFY((uidSingle(rng32) == 5) && (uidSingle(rng64) == 5));
+		#endif
 	}
 
 
