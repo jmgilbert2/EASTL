@@ -584,10 +584,15 @@ namespace eastl
 	//     struct common_type<MyClass1, MyClass2>{ typedef MyBaseClassB type; };
 	//
 	// The member typedef type shall be defined as set out in 20.9.7.6,p3. All types in
-	// the parameter pack T shall be complete or (possibly cv) void. A program may 
-	// specialize this trait if at least one template parameter in the specialization 
-	// is a user-defined type. Note: Such specializations are needed when only  
+	// the parameter pack T shall be complete or (possibly cv) void. A program may
+	// specialize this trait if at least one template parameter in the specialization
+	// is a user-defined type. Note: Such specializations are needed when only
 	// explicit conversions are desired among the template arguments.
+	//
+	// As in the standard ([meta.trans.other]), there is no member type when the
+	// types have no common type, so common_type can be used in SFINAE contexts.
+	// The types are decayed before anything else, so a specialization for the
+	// decayed types is also used for their cv-qualified and reference forms.
 	///////////////////////////////////////////////////////////////////////
 
 	#define EASTL_TYPE_TRAIT_common_type_CONFORMANCE 1    // common_type is conforming.
@@ -595,19 +600,54 @@ namespace eastl
 	template<typename... T>
 	struct common_type;
 
+	namespace internal
+	{
+		template <typename T, typename U>
+		using conditional_result_t = decltype(false ? eastl::declval<T>() : eastl::declval<U>());
+
+		// C++20: COND_RES(CREF(D1), CREF(D2)), used when the conditional on the decayed types is ill-formed.
+		template <typename D1, typename D2, typename = void>
+		struct common_type_cref {};
+
+		#if defined(EA_COMPILER_CPP20_ENABLED)
+			template <typename D1, typename D2>
+			struct common_type_cref<D1, D2, void_t<conditional_result_t<const D1&, const D2&>>>
+				{ typedef decay_t<conditional_result_t<const D1&, const D2&>> type; };
+		#endif
+
+		template <typename D1, typename D2, typename = void>
+		struct common_type_decayed : public common_type_cref<D1, D2> {};
+
+		template <typename D1, typename D2>
+		struct common_type_decayed<D1, D2, void_t<conditional_result_t<D1, D2>>>
+			{ typedef decay_t<conditional_result_t<D1, D2>> type; };
+
+		// If decaying changes either type, use common_type of the decayed types, so that user specializations apply.
+		template <typename T, typename U, typename D1 = decay_t<T>, typename D2 = decay_t<U>>
+		struct common_type_2 : public common_type<D1, D2> {};
+
+		template <typename T, typename U>
+		struct common_type_2<T, U, T, U> : public common_type_decayed<T, U> {};
+
+		template <typename AlwaysVoid, typename T, typename U, typename... V>
+		struct common_type_n {};
+
+		template <typename T, typename U, typename... V>
+		struct common_type_n<void_t<typename common_type<T, U>::type>, T, U, V...>
+			: public common_type<typename common_type<T, U>::type, V...> {};
+	}
+
+	template<>
+	struct common_type<> {};
+
 	template<typename T>
-	struct common_type<T>
-		{ typedef decay_t<T> type; }; // Question: Should we use T or decay_t<T> here? The C++11 Standard specifically (20.9.7.6,p3) specifies that it be without decay, but libc++ uses decay.
+	struct common_type<T> : public common_type<T, T> {};
 
 	template<typename T, typename U>
-	struct common_type<T, U>
-	{
-		typedef decay_t<decltype(true ? declval<T>() : declval<U>())> type; // The type of a tertiary expression is set by the compiler to be the common type of the two result types.
-	};
+	struct common_type<T, U> : public internal::common_type_2<T, U> {};
 
-	template<typename T, typename U, typename... V>
-	struct common_type<T, U, V...>
-		{ typedef typename common_type<typename common_type<T, U>::type, V...>::type type; };
+	template<typename T, typename U, typename V, typename... W>
+	struct common_type<T, U, V, W...> : public internal::common_type_n<void, T, U, V, W...> {};
 
 
 	// common_type_t is the C++14 using typedef for typename common_type<T...>::type.

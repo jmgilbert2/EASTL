@@ -1061,7 +1061,7 @@ namespace eastl
 ///////////////////////////////////////////////////////////////////////////////
 // EASTL_STD_ITERATOR_CATEGORY_ENABLED
 //
-// Defined as 0 or 1. Default is 0.
+// Defined as 0 or 1. Default is 1.
 // If defined as non-zero, EASTL iterator categories (iterator.h's input_iterator_tag,
 // forward_iterator_tag, etc.) are defined to be those from std C++ in the std
 // namespace. The reason for wanting to enable such a feature is that it allows
@@ -1070,10 +1070,15 @@ namespace eastl
 // The reason for the change was that almost nobody was taking advantage of it and
 // it was slowing down compile times for some compilers quite a bit due to them
 // having a lot of headers behind <iterator>.
+// The default is 1 again in this fork: the cost only shows in translation units
+// that include no other standard library header.
+// To consider: include each standard library's internal header that defines the
+// tags (e.g. MSVC's <__msvc_iter_core.hpp>) instead of <iterator>, which also
+// brings in <iosfwd>.
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_STD_ITERATOR_CATEGORY_ENABLED
-	#define EASTL_STD_ITERATOR_CATEGORY_ENABLED 0
+	#define EASTL_STD_ITERATOR_CATEGORY_ENABLED 1
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1216,7 +1221,7 @@ namespace eastl
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_LIKELY
-	#if defined(__GNUC__) && (__GNUC__ >= 3)
+	#if (defined(__GNUC__) && (__GNUC__ >= 3)) || defined(__clang__)
 		#define EASTL_LIKELY(x)   __builtin_expect(!!(x), true)
 		#define EASTL_UNLIKELY(x) __builtin_expect(!!(x), false)
 	#else

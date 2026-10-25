@@ -220,7 +220,7 @@ namespace eastl
 		decltype(Hash()) // default constructible
 		, decltype(Hash(declval<Hash>())) // copy constructible
 		, decltype(declval<Hash>() = declval<const Hash&>()) // copy assignable
-		, decltype(swap(declval<Hash>(), declval<Hash>())) // swappable
+		, enable_if_t<is_swappable<Hash>::value> // swappable
 		, decltype(size_t(declval<const Hash>()(declval<const Key&>()))) // function object
 		>> : public true_type {};
 
@@ -1020,7 +1020,9 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////////
 	// 20.7.9, swap
 	//
-	template <class... Types>
+	// Participates in overload resolution only if every alternative is move constructible and swappable.
+	//
+	template <class... Types, typename enable_if<conjunction_v<is_move_constructible<Types>..., is_swappable<Types>...>, int>::type = 0>
 	void swap(variant<Types...>& lhs, variant<Types...>& rhs)
 		EA_NOEXCEPT(EA_NOEXCEPT(lhs.swap(rhs)))
 	{

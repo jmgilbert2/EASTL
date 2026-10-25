@@ -50,8 +50,8 @@ namespace eastl
 	/// more efficient in some way. 
 	///
 
-	template <typename T> 
-	inline void swap(T& a, T& b) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<T>::value && eastl::is_nothrow_move_assignable<T>::value)
+	template <typename T, typename U, typename eastl::enable_if<eastl::is_same<T, U>::value && eastl::is_move_constructible<T>::value && eastl::is_move_assignable<T>::value, int>::type>
+	inline void swap(T& a, U& b) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<T>::value && eastl::is_nothrow_move_assignable<T>::value)
 	{
 		T temp(EASTL_MOVE(a));  // EASTL_MOVE uses EASTL::move when available, else is a no-op.
 		a = EASTL_MOVE(b);
@@ -59,141 +59,84 @@ namespace eastl
 	}
 
 
-	/// is_swappable
+	/// is_swappable, is_swappable_with, is_nothrow_swappable, is_nothrow_swappable_with
 	///
-	/// Determines if two types can be swapped via the swap function. This determines
-	/// only if there is a swap function that matches the types and not if the assignments
-	/// within the swap implementation are valid.
-	/// Returns false for pre-C++11 compilers that don't support decltype.
-	///
-	/// This is a type trait, but it's not currently found within <type_traits.h>,
-	/// as it's dependent on the swap algorithm, which is at a higher level than
-	/// type traits.
+	/// True if swap(declval<T>(), declval<U>()) and swap(declval<U>(), declval<T>()) are valid
+	/// (and noexcept for the nothrow forms) in a context where eastl::swap is visible and
+	/// user-defined swaps are found by argument-dependent lookup. Invalid or ambiguous calls
+	/// give false, not a compile error.
 	///
 	/// Example usage:
 	///     static_assert(is_swappable<int>::value, "int should be swappable");
 	///
-	#if defined(EA_COMPILER_NO_DECLTYPE)
-		#define EASTL_TYPE_TRAIT_is_swappable_CONFORMANCE 0
-
-		template <typename>
-		struct is_swappable
-			: public eastl::false_type {};
-	#else
-		#define EASTL_TYPE_TRAIT_is_swappable_CONFORMANCE 1
-
-		// We declare this version of 'eastl::swap' to make compile-time existance checks for swap functions possible.  
-		//
-		#if EASTL_VARIADIC_TEMPLATES_ENABLED
-			eastl::unused swap(eastl::argument_sink, eastl::argument_sink);
-		#else
-			// Compilers that do not support variadic templates suffer from a bug with variable arguments list that
-			// causes the construction of aligned types in unaligned memory. To prevent the aligned type construction we
-			// accept the parameters by reference.
-			eastl::unused swap(eastl::argument_sink&, eastl::argument_sink&);
-		#endif
-
-		template <typename T>
-		struct is_swappable
-			: public integral_constant<bool, !eastl::is_same<decltype(swap(eastl::declval<T&>(), eastl::declval<T&>())), eastl::unused>::value> {}; // Don't prefix swap with eastl:: as we want to allow user-defined swaps via argument-dependent lookup.
-	#endif
-	
-	#if EASTL_VARIABLE_TEMPLATES_ENABLED
-        template <class T>
-        EA_CONSTEXPR bool is_swappable_v = is_swappable<T>::value;
-    #endif
-
-
-
-	/// is_nothrow_swappable
-	///
-	/// Evaluates to true if is_swappable, and swap is a nothrow function.
-	/// returns false for pre-C++11 compilers that don't support nothrow.
-	///
-	/// This is a type trait, but it's not currently found within <type_traits.h>,
-	/// as it's dependent on the swap algorithm, which is at a higher level than
-	/// type traits.
-	///
-	#define EASTL_TYPE_TRAIT_is_nothrow_swappable_CONFORMANCE EASTL_TYPE_TRAIT_is_swappable_CONFORMANCE
+	#define EASTL_TYPE_TRAIT_is_swappable_CONFORMANCE 1
+	#define EASTL_TYPE_TRAIT_is_nothrow_swappable_CONFORMANCE 1
+	#define EASTL_TYPE_TRAIT_is_nothrow_swappable_with_CONFORMANCE 1
 
 	template <typename T>
-	struct is_nothrow_swappable_helper_noexcept_wrapper
-		{ const static bool value = noexcept(swap(eastl::declval<T&>(), eastl::declval<T&>())); };
-
-	template <typename T, bool>
-	struct is_nothrow_swappable_helper
-		: public eastl::integral_constant<bool, is_nothrow_swappable_helper_noexcept_wrapper<T>::value> {}; // Don't prefix swap with eastl:: as we want to allow user-defined swaps via argument-dependent lookup.
+	struct is_swappable;
 
 	template <typename T>
-	struct is_nothrow_swappable_helper<T, false>
-		: public eastl::false_type {};
+	struct is_nothrow_swappable;
+
+	// C++11 array swap, declared here so the traits below see it.
+	template <typename T, typename U, size_t N, typename eastl::enable_if<eastl::is_same<T, U>::value && eastl::is_swappable<T>::value, int>::type = 0>
+	inline void swap(T (&a)[N], U (&b)[N]) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<T>::value);
+
+	namespace Internal
+	{
+		namespace swap_detail
+		{
+			using eastl::swap; // Calls below are unqualified so that user-defined swaps are found via argument-dependent lookup.
+
+			template <typename T, typename U, typename = void>
+			struct is_swappable_with_impl : public eastl::false_type {};
+
+			template <typename T, typename U>
+			struct is_swappable_with_impl<T, U, eastl::void_t<decltype(swap(eastl::declval<T>(), eastl::declval<U>())),
+			                                                   decltype(swap(eastl::declval<U>(), eastl::declval<T>()))>>
+				: public eastl::true_type {};
+
+			template <typename T, typename U, bool = is_swappable_with_impl<T, U>::value>
+			struct is_nothrow_swappable_with_impl
+				: public eastl::bool_constant<noexcept(swap(eastl::declval<T>(), eastl::declval<U>())) &&
+				                              noexcept(swap(eastl::declval<U>(), eastl::declval<T>()))> {};
+
+			template <typename T, typename U>
+			struct is_nothrow_swappable_with_impl<T, U, false> : public eastl::false_type {};
+		}
+	}
+
+	template <typename T>
+	struct is_swappable
+		: public Internal::swap_detail::is_swappable_with_impl<eastl::add_lvalue_reference_t<T>, eastl::add_lvalue_reference_t<T>> {};
+
+	template <typename T, typename U>
+	struct is_swappable_with
+		: public Internal::swap_detail::is_swappable_with_impl<T, U> {};
 
 	template <typename T>
 	struct is_nothrow_swappable
-		: public eastl::is_nothrow_swappable_helper<T, eastl::is_swappable<T>::value> {};
-
-	#if EASTL_VARIABLE_TEMPLATES_ENABLED
-        template <class T>
-        EA_CONSTEXPR bool is_nothrow_swappable_v = is_nothrow_swappable<T>::value;
-    #endif
-
-
-	
-	/// is_swappable_with
-	///
-	///
-	template <typename T, typename U, bool OneTypeIsVoid = (eastl::is_void<T>::value || eastl::is_void<U>::value)>
-	struct is_swappable_with_helper
-	{
-		// Don't prefix swap with eastl:: as we want to allow user-defined swaps via argument-dependent lookup.
-	    static const bool value =
-	        !eastl::is_same<decltype(swap(eastl::declval<T>(), eastl::declval<U>())), eastl::unused>::value &&
-	        !eastl::is_same<decltype(swap(eastl::declval<U>(), eastl::declval<T>())), eastl::unused>::value;
-    };
+		: public Internal::swap_detail::is_nothrow_swappable_with_impl<eastl::add_lvalue_reference_t<T>, eastl::add_lvalue_reference_t<T>> {};
 
 	template <typename T, typename U>
-	struct is_swappable_with_helper<T,U, true> { static const bool value = false; };
-
-    template<typename T, typename U>
-	struct is_swappable_with 
-			: public eastl::bool_constant<is_swappable_with_helper<T, U>::value> {}; 
+	struct is_nothrow_swappable_with
+		: public Internal::swap_detail::is_nothrow_swappable_with_impl<T, U> {};
 
 	#if EASTL_VARIABLE_TEMPLATES_ENABLED
-        template <class T, class U>
-        EA_CONSTEXPR bool is_swappable_with_v = is_swappable_with<T, U>::value;
-    #endif
+		template <class T>
+		EA_CONSTEXPR bool is_swappable_v = is_swappable<T>::value;
 
+		template <class T>
+		EA_CONSTEXPR bool is_nothrow_swappable_v = is_nothrow_swappable<T>::value;
 
-	
-	/// is_nothrow_swappable_with
-	///
-	///
-	#if defined(EA_COMPILER_NO_DECLTYPE) || defined(EA_COMPILER_NO_NOEXCEPT) 
-		#define EASTL_TYPE_TRAIT_is_nothrow_swappable_with_CONFORMANCE 0
-		template <typename T, typename U>
-		struct is_nothrow_swappable_with_helper { static const bool value = false; };
-	#else
-		#define EASTL_TYPE_TRAIT_is_nothrow_swappable_with_CONFORMANCE 1
-		template <typename T, typename U, bool OneTypeIsVoid = (eastl::is_void<T>::value || eastl::is_void<U>::value)>
-		struct is_nothrow_swappable_with_helper
-		{
-	        // Don't prefix swap with eastl:: as we want to allow user-defined swaps via argument-dependent lookup.
-	        static const bool value = noexcept(swap(eastl::declval<T>(), eastl::declval<U>())) &&
-	                                  noexcept(swap(eastl::declval<U>(), eastl::declval<T>()));
-        };
+		template <class T, class U>
+		EA_CONSTEXPR bool is_swappable_with_v = is_swappable_with<T, U>::value;
 
-		template <typename T, typename U>
-		struct is_nothrow_swappable_with_helper<T,U, true> { static const bool value = false; };
+		template <class T, class U>
+		EA_CONSTEXPR bool is_nothrow_swappable_with_v = is_nothrow_swappable_with<T, U>::value;
 	#endif
 
-    template <typename T, typename U>
-    struct is_nothrow_swappable_with : public eastl::bool_constant<is_nothrow_swappable_with_helper<T, U>::value> {};
-
-    #if EASTL_VARIABLE_TEMPLATES_ENABLED
-        template <class T, class U>
-        EA_CONSTEXPR bool is_nothrow_swappable_with_v = is_nothrow_swappable_with<T, U>::value;
-    #endif
-	
 
 
 	// iter_swap helper functions
@@ -269,7 +212,7 @@ namespace eastl
 	swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2)
 	{
 		for(; first1 != last1; ++first1, ++first2)
-			iter_swap(first1, first2); // Don't prefix swap with eastl:: as we want to allow user-defined swaps via argument-dependent lookup.
+			eastl::iter_swap(first1, first2); // iter_swap swaps the elements via argument-dependent lookup.
 		return first2;
 	}
 
@@ -279,9 +222,9 @@ namespace eastl
 	/// C++11 array swap
 	/// http://en.cppreference.com/w/cpp/algorithm/swap
 	///
-	template <typename T, size_t N>
+	template <typename T, typename U, size_t N, typename eastl::enable_if<eastl::is_same<T, U>::value && eastl::is_swappable<T>::value, int>::type>
 	inline void
-	swap(T (&a)[N], T (&b)[N]) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<T>::value)
+	swap(T (&a)[N], U (&b)[N]) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<T>::value)
 	{
 		eastl::swap_ranges(a, a + N, b);
 	}
@@ -635,6 +578,17 @@ namespace eastl
 	};
 
 	#define EASTL_PAIR_CONFORMANCE 1
+
+
+	/// swap
+	///
+	/// Participates in overload resolution only if T1 and T2 are swappable.
+	///
+	template <typename T1, typename T2, typename eastl::enable_if<eastl::is_swappable<T1>::value && eastl::is_swappable<T2>::value, int>::type = 0>
+	inline void swap(pair<T1, T2>& a, pair<T1, T2>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT(a.swap(b)))
+	{
+		a.swap(b);
+	}
 
 
 

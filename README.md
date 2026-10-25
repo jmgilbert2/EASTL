@@ -1,8 +1,17 @@
 # EA Standard Template Library
 
-[![Build Status](https://travis-ci.org/electronicarts/EASTL.svg?branch=master)](https://travis-ci.org/electronicarts/EASTL)  
-
 EASTL stands for Electronic Arts Standard Template Library. It is a C++ template library of containers, algorithms, and iterators useful for runtime and tool development across multiple platforms. It is a fairly extensive and robust implementation of such a library and has an emphasis on high performance above all other considerations.
+
+## About this fork
+
+This is a fork of [electronicarts/EASTL](https://github.com/electronicarts/EASTL) for personal use. It is planned to diverge from upstream in the following ways:
+
+* a focus on C++20 and C++23;
+* performance at least on par with the MSVC STL;
+* accepting and rejecting the same code as the standard library (for example, SFINAE-friendly type traits such as `common_type`, and `swap` calls that don't clash with `std::swap`), while keeping EASTL's major interface differences and extensions;
+* new extensions and further breaks from the STL interface where they make sense, so don't expect the same pointer and iterator stability guarantees as the STL.
+
+The EASTL packages in Conan and vcpkg are built from upstream, not from this fork. Use this fork from source, with the matching [EABase fork](https://github.com/jmgilbert2/EABase).
 
 
 ## Usage
@@ -10,26 +19,6 @@ EASTL stands for Electronic Arts Standard Template Library. It is a C++ template
 If you are familiar with the C++ STL or have worked with other templated container/algorithm libraries, you probably don't need to read this. If you have no familiarity with C++ templates at all, then you probably will need more than this document to get you up to speed. In this case, you need to understand that templates, when used properly, are powerful vehicles for the ease of creation of optimized C++ code. A description of C++ templates is outside the scope of this documentation, but there is plenty of such documentation on the Internet.
 
 EASTL is suitable for any tools and shipping applications where the functionality of EASTL is useful. Modern compilers are capable of producing good code with templates and many people are using them in both current generation and future generation applications on multiple platforms from embedded systems to servers and mainframes.
-
-## Package Managers
-
-You can download and install EASTL using the [Conan](https://github.com/conan-io/conan) package manager:
-
-    conan install eastl/3.15.00@
-
-The EASTL package in conan is kept up to date by Conan team members and community contributors. If the version is out-of-date, please [create an issue or pull request](https://github.com/conan-io/conan-center-index) on the Conan Center Index repository.
-
-
-You can download and install EASTL using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
-
-    git clone https://github.com/Microsoft/vcpkg.git
-    cd vcpkg
-    ./bootstrap-vcpkg.sh
-    ./vcpkg integrate install
-    vcpkg install eastl
-
-The EASTL port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
-
 
 ## Documentation
 

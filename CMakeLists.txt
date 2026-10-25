@@ -7,7 +7,7 @@ project(EASTL CXX)
 #-------------------------------------------------------------------------------------------
 # Options
 #-------------------------------------------------------------------------------------------
-option(EASTL_STD_ITERATOR_CATEGORY_ENABLED "Enable compatibility with std:: iterator categories" OFF)
+option(EASTL_STD_ITERATOR_CATEGORY_ENABLED "Enable compatibility with std:: iterator categories" ON)
 
 
 option(EASTL_DISABLE_APRIL_2024_DEPRECATIONS "Enable use of API marked for removal in April 2024." OFF)
@@ -49,6 +49,8 @@ add_definitions(-D_SCL_SECURE_NO_WARNINGS)
 add_definitions(-DEASTL_OPENSOURCE=1)
 if (EASTL_STD_ITERATOR_CATEGORY_ENABLED)
   add_definitions(-DEASTL_STD_ITERATOR_CATEGORY_ENABLED=1)
+elseif (DEFINED EASTL_STD_ITERATOR_CATEGORY_ENABLED)
+  add_definitions(-DEASTL_STD_ITERATOR_CATEGORY_ENABLED=0)
 endif()
 
 #-------------------------------------------------------------------------------------------

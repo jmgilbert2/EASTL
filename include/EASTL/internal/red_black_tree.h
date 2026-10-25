@@ -1131,7 +1131,8 @@ namespace eastl
 			// Most of our members can be exchaged by a basic swap:
 			// We leave mAllocator as-is.
 			eastl::swap(mnSize,        x.mnSize);
-			eastl::swap(get_compare(), x.get_compare());
+			using eastl::swap; // The comparator is swapped via argument-dependent lookup, as in the standard containers.
+			swap(get_compare(), x.get_compare());
 		#if !EASTL_RBTREE_LEGACY_SWAP_BEHAVIOUR_REQUIRES_COPY_CTOR
 			eastl::swap(mAllocator,          x.mAllocator);
 		#endif

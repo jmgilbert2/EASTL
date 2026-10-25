@@ -185,7 +185,8 @@ namespace Internal
 	template <size_t I, typename ValueType, bool IsEmpty>
 	inline void swap(TupleLeaf<I, ValueType, IsEmpty>& a, TupleLeaf<I, ValueType, IsEmpty>& b)
 	{
-		eastl::swap(a.getInternal(), b.getInternal());
+		using eastl::swap; // Unqualified so that user-defined swaps are found via argument-dependent lookup.
+		swap(a.getInternal(), b.getInternal());
 	}
 
 	template <size_t I, typename ValueType, bool IsEmpty>
@@ -594,10 +595,10 @@ namespace Internal
 
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	template <typename... T1s, typename... T2s, size_t... Is>
-	constexpr auto TupleThreeWay(const tuple<T1s...>& t1, const tuple<T2s...>& t2, index_sequence<Is...> is)
+	constexpr auto TupleThreeWay(const tuple<T1s...>& t1, const tuple<T2s...>& t2, index_sequence<Is...>)
 	{
 		std::common_comparison_category_t<synth_three_way_result<T1s, T2s>...> result = std::strong_ordering::equal;
-		((result = synth_three_way{}(get<Is>(t1), get<Is>(t2)), result != 0) || ...);
+		(void)((result = synth_three_way{}(get<Is>(t1), get<Is>(t2)), result != 0) || ...);
 		return result;
 	}
 #endif
@@ -735,7 +736,7 @@ inline T&& get(tuple<Ts...>&& t)
 	return Internal::getImpl<T>(eastl::move(t.mImpl));
 }
 
-template <typename... Ts>
+template <typename... Ts, typename eastl::enable_if<eastl::conjunction<eastl::is_swappable<Ts>...>::value, int>::type = 0>
 inline void swap(tuple<Ts...>& a, tuple<Ts...>& b)
 {
 	a.swap(b);
