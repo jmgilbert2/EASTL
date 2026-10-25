@@ -782,7 +782,7 @@ namespace eastl
 		static eastl::no_type is(...);
 
 		template<typename T1, typename U1>
-		static decltype(eastl::declval<T1>() = eastl::declval<U1>(), eastl::yes_type()) is(int);
+		static decltype((void)(eastl::declval<T1>() = eastl::declval<U1>()), eastl::yes_type()) is(int);
 
 		static const bool value = (sizeof(is<T, U>(0)) == sizeof(eastl::yes_type));
 	};
