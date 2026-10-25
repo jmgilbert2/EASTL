@@ -180,6 +180,8 @@ namespace eastl
 		this_type operator+(difference_type n) const;
 		this_type operator-(difference_type n) const;
 
+		reference operator[](difference_type n) const;
+
 	protected:
 		template <typename, typename, typename, unsigned>
 		friend struct DequeIterator;
@@ -1069,6 +1071,14 @@ namespace eastl
 	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator-(difference_type n) const
 	{
 		return this_type(*this).operator+=(-n);
+	}
+
+
+	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
+	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::reference
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator[](difference_type n) const
+	{
+		return *(*this + n);
 	}
 
 

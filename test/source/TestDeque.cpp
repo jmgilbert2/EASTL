@@ -14,6 +14,13 @@
 #include <EASTL/unique_ptr.h>
 #include "ConceptImpls.h"
 
+#if defined(EA_COMPILER_CPP20_ENABLED) && !defined(EA_COMPILER_NO_STANDARD_CPP_LIBRARY)
+	EA_DISABLE_ALL_VC_WARNINGS()
+	#include <algorithm>
+	#include <ranges>
+	EA_RESTORE_ALL_VC_WARNINGS()
+#endif
+
 
 using namespace eastl;
 
@@ -1015,6 +1022,34 @@ int TestDeque()
 		// actually frees allocations when assigning the allocator. this lack of consistency is unfortunate.
 		eastl::deque<TestObject, InstanceAllocator, 16> d(0, TestObject(), InstanceAllocator(1));
 		d.set_allocator(InstanceAllocator(2));
+	}
+
+	{
+		// Random access iterator operations across subarrays, including between iterator and const_iterator.
+		typedef eastl::deque<int, EASTLAllocatorType, 4> IntDeque4;
+
+		IntDeque4 d;
+		for(int i = 0; i < 20; ++i)
+			d.push_front(i);
+
+		IntDeque4::iterator       it  = d.begin() + 2;  // 17
+		IntDeque4::const_iterator cit = d.cbegin() + 9; // 10
+
+		EATEST_VERIFY((it[0] == 17) && (it[7] == 10) && (it[-2] == 19) && (cit[3] == 7) && (cit[-9] == 19));
+		it[1] = 100;
+		EATEST_VERIFY(d[3] == 100);
+		EATEST_VERIFY((it < cit) && (cit > it) && (it <= cit) && (cit >= it) && !(cit < it) && !(it > cit) && (it <= it) && (it >= it) && !(it < it));
+		EATEST_VERIFY(((cit - it) == 7) && ((it - cit) == -7) && ((3 + it) == (it + 3)) && ((7 + it) == cit) && ((cit - 7) == it));
+
+		#if defined(EA_COMPILER_CPP20_ENABLED) && defined(__cpp_lib_ranges) && EASTL_STD_ITERATOR_CATEGORY_ENABLED
+			static_assert(std::random_access_iterator<eastl::deque<int>::iterator>, "");
+			static_assert(std::random_access_iterator<eastl::deque<int>::const_iterator>, "");
+			static_assert(std::totally_ordered_with<eastl::deque<int>::iterator, eastl::deque<int>::const_iterator>, "");
+			static_assert(std::ranges::random_access_range<const eastl::deque<int>>, "");
+
+			std::ranges::sort(d);
+			EATEST_VERIFY(std::ranges::is_sorted(d) && (d.back() == 100));
+		#endif
 	}
 
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
