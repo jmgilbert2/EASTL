@@ -470,11 +470,22 @@ namespace eastl
 			}
 		#endif
 
-		template <
-		    typename TT1 = T1,
-		    typename TT2 = T2,
-		    class = eastl::enable_if_t<eastl::is_copy_constructible_v<TT1> && eastl::is_copy_constructible_v<TT2>>>
+		// The converting constructors below are explicit exactly when an element conversion isn't implicit, like
+		// std::pair's explicit(bool): each one is an implicit and an explicit overload with complementary constraints.
+		template <typename TT1 = T1,
+		          typename TT2 = T2,
+		          eastl::enable_if_t<eastl::is_copy_constructible_v<TT1> && eastl::is_copy_constructible_v<TT2> &&
+		                             (eastl::is_convertible_v<const TT1&, TT1> && eastl::is_convertible_v<const TT2&, TT2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(const T1& x, const T2& y)
+		    : first(x), second(y)
+		{
+		}
+
+		template <typename TT1 = T1,
+		          typename TT2 = T2,
+		          eastl::enable_if_t<eastl::is_copy_constructible_v<TT1> && eastl::is_copy_constructible_v<TT2> &&
+		                             !(eastl::is_convertible_v<const TT1&, TT1> && eastl::is_convertible_v<const TT2&, TT2>), int> = 0>
+		explicit EA_CPP14_CONSTEXPR pair(const T1& x, const T2& y)
 		    : first(x), second(y)
 		{
 		}
@@ -484,10 +495,10 @@ namespace eastl
 		EA_CPP14_CONSTEXPR pair& operator=(const pair&) = default;
 		EA_CPP14_CONSTEXPR pair& operator=(pair&&) = default;
 
-		template <
-		    typename U,
-		    typename V,
-		    class = eastl::enable_if_t<eastl::is_constructible_v<T1, const U&> && eastl::is_constructible_v<T2, const V&>>>
+		template <typename U,
+		          typename V,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, const U&> && eastl::is_constructible_v<T2, const V&> &&
+		                             (eastl::is_convertible_v<const U&, T1> && eastl::is_convertible_v<const V&, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(const pair<U, V>& p)
 		    : first(p.first), second(p.second)
 		{
@@ -495,28 +506,77 @@ namespace eastl
 
 		template <typename U,
 		          typename V,
-		          typename = eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, V>>>
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, const U&> && eastl::is_constructible_v<T2, const V&> &&
+		                             !(eastl::is_convertible_v<const U&, T1> && eastl::is_convertible_v<const V&, T2>), int> = 0>
+		explicit EA_CPP14_CONSTEXPR pair(const pair<U, V>& p)
+		    : first(p.first), second(p.second)
+		{
+		}
+
+		template <typename U,
+		          typename V,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, V> &&
+		                             (eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(U&& u, V&& v)
 		    : first(eastl::forward<U>(u)), second(eastl::forward<V>(v))
 		{
 		}
 
-		template <typename U, typename = eastl::enable_if_t<eastl::is_constructible_v<T1, U>>>
+		template <typename U,
+		          typename V,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, V> &&
+		                             !(eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
+		explicit EA_CPP14_CONSTEXPR pair(U&& u, V&& v)
+		    : first(eastl::forward<U>(u)), second(eastl::forward<V>(v))
+		{
+		}
+
+		template <typename U,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> &&
+		                             (eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<const T2&, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(U&& x, const T2& y)
 			: first(eastl::forward<U>(x)), second(y)
 		{
 		}
 
-		template <typename V, typename = eastl::enable_if_t<eastl::is_constructible_v<T2, V>>>
+		template <typename U,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> &&
+		                             !(eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<const T2&, T2>), int> = 0>
+		explicit EA_CPP14_CONSTEXPR pair(U&& x, const T2& y)
+			: first(eastl::forward<U>(x)), second(y)
+		{
+		}
+
+		template <typename V,
+		          eastl::enable_if_t<eastl::is_constructible_v<T2, V> &&
+		                             (eastl::is_convertible_v<const T1&, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(const T1& x, V&& y)
+			: first(x), second(eastl::forward<V>(y))
+		{
+		}
+
+		template <typename V,
+		          eastl::enable_if_t<eastl::is_constructible_v<T2, V> &&
+		                             !(eastl::is_convertible_v<const T1&, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
+		explicit EA_CPP14_CONSTEXPR pair(const T1& x, V&& y)
 			: first(x), second(eastl::forward<V>(y))
 		{
 		}
 
 		template <typename U,
 		          typename V,
-		          typename = eastl::enable_if_t<eastl::is_constructible_v<T1, U>&& eastl::is_constructible_v<T2, V>>>
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, V> &&
+		                             (eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(pair<U, V>&& p)
+		    : first(eastl::forward<U>(p.first)), second(eastl::forward<V>(p.second))
+		{
+		}
+
+		template <typename U,
+		          typename V,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, V> &&
+		                             !(eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
+		explicit EA_CPP14_CONSTEXPR pair(pair<U, V>&& p)
 		    : first(eastl::forward<U>(p.first)), second(eastl::forward<V>(p.second))
 		{
 		}

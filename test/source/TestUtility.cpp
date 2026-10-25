@@ -317,6 +317,24 @@ static int TestUtilityPair()
 #endif
 	}
 
+	// The converting constructors are explicit exactly when an element conversion isn't implicit, like std::pair.
+	{
+		static_assert(eastl::is_convertible_v<pair<int, float>, pair<long, double>>, "pair(pair<U, V>&&) is implicit");
+		static_assert(eastl::is_convertible_v<const pair<int, float>&, pair<long, double>>, "pair(const pair<U, V>&) is implicit");
+		static_assert(!eastl::is_convertible_v<pair<int, int>, pair<int, TestObject>>, "pair(pair<U, V>&&) is explicit");
+		static_assert(!eastl::is_convertible_v<const pair<int, int>&, pair<int, TestObject>>, "pair(const pair<U, V>&) is explicit");
+
+		pair<int, TestObject> p1(pair<int, int>(1, 2));
+		EATEST_VERIFY((p1.first == 1) && (p1.second.mX == 2));
+
+		const pair<int, int> p2(3, 4);
+		pair<int, TestObject> p3(p2);
+		EATEST_VERIFY((p3.first == 3) && (p3.second.mX == 4));
+
+		pair<long, double> p4 = {1, 2.f};
+		EATEST_VERIFY((p4.first == 1) && (p4.second == 2.0));
+	}
+
 #ifndef EA_COMPILER_NO_STRUCTURED_BINDING
 	// pair structured bindings test 
 	{
