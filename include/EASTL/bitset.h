@@ -28,19 +28,11 @@
 #include <EASTL/algorithm.h>
 #include <EASTL/bit.h>
 
-EA_DISABLE_ALL_VC_WARNINGS();
-
 #include <stddef.h>
 #include <string.h>
 
-EA_RESTORE_ALL_VC_WARNINGS();
-
 #if EASTL_EXCEPTIONS_ENABLED
-	EA_DISABLE_ALL_VC_WARNINGS();
-
 	#include <stdexcept> // std::out_of_range, std::length_error.
-
-	EA_RESTORE_ALL_VC_WARNINGS();
 #endif
 
 EA_DISABLE_VC_WARNING(4127); // Conditional expression is constant

@@ -1243,9 +1243,7 @@ namespace eastl
 //
 #ifndef EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE
 	#if defined(_MSC_VER) && (_MSC_VER >= 1500) && !defined(EA_COMPILER_CLANG_CL) // VS2008 or later
-		#pragma warning(push, 0)
-			#include <yvals.h>
-		#pragma warning(pop)
+		#include <yvals.h>
 		#if ((defined(_HAS_TR1) && _HAS_TR1) || _MSC_VER >= 1700)  // VS2012 (1700) and later has built-in type traits support.
 			#define EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE 1
 		#else

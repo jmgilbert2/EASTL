@@ -47,10 +47,8 @@
 #include <stdexcept>
 #endif
 
-EA_DISABLE_ALL_VC_WARNINGS()
 #include <new>
 #include <stddef.h>
-EA_RESTORE_ALL_VC_WARNINGS()
 
 
 // 4530 - C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc

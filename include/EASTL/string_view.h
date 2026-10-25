@@ -23,9 +23,7 @@
 #include <EASTL/numeric_limits.h>
 
 #if EASTL_EXCEPTIONS_ENABLED
-	EA_DISABLE_ALL_VC_WARNINGS()
 	#include <stdexcept> // std::out_of_range.
-	EA_RESTORE_ALL_VC_WARNINGS()
 #endif
 
 EA_DISABLE_VC_WARNING(4814)

@@ -25,10 +25,8 @@
 #include <stdexcept>
 #endif
 
-EA_DISABLE_ALL_VC_WARNINGS()
 #include <new>
 #include <stddef.h>
-EA_RESTORE_ALL_VC_WARNINGS()
 
 
 // 4512/4626 - 'class' : assignment operator could not be generated

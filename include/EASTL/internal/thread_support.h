@@ -28,9 +28,7 @@
 #endif
 
 #if EASTL_CPP11_MUTEX_ENABLED
-	EA_DISABLE_ALL_VC_WARNINGS()
 	#include <mutex>
-	EA_RESTORE_ALL_VC_WARNINGS()
 #endif
 
 #if defined(EA_PLATFORM_MICROSOFT)

@@ -24,9 +24,7 @@
 #include <stddef.h>
 
 #if EASTL_EXCEPTIONS_ENABLED
-	EA_DISABLE_ALL_VC_WARNINGS()
 	#include <stdexcept> // std::out_of_range, std::length_error.
-	EA_RESTORE_ALL_VC_WARNINGS()
 #endif
 
 // 4512/4626 - 'class' : assignment operator could not be generated.  // This disabling would best be put elsewhere.

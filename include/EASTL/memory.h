@@ -65,10 +65,8 @@
 #include <EASTL/utility.h>
 #include <EASTL/numeric_limits.h>
 
-EA_DISABLE_ALL_VC_WARNINGS()
 #include <stdlib.h>
 #include <new>
-EA_RESTORE_ALL_VC_WARNINGS()
 
 
 // 4530 - C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc

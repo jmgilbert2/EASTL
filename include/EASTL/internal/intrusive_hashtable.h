@@ -29,11 +29,9 @@
 #include <EASTL/utility.h>
 #include <EASTL/algorithm.h>
 
-EA_DISABLE_ALL_VC_WARNINGS();
 #include <new>
 #include <stddef.h>
 #include <string.h>
-EA_RESTORE_ALL_VC_WARNINGS();
 
 
 namespace eastl
