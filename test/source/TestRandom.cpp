@@ -156,6 +156,7 @@ int TestRandom()
 
 			eastl::uniform_int_distribution<uint32_t> uid2(1, 6);
 			EATEST_VERIFY(uid == uid2);
+			EATEST_VERIFY((uid.a() == 1) && (uid.b() == 6) && (uid.min() == 1) && (uid.max() == 6));
 		}
 	}
 

@@ -175,14 +175,14 @@ namespace eastl
 	inline typename uniform_int_distribution<IntType>::result_type
 	uniform_int_distribution<IntType>::a() const
 	{
-		return mParam.mA;
+		return mParam.a();
 	}
 
 	template<class IntType>
 	inline typename uniform_int_distribution<IntType>::result_type
 	uniform_int_distribution<IntType>::b() const
 	{
-		return mParam.mB;
+		return mParam.b();
 	}
 
 
@@ -204,14 +204,14 @@ namespace eastl
 	inline typename uniform_int_distribution<IntType>::result_type
 	uniform_int_distribution<IntType>::min() const
 	{
-		return mParam.mA;
+		return mParam.a();
 	}
 
 	template<class IntType>
 	inline typename uniform_int_distribution<IntType>::result_type
 	uniform_int_distribution<IntType>::max() const
 	{
-		return mParam.mB;
+		return mParam.b();
 	}
 
 
