@@ -20,6 +20,10 @@
 #include <EASTL/string.h>
 #include <EASTL/set.h>
 #include <EASTL/sort.h>
+#include <EASTL/heap.h>
+#include <EASTL/memory.h>
+#include <EASTL/numeric.h>
+#include <EASTL/bonus/ring_buffer.h>
 #include "ConceptImpls.h"
 #include <EAStdC/EAMemory.h>
 #include "EASTLTest.h"  // Put this after the above so that it doesn't block any warnings from the includes above.
@@ -689,6 +693,250 @@ static int TestClamp()
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// CommaHostile
+//
+// An iterator whose comma operator can't be used on either side, as if its type overloaded it. The algorithms must
+// not apply the comma operator to iterators: "++first1, ++first2" has to be written "++first1, (void)++first2".
+//
+namespace CommaHostile
+{
+	// Kind: 0 input, 1 forward, 2 bidirectional, 3 random access. It's an int rather than the tag type, so that
+	// the tag's namespace (std when EASTL_STD_ITERATOR_CATEGORY_ENABLED) isn't associated with the iterator.
+	template <typename T, int Kind>
+	class Iterator
+	{
+	public:
+		typedef typename eastl::conditional<Kind == 0, eastl::input_iterator_tag,
+		        typename eastl::conditional<Kind == 1, eastl::forward_iterator_tag,
+		        typename eastl::conditional<Kind == 2, eastl::bidirectional_iterator_tag,
+		                                    eastl::random_access_iterator_tag>::type>::type>::type iterator_category;
+		typedef T         value_type;
+		typedef ptrdiff_t difference_type;
+		typedef T*        pointer;
+		typedef T&        reference;
+
+		Iterator() = default;
+		explicit Iterator(T* p) : mp(p) {}
+
+		T& operator*() const { return *mp; }
+		T* operator->() const { return mp; }
+		T& operator[](ptrdiff_t n) const { return mp[n]; }
+
+		Iterator& operator++() { ++mp; return *this; }
+		Iterator  operator++(int) { Iterator temp(*this); ++mp; return temp; }
+		Iterator& operator--() { --mp; return *this; }
+		Iterator  operator--(int) { Iterator temp(*this); --mp; return temp; }
+		Iterator& operator+=(ptrdiff_t n) { mp += n; return *this; }
+		Iterator& operator-=(ptrdiff_t n) { mp -= n; return *this; }
+
+		friend Iterator  operator+(Iterator it, ptrdiff_t n) { return it += n; }
+		friend Iterator  operator+(ptrdiff_t n, Iterator it) { return it += n; }
+		friend Iterator  operator-(Iterator it, ptrdiff_t n) { return it -= n; }
+		friend ptrdiff_t operator-(const Iterator& a, const Iterator& b) { return a.mp - b.mp; }
+
+		friend bool operator==(const Iterator& a, const Iterator& b) { return a.mp == b.mp; }
+		friend bool operator!=(const Iterator& a, const Iterator& b) { return a.mp != b.mp; }
+		friend bool operator< (const Iterator& a, const Iterator& b) { return a.mp <  b.mp; }
+		friend bool operator> (const Iterator& a, const Iterator& b) { return a.mp >  b.mp; }
+		friend bool operator<=(const Iterator& a, const Iterator& b) { return a.mp <= b.mp; }
+		friend bool operator>=(const Iterator& a, const Iterator& b) { return a.mp >= b.mp; }
+
+		template <typename U>
+		void operator,(U&&) const = delete;
+
+	private:
+		T* mp = nullptr;
+	};
+
+	template <typename U, typename T, int Kind>
+	void operator,(U&&, const Iterator<T, Kind>&) = delete;
+
+	// Not trivially copyable, so that the uninitialized_* algorithms take their generic paths.
+	struct NonTrivial
+	{
+		int mValue;
+
+		NonTrivial(int value = 0) : mValue(value) {}
+		NonTrivial(const NonTrivial& x) : mValue(x.mValue) {}
+		NonTrivial& operator=(const NonTrivial& x) { mValue = x.mValue; return *this; }
+		~NonTrivial() {}
+	};
+}
+
+
+static int TestCommaHostileIterators()
+{
+	using namespace eastl;
+
+	typedef CommaHostile::Iterator<int, 0> InIt;
+	typedef CommaHostile::Iterator<int, 1> FwdIt;
+	typedef CommaHostile::Iterator<int, 2> BidIt;
+	typedef CommaHostile::Iterator<int, 3> RanIt;
+
+	int nErrorCount = 0;
+
+	const int kSorted[5] = {1, 2, 3, 4, 5};
+
+	{
+		// algorithm.h
+		int a[5] = {1, 2, 3, 4, 5};
+		int b[5] = {1, 2, 3, 4, 5};
+		int c[5] = {};
+
+		int sum = 0;
+		for_each_n(InIt(a), 5, [&sum](int x) { sum += x; });
+		EATEST_VERIFY(sum == 15);
+
+		int n = 0;
+		generate_n(FwdIt(c), 5, [&n]() { return ++n; });
+		EATEST_VERIFY(equal(InIt(c), InIt(c + 5), InIt(a)));
+		EATEST_VERIFY(equal(InIt(c), InIt(c + 5), InIt(a), equal_to<int>()));
+
+		transform(InIt(a), InIt(a + 5), FwdIt(c), [](int x) { return x * 2; });
+		EATEST_VERIFY(c[0] == 2 && c[4] == 10);
+		transform(InIt(a), InIt(a + 5), InIt(b), FwdIt(c), plus<int>());
+		EATEST_VERIFY(c[0] == 2 && c[4] == 10);
+
+		EATEST_VERIFY(!lexicographical_compare(InIt(a), InIt(a + 5), InIt(b), InIt(b + 5)));
+		EATEST_VERIFY(lexicographical_compare(InIt(a), InIt(a + 4), InIt(b), InIt(b + 5), less<int>()));
+		#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+			EATEST_VERIFY(lexicographical_compare_three_way(InIt(a), InIt(a + 4), InIt(b), InIt(b + 5), synth_three_way{}) < 0);
+		#endif
+
+		replace_copy(InIt(a), InIt(a + 5), FwdIt(c), 3, 0);
+		EATEST_VERIFY(c[2] == 0 && c[3] == 4);
+		replace_copy_if(InIt(a), InIt(a + 5), FwdIt(c), [](int x) { return x > 3; }, 0);
+		EATEST_VERIFY(c[2] == 3 && c[3] == 0 && c[4] == 0);
+
+		int d[6] = {1, 2, 2, 2, 3, 4};
+		EATEST_VERIFY(search_n(FwdIt(d), FwdIt(d + 6), 3, 2) == FwdIt(d + 1));
+	}
+
+	{
+		// internal/copy_help.h
+		int s[5] = {1, 2, 3, 4, 5};
+		int c[5] = {};
+		copy(InIt(s), InIt(s + 5), FwdIt(c));
+		EATEST_VERIFY(equal(c, c + 5, kSorted));
+		eastl::fill(c, c + 5, 0);
+		copy(RanIt(s), RanIt(s + 5), RanIt(c));
+		EATEST_VERIFY(equal(c, c + 5, kSorted));
+
+		int m[5] = {1, 2, 3, 4, 5};
+		eastl::fill(c, c + 5, 0);
+		eastl::move(InIt(m), InIt(m + 5), FwdIt(c));
+		EATEST_VERIFY(equal(c, c + 5, kSorted));
+		eastl::fill(c, c + 5, 0);
+		eastl::move(RanIt(m), RanIt(m + 5), RanIt(c));
+		EATEST_VERIFY(equal(c, c + 5, kSorted));
+	}
+
+	{
+		// memory.h
+		typedef CommaHostile::NonTrivial NonTrivial;
+		typedef CommaHostile::Iterator<NonTrivial, 0> NonTrivialInIt;
+		typedef CommaHostile::Iterator<NonTrivial, 1> NonTrivialFwdIt;
+
+		NonTrivial source[5] = {1, 2, 3, 4, 5};
+		alignas(NonTrivial) unsigned char buffer[sizeof(NonTrivial) * 5];
+		NonTrivial* p = reinterpret_cast<NonTrivial*>(buffer);
+
+		uninitialized_copy(NonTrivialInIt(source), NonTrivialInIt(source + 5), NonTrivialFwdIt(p));
+		EATEST_VERIFY(p[0].mValue == 1 && p[4].mValue == 5);
+		destroy_n(NonTrivialFwdIt(p), 5);
+
+		uninitialized_copy_n(NonTrivialInIt(source), 5, NonTrivialFwdIt(p));
+		EATEST_VERIFY(p[0].mValue == 1 && p[4].mValue == 5);
+		destroy_n(NonTrivialFwdIt(p), 5);
+
+		uninitialized_default_construct_n(NonTrivialFwdIt(p), 5);
+		EATEST_VERIFY(p[4].mValue == 0);
+		destroy_n(NonTrivialFwdIt(p), 5);
+
+		uninitialized_value_construct_n(NonTrivialFwdIt(p), 5);
+		EATEST_VERIFY(p[4].mValue == 0);
+		destroy_n(NonTrivialFwdIt(p), 5);
+
+		uninitialized_fill_n(NonTrivialFwdIt(p), 5, NonTrivial(7));
+		EATEST_VERIFY(p[0].mValue == 7 && p[4].mValue == 7);
+		destroy_n(NonTrivialFwdIt(p), 5);
+
+		int s[5] = {1, 2, 3, 4, 5};
+		int c[5] = {};
+		uninitialized_copy(InIt(s), InIt(s + 5), FwdIt(c));
+		EATEST_VERIFY(equal(c, c + 5, kSorted));
+	}
+
+	{
+		// numeric.h
+		int a[3] = {1, 2, 3};
+		EATEST_VERIFY(inner_product(InIt(a), InIt(a + 3), InIt(a), 0) == 14);
+		EATEST_VERIFY(inner_product(InIt(a), InIt(a + 3), InIt(a), 0, plus<int>(), multiplies<int>()) == 14);
+	}
+
+	{
+		// utility.h
+		int a[3] = {1, 2, 3};
+		int b[3] = {4, 5, 6};
+		swap_ranges(FwdIt(a), FwdIt(a + 3), FwdIt(b));
+		EATEST_VERIFY(a[0] == 4 && b[2] == 3);
+	}
+
+	{
+		// heap.h
+		int h[5] = {5, 4, 3, 2, 1};
+		EATEST_VERIFY(is_heap_until(RanIt(h), RanIt(h + 5)) == RanIt(h + 5));
+		EATEST_VERIFY(is_heap_until(RanIt(h), RanIt(h + 5), greater<int>()) == RanIt(h + 1));
+	}
+
+	{
+		// sort.h
+		int a[5] = {5, 1, 4, 2, 3};
+		EATEST_VERIFY(!is_sorted(FwdIt(a), FwdIt(a + 5)));
+
+		bubble_sort(FwdIt(a), FwdIt(a + 5));
+		EATEST_VERIFY(is_sorted(FwdIt(a), FwdIt(a + 5)));
+
+		eastl::reverse(a, a + 5);
+		bubble_sort(BidIt(a), BidIt(a + 5));
+		EATEST_VERIFY(equal(a, a + 5, kSorted));
+
+		eastl::reverse(a, a + 5);
+		comb_sort(FwdIt(a), FwdIt(a + 5));
+		EATEST_VERIFY(equal(a, a + 5, kSorted));
+
+		int buffer[5];
+		eastl::reverse(a, a + 5);
+		tim_sort_buffer(RanIt(a), RanIt(a + 5), buffer, less<int>()); // insertion sort for small ranges
+		EATEST_VERIFY(equal(a, a + 5, kSorted));
+
+		int big[64];
+		for (int i = 0; i < 64; ++i)
+			big[i] = (i * 37) % 64;
+		quick_sort(RanIt(big), RanIt(big + 64)); // insertion sort beyond the quick sort limit
+		EATEST_VERIFY(is_sorted(big, big + 64));
+		quick_sort(RanIt(big), RanIt(big + 64), greater<int>());
+		EATEST_VERIFY(is_sorted(big, big + 64, greater<int>()));
+	}
+
+	{
+		// vector.h, bonus/ring_buffer.h: insertion from input iterators
+		int a[5] = {1, 2, 3, 4, 5};
+
+		vector<int> v;
+		v.insert(v.end(), InIt(a), InIt(a + 5));
+		EATEST_VERIFY(v.size() == 5 && equal(v.begin(), v.end(), kSorted));
+
+		ring_buffer<int> r(8);
+		r.insert(r.end(), InIt(a), InIt(a + 5));
+		EATEST_VERIFY(r.size() == 5 && equal(r.begin(), r.end(), kSorted));
+	}
+
+	return nErrorCount;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 // TestAlgorithm
 //
 int TestAlgorithm()
@@ -703,6 +951,7 @@ int TestAlgorithm()
 
 	nErrorCount += TestMinMax();
 	nErrorCount += TestClamp();
+	nErrorCount += TestCommaHostileIterators();
 
 
 	// bool all_of (InputIterator first, InputIterator last, Predicate p);

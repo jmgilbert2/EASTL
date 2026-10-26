@@ -211,7 +211,7 @@ namespace eastl
 	inline ForwardIterator2
 	swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2)
 	{
-		for(; first1 != last1; ++first1, ++first2)
+		for(; first1 != last1; ++first1, (void)++first2)
 			eastl::iter_swap(first1, first2); // iter_swap swaps the elements via argument-dependent lookup.
 		return first2;
 	}

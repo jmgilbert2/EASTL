@@ -94,7 +94,7 @@ namespace eastl
 		{
 			ForwardIterator current = first;
 
-			for(++current; current != last; first = current, ++current)
+			for(++current; current != last; first = current, (void)++current)
 			{
 				if(compare(*current, *first))
 				{
@@ -392,7 +392,7 @@ namespace eastl
 
 					iNext = iCurrent = iSorted;
 
-					for (--iCurrent; (iNext != first) && compare(temp, *iCurrent); --iNext, --iCurrent)
+					for (--iCurrent; (iNext != first) && compare(temp, *iCurrent); --iNext, (void)--iCurrent)
 					{
 						EASTL_VALIDATE_COMPARE(!compare(*iCurrent, temp)); // Validate that the compare function is sane.
 						*iNext = *iCurrent;
@@ -834,7 +834,7 @@ namespace eastl
 				RandomAccessIterator end(current), prev(current);
 				value_type           value(eastl::forward<value_type>(*current));
 
-				for(--prev; value < *prev; --end, --prev) // We skip checking for (prev >= first) because quick_sort (our caller) makes this unnecessary.
+				for(--prev; value < *prev; --end, (void)--prev) // We skip checking for (prev >= first) because quick_sort (our caller) makes this unnecessary.
 				{
 					EASTL_VALIDATE_COMPARE(!(*prev < value)); // Validate that the compare function is sane.
 					*end = eastl::forward<value_type>(*prev);
@@ -859,7 +859,7 @@ namespace eastl
 				RandomAccessIterator end(current), prev(current);
 				value_type           value(eastl::forward<value_type>(*current));
 
-				for(--prev; compare(value, *prev); --end, --prev) // We skip checking for (prev >= first) because quick_sort (our caller) makes this unnecessary.
+				for(--prev; compare(value, *prev); --end, (void)--prev) // We skip checking for (prev >= first) because quick_sort (our caller) makes this unnecessary.
 				{
 					EASTL_VALIDATE_COMPARE(!compare(*prev, value)); // Validate that the compare function is sane.
 					*end = eastl::forward<value_type>(*prev);
@@ -1763,7 +1763,7 @@ namespace eastl
 			iCurrent = iNext = first;
 			eastl::advance(iNext, nSpace);
 			
-			for(bSwapped = false; iNext != last; iCurrent++, iNext++)
+			for(bSwapped = false; iNext != last; iCurrent++, (void)iNext++)
 			{
 				if(compare(*iNext, *iCurrent))
 				{
@@ -1804,7 +1804,7 @@ namespace eastl
 			{
 				iNext = iCurrent = first;
 				
-				for(++iNext; iNext != last; iCurrent = iNext, ++iNext) 
+				for(++iNext; iNext != last; iCurrent = iNext, (void)++iNext) 
 				{
 					if(compare(*iNext, *iCurrent))
 					{
@@ -1829,7 +1829,7 @@ namespace eastl
 				{
 					iLastModified = iNext = iCurrent = first;
 					
-					for(++iNext; iCurrent != last; iCurrent = iNext, ++iNext)
+					for(++iNext; iCurrent != last; iCurrent = iNext, (void)++iNext)
 					{
 						if(compare(*iNext, *iCurrent))
 						{

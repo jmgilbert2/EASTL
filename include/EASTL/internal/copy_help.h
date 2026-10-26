@@ -51,7 +51,7 @@ namespace eastl
 		template <typename InputIterator, typename OutputIterator>
 		static OutputIterator move_or_copy(InputIterator first, InputIterator last, OutputIterator result)
 		{
-			for(; first != last; ++result, ++first)
+			for(; first != last; ++result, (void)++first)
 				*result = *first;
 			return result;
 		}
@@ -68,7 +68,7 @@ namespace eastl
 		{
 			typedef typename eastl::iterator_traits<InputIterator>::difference_type difference_type;
 
-			for(difference_type n = (last - first); n > 0; --n, ++first, ++result)
+			for(difference_type n = (last - first); n > 0; --n, (void)++first, (void)++result)
 				*result = *first;
 
 			return result;
@@ -82,7 +82,7 @@ namespace eastl
 		template <typename InputIterator, typename OutputIterator>
 		static OutputIterator move_or_copy(InputIterator first, InputIterator last, OutputIterator result)
 		{
-			for(; first != last; ++result, ++first)
+			for(; first != last; ++result, (void)++first)
 				*result = eastl::move(*first);
 			return result;
 		}
@@ -97,7 +97,7 @@ namespace eastl
 		{
 			typedef typename eastl::iterator_traits<InputIterator>::difference_type difference_type;
 
-			for(difference_type n = (last - first); n > 0; --n, ++first, ++result)
+			for(difference_type n = (last - first); n > 0; --n, (void)++first, (void)++result)
 				*result = eastl::move(*first);
 
 			return result;

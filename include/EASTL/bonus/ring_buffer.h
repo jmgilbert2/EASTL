@@ -1428,7 +1428,7 @@ namespace eastl
 		// To do: This can possibly be improved with a smarter version.
 		// However, this can be tricky if distance(first, last) is greater
 		// than the size of the container itself.
-		for(; first != last; ++first, ++position)
+		for(; first != last; ++first, (void)++position)
 			insert(position, *first);
 	}
 

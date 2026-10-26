@@ -1637,7 +1637,7 @@ namespace eastl
 	template <typename InputIterator>
 	inline void vector<T, Allocator>::DoInsertFromIterator(const_iterator position, InputIterator first, InputIterator last, eastl::input_iterator_tag)
 	{
-		for(; first != last; ++first, ++position)
+		for(; first != last; ++first, (void)++position)
 			position = insert(position, *first);
 	}
 

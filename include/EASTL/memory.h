@@ -271,7 +271,7 @@ namespace eastl
 				try
 				{
 #endif
-					for (; first != last; ++first, ++currentDest)
+					for (; first != last; ++first, (void)++currentDest)
 						::new(static_cast<void*>(eastl::addressof(*currentDest))) value_type(*first);
 #if EASTL_EXCEPTIONS_ENABLED
 				}
@@ -295,7 +295,7 @@ namespace eastl
 			{
 				typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
 
-				for (; first != last; ++first, ++dest)
+				for (; first != last; ++first, (void)++dest)
 					memmove(static_cast<void*>(eastl::addressof(*dest)), eastl::addressof(*first), sizeof(value_type));
 
 				return dest;
@@ -378,7 +378,7 @@ namespace eastl
 					try
 					{
 				#endif
-						for(; n > 0; --n, ++first, ++currentDest)
+						for(; n > 0; --n, (void)++first, (void)++currentDest)
 							::new((void*)(eastl::addressof(*currentDest))) value_type(*first);
 				#if EASTL_EXCEPTIONS_ENABLED
 					}
@@ -547,7 +547,7 @@ namespace eastl
 		try
 		{
 	#endif
-			for (; n > 0; --n, ++currentDest)
+			for (; n > 0; --n, (void)++currentDest)
 				::new (eastl::addressof(*currentDest)) value_type;
 			return currentDest;
 	#if EASTL_EXCEPTIONS_ENABLED
@@ -670,7 +670,7 @@ namespace eastl
 		try
 		{
 	#endif
-			for (; n > 0; --n, ++currentDest)
+			for (; n > 0; --n, (void)++currentDest)
 				::new (eastl::addressof(*currentDest)) value_type();
 			return currentDest;
 	#if EASTL_EXCEPTIONS_ENABLED
@@ -724,7 +724,7 @@ namespace eastl
 				try
 				{
 			#endif
-					for(; n > 0; --n, ++currentDest)
+					for(; n > 0; --n, (void)++currentDest)
 						::new((void*)eastl::addressof(*currentDest)) value_type(value);
 			#if EASTL_EXCEPTIONS_ENABLED
 				}
@@ -1009,7 +1009,7 @@ namespace eastl
 	template <typename ForwardIterator, typename Size>
 	ForwardIterator destroy_n(ForwardIterator first, Size n)
 	{
-		for (; n > 0; ++first, --n)
+		for (; n > 0; ++first, (void)--n)
 			eastl::destroy_at(eastl::addressof(*first));
 
 		return first;
