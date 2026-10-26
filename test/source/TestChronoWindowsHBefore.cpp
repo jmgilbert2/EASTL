@@ -28,7 +28,4 @@
 	#if EASTL_NOMINMAX && (defined(min) || defined(max))
 		#error <EASTL/chrono.h> did not #undef min and max (EASTL_NOMINMAX)
 	#endif
-
-	static_assert(eastl::is_same<decltype(&QueryPerformanceCounter), BOOL (WINAPI*)(LARGE_INTEGER*)>::value, "QueryPerformanceCounter");
-	static_assert(eastl::is_same<decltype(&QueryPerformanceFrequency), BOOL (WINAPI*)(LARGE_INTEGER*)>::value, "QueryPerformanceFrequency");
 #endif

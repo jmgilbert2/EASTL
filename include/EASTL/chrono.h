@@ -36,14 +36,6 @@
 
 
 // TODO:  move to platform specific cpp or header file
-#if  defined EA_PLATFORM_MICROSOFT
-	// Declared here rather than including <Windows.h>, whose macros would leak into the user's code.
-	// These match the Windows SDK declarations (BOOL is int, WINAPI is __stdcall, LARGE_INTEGER is
-	// union _LARGE_INTEGER), so <Windows.h> can be included before or after this header.
-	extern "C" __declspec(dllimport) int __stdcall QueryPerformanceFrequency(union _LARGE_INTEGER*);
-	extern "C" __declspec(dllimport) int __stdcall QueryPerformanceCounter(union _LARGE_INTEGER*);
-#endif
-
 #if defined(EA_PLATFORM_MICROSOFT) && !defined(EA_PLATFORM_MINGW)
 	// Nothing to do
 #elif defined(EA_PLATFORM_SONY)
@@ -573,28 +565,12 @@ namespace chrono
 		///////////////////////////////////////////////////////////////////////////////
 		// Internal::GetTicks 
 		///////////////////////////////////////////////////////////////////////////////
+	#if defined EA_PLATFORM_MICROSOFT
+		EASTL_API uint64_t GetTicks(); // Defined in source/chrono.cpp, which keeps <Windows.h> out of this header.
+	#else
 		inline uint64_t GetTicks()
 		{
-		#if defined EA_PLATFORM_MICROSOFT
-			auto queryFrequency = []
-			{
-				long long frequency; // LARGE_INTEGER::QuadPart
-				QueryPerformanceFrequency(reinterpret_cast<union _LARGE_INTEGER*>(&frequency));
-				return double(1000000000.0L / (long double)frequency);  // nanoseconds per tick
-			};
-
-			auto queryCounter = []
-			{
-				long long counter; // LARGE_INTEGER::QuadPart
-				QueryPerformanceCounter(reinterpret_cast<union _LARGE_INTEGER*>(&counter));
-				return counter;
-			};
-
-			EA_DISABLE_VC_WARNING(4640)  // warning C4640: construction of local static object is not thread-safe (VS2013)
-			static auto frequency = queryFrequency(); // cache cpu frequency on first call
-			EA_RESTORE_VC_WARNING()
-			return uint64_t(frequency * (double)queryCounter());
-		#elif defined EA_PLATFORM_SONY
+		#if defined EA_PLATFORM_SONY
 			auto queryFrequency = []
 			{
 				// nanoseconds/seconds / ticks/seconds
@@ -643,6 +619,7 @@ namespace chrono
 			#error "chrono not implemented for platform"
 		#endif
 		}
+	#endif
 	} // namespace Internal
 
 
