@@ -12,6 +12,7 @@
 #include <EASTL/string.h>
 #include <EASTL/algorithm.h>
 #include <EASTL/unique_ptr.h>
+#include <EASTL/vector.h>
 #include "ConceptImpls.h"
 
 #if defined(EA_COMPILER_CPP20_ENABLED) && !defined(EA_COMPILER_NO_STANDARD_CPP_LIBRARY)
@@ -1103,6 +1104,87 @@ int TestDeque()
 		EATEST_VERIFY((d4 <=> d3) > 0);
 	}
 #endif
+
+	// Member functions that must work with move-only element types, as they do in std::deque.
+	{
+		typedef eastl::deque<eastl::unique_ptr<int>, EASTLAllocatorType, 8> MoveOnlyDeque; // A small subarray size, so that operations cross subarrays.
+
+		MoveOnlyDeque d1(20); // deque(size_type n)
+		EATEST_VERIFY(d1.size() == 20);
+		EATEST_VERIFY(eastl::all_of(d1.begin(), d1.end(), [](const eastl::unique_ptr<int>& p) { return p == nullptr; }));
+
+		d1.resize(45); // resize(size_type n)
+		EATEST_VERIFY(d1.size() == 45);
+		EATEST_VERIFY(eastl::all_of(d1.begin(), d1.end(), [](const eastl::unique_ptr<int>& p) { return p == nullptr; }));
+		d1.resize(3);
+		EATEST_VERIFY(d1.size() == 3);
+
+		eastl::unique_ptr<int> src[10];
+		for(int i = 0; i < 10; i++)
+			src[i].reset(new int(i));
+
+		d1.assign(eastl::make_move_iterator(src), eastl::make_move_iterator(src + 10)); // assign(first, last)
+		EATEST_VERIFY(d1.size() == 10);
+		for(int i = 0; i < 10; i++)
+			EATEST_VERIFY((src[i] == nullptr) && (*d1[(eastl_size_t)i] == i));
+
+		d1.assign(eastl::make_move_iterator(src), eastl::make_move_iterator(src + 4)); // Assign fewer elements, from moved-from elements.
+		EATEST_VERIFY(d1.size() == 4);
+		EATEST_VERIFY(eastl::all_of(d1.begin(), d1.end(), [](const eastl::unique_ptr<int>& p) { return p == nullptr; }));
+	}
+
+	// insert(position, first, last) shifts the existing elements and must keep values and order, for every position and count.
+	{
+		typedef eastl::deque<eastl::unique_ptr<int>, EASTLAllocatorType, 8> MoveOnlyDeque;
+
+		for(int nExisting = 0; nExisting <= 20; nExisting += 5)
+		{
+			for(int nPosition = 0; nPosition <= nExisting; nPosition++)
+			{
+				for(int nInserted = 0; nInserted <= 20; nInserted += 3)
+				{
+					MoveOnlyDeque d;
+					eastl::vector<int> expected;
+					eastl::vector<eastl::unique_ptr<int> > src;
+
+					for(int i = 0; i < nExisting; i++)
+					{
+						d.push_back(eastl::make_unique<int>(i));
+						expected.push_back(i);
+					}
+					for(int i = 0; i < nInserted; i++)
+						src.push_back(eastl::make_unique<int>(100 + i));
+					expected.insert(expected.begin() + nPosition, 0, 0);
+					for(int i = 0; i < nInserted; i++)
+						expected.insert(expected.begin() + nPosition + i, 100 + i);
+
+					MoveOnlyDeque::iterator it = d.insert(d.begin() + nPosition, eastl::make_move_iterator(src.begin()), eastl::make_move_iterator(src.end()));
+					EATEST_VERIFY((it - d.begin()) == nPosition);
+					EATEST_VERIFY(d.size() == expected.size());
+					EATEST_VERIFY(d.validate());
+					for(eastl_size_t i = 0; (i < d.size()) && (i < expected.size()); i++)
+						EATEST_VERIFY(*d[i] == expected[i]);
+				}
+			}
+		}
+
+		// Copyable elements.
+		eastl::deque<int, EASTLAllocatorType, 8> dInt;
+		const int intSrc[7] = { 100, 101, 102, 103, 104, 105, 106 };
+		for(int i = 0; i < 25; i++)
+			dInt.push_back(i);
+		dInt.insert(dInt.begin() + 11, intSrc, intSrc + 7);
+		dInt.insert(dInt.begin() + 2, intSrc, intSrc + 7);
+		dInt.insert(dInt.end() - 3, intSrc, intSrc + 7);
+		eastl::vector<int> expectedInt;
+		for(int i = 0; i < 25; i++)
+			expectedInt.push_back(i);
+		expectedInt.insert(expectedInt.begin() + 11, intSrc, intSrc + 7);
+		expectedInt.insert(expectedInt.begin() + 2, intSrc, intSrc + 7);
+		expectedInt.insert(expectedInt.end() - 3, intSrc, intSrc + 7);
+		EATEST_VERIFY(dInt.size() == expectedInt.size());
+		EATEST_VERIFY(eastl::equal(dInt.begin(), dInt.end(), expectedInt.begin()));
+	}
 
 	return nErrorCount;
 }

@@ -497,6 +497,7 @@ namespace eastl
 		void DoInitFromIterator(ForwardIterator first, ForwardIterator last, eastl::forward_iterator_tag);
 
 		void DoFillInit(const value_type& value);
+		void DoValueInit();
 
 		template <typename Integer>
 		void DoAssign(Integer n, Integer value, true_type);
@@ -1241,7 +1242,7 @@ namespace eastl
 	inline deque<T, Allocator, kDequeSubarraySize>::deque(size_type n, const allocator_type& allocator)
 		: base_type(n, allocator)
 	{
-		DoFillInit(value_type());
+		DoValueInit();
 	}
 
 
@@ -1520,7 +1521,30 @@ namespace eastl
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	inline void deque<T, Allocator, kDequeSubarraySize>::resize(size_type n)
 	{
-		resize(n, value_type());
+		const size_type nSizeCurrent = size();
+
+		if(n > nSizeCurrent) // We expect that more often than not, resizes will be upsizes.
+		{
+			const size_type nAdded = n - nSizeCurrent;
+			const iterator  itNewEnd(DoReallocSubarray(nAdded, kSideBack)); // mItEnd to itNewEnd refers to memory that isn't initialized yet; so it's not truly a valid iterator. Or at least not a dereferencable one.
+
+			#if EASTL_EXCEPTIONS_ENABLED
+				try
+				{
+			#endif
+					eastl::uninitialized_value_construct_n(mItEnd, nAdded);
+					mItEnd = itNewEnd;
+			#if EASTL_EXCEPTIONS_ENABLED
+				}
+				catch(...)
+				{
+					DoFreeSubarrays(mItEnd.mpCurrentArrayPtr + 1, itNewEnd.mpCurrentArrayPtr + 1);
+					throw;
+				}
+			#endif
+		}
+		else
+			erase(mItBegin + (difference_type)n, mItEnd);
 	}
 
 
@@ -2276,6 +2300,33 @@ namespace eastl
 
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
+	void deque<T, Allocator, kDequeSubarraySize>::DoValueInit()
+	{
+		value_type** pPtrArrayCurrent = mItBegin.mpCurrentArrayPtr;
+
+		#if EASTL_EXCEPTIONS_ENABLED
+			try
+			{
+		#endif
+				while(pPtrArrayCurrent < mItEnd.mpCurrentArrayPtr)
+				{
+					eastl::uninitialized_value_construct_n(*pPtrArrayCurrent, kDequeSubarraySize);
+					++pPtrArrayCurrent;
+				}
+				eastl::uninitialized_value_construct_n(mItEnd.mpBegin, mItEnd.mpCurrent - mItEnd.mpBegin);
+		#if EASTL_EXCEPTIONS_ENABLED
+			}
+			catch(...)
+			{
+				for(iterator itCurrent(mItBegin), itEnd(pPtrArrayCurrent, *pPtrArrayCurrent); itCurrent != itEnd; ++itCurrent)
+					itCurrent.mpCurrent->~value_type();
+				throw;
+			}
+		#endif
+	}
+
+
+	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	template <typename Integer>
 	void deque<T, Allocator, kDequeSubarraySize>::DoAssign(Integer n, Integer value, true_type) // false_type means this is the integer version instead of iterator version.
 	{
@@ -2453,15 +2504,13 @@ namespace eastl
 					try
 					{
 				#endif
-						// We have a problem here: we would like to use move instead of copy, but it may be that the range to be inserted comes from
-						// this container and comes from the segment we need to move. So we can't use move operations unless we are careful to handle
-						// that situation. The newly inserted contents must be contents that were moved to and not moved from. To do: solve this.
+						// The existing elements are moved. As with std::deque::insert, [first, last) must not refer to elements of this container.
 						if(nInsertionIndex >= (difference_type)n) // If the newly inserted items will be entirely within the old area...
 						{
 							iterator itUCopyEnd(mItBegin + (difference_type)n);
 
-							eastl::uninitialized_copy(mItBegin, itUCopyEnd, itNewBegin); // This can throw.
-							itUCopyEnd = eastl::copy(itUCopyEnd, itPosition, itOldBegin); // Recycle 'itUCopyEnd' to mean something else.
+							eastl::uninitialized_move_if_noexcept(mItBegin, itUCopyEnd, itNewBegin); // This can throw.
+							itUCopyEnd = eastl::move(itUCopyEnd, itPosition, itOldBegin); // Recycle 'itUCopyEnd' to mean something else.
 							eastl::copy(first, last, itUCopyEnd);
 						}
 						else // Else the newly inserted items are going within the newly allocated area at the front.
@@ -2469,7 +2518,7 @@ namespace eastl
 							ForwardIterator mid(first);
 
 							eastl::advance(mid, (difference_type)n - nInsertionIndex);
-							eastl::uninitialized_copy_copy(mItBegin, itPosition, first, mid, itNewBegin); // This can throw.
+							eastl::uninitialized_copy(first, mid, eastl::uninitialized_move_if_noexcept(mItBegin, itPosition, itNewBegin)); // This can throw.
 							eastl::copy(mid, last, itOldBegin);
 						}
 						mItBegin = itNewBegin;
@@ -2493,15 +2542,13 @@ namespace eastl
 					try
 					{
 				#endif
-						// We have a problem here: we would like to use move instead of copy, but it may be that the range to be inserted comes from
-						// this container and comes from the segment we need to move. So we can't use move operations unless we are careful to handle
-						// that situation. The newly inserted contents must be contents that were moved to and not moved from. To do: solve this.
+						// The existing elements are moved. As with std::deque::insert, [first, last) must not refer to elements of this container.
 						if(nPushedCount > (difference_type)n)
 						{
 							const iterator itUCopyEnd(mItEnd - (difference_type)n);
 
-							eastl::uninitialized_copy(itUCopyEnd, mItEnd, mItEnd);
-							eastl::copy_backward(itPosition, itUCopyEnd, itOldEnd);
+							eastl::uninitialized_move_if_noexcept(itUCopyEnd, mItEnd, mItEnd);
+							eastl::move_backward(itPosition, itUCopyEnd, itOldEnd);
 							eastl::copy(first, last, itPosition);
 						}
 						else
@@ -2509,7 +2556,7 @@ namespace eastl
 							ForwardIterator mid(first);
 
 							eastl::advance(mid, nPushedCount);
-							eastl::uninitialized_copy_copy(mid, last, itPosition, mItEnd, mItEnd);
+							eastl::uninitialized_move_if_noexcept(itPosition, itOldEnd, eastl::uninitialized_copy(mid, last, mItEnd));
 							eastl::copy(first, mid, itPosition);
 						}
 						mItEnd = itNewEnd;
