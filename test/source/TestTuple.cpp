@@ -739,6 +739,23 @@ int TestTuple()
 		EATEST_VERIFY(get<0>(t1) == 3);
 	}
 
+	// copy and move are deleted when an element can't be copied or moved, like std::tuple.
+	{
+		static_assert(!is_copy_assignable_v<tuple<const int>>, "tuple<const int> is not copy assignable");
+		static_assert(!is_move_assignable_v<tuple<const int>>, "tuple<const int> is not move assignable");
+		static_assert(!is_copy_assignable_v<tuple<const int&>>, "tuple<const int&> is not copy assignable");
+		static_assert(is_copy_assignable_v<tuple<int&>>, "tuple<int&> is copy assignable");
+
+		static_assert(!is_move_constructible_v<tuple<NoCopyMove>>, "tuple<NoCopyMove> is not move constructible");
+		static_assert(!is_move_assignable_v<tuple<NoCopyMove>>, "tuple<NoCopyMove> is not move assignable");
+		static_assert(!is_swappable_v<tuple<NoCopyMove>>, "tuple<NoCopyMove> is not swappable");
+		static_assert(!is_move_constructible_v<tuple<NoCopyMoveNonEmpty>>, "tuple<NoCopyMoveNonEmpty> is not move constructible");
+		static_assert(!is_move_assignable_v<tuple<NoCopyMoveNonEmpty>>, "tuple<NoCopyMoveNonEmpty> is not move assignable");
+
+		static_assert(is_trivially_copy_constructible_v<tuple<int>>, "EASTL extension, tuple<int> is trivially copy constructible.");
+		static_assert(is_trivially_destructible_v<tuple<int>>, "tuple<int> is trivially destructible");
+	}
+
 	{
 		tuple<NoCopyMove> t;
 		[[maybe_unused]] auto& x = get<0>(t);

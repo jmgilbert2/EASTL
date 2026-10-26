@@ -214,18 +214,20 @@ namespace Internal
 		// because it has a member of that type, then TupleImpl has the assignment deleted due
 		// to the inheritance and then so does tuple<T&> because it has a member of type
 		// TupleImpl. So we explicitly implement the assignment so it isn't deleted in tuple<T&>.
-		TupleLeaf& operator=(const TupleLeaf& t)
+		// When ValueType isn't copy (move) assignable, the parameter is nonesuch instead, so this is no longer the
+		// copy (move) assignment: the copy assignment is then implicitly deleted, as the standard requires for tuple.
+		TupleLeaf& operator=(conditional_t<is_copy_assignable<ValueType>::value, const TupleLeaf&, const nonesuch&> t)
 		{
 			mValue = t.getInternal();
 			return *this;
 		}
-		TupleLeaf& operator=(TupleLeaf&& t) noexcept
+		TupleLeaf& operator=(conditional_t<is_move_assignable<ValueType>::value, TupleLeaf&&, nonesuch&&> t) noexcept
 		{
 			mValue = eastl::move(t.getInternal());
 			return *this;
 		}
 
-		template <typename T>
+		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value>>
 		TupleLeaf& operator=(T&& t)
 		{
 			mValue = eastl::forward<T>(t);
@@ -267,7 +269,7 @@ namespace Internal
 		TupleLeaf& operator=(const TupleLeaf&) = default;
 		TupleLeaf& operator=(TupleLeaf&&) noexcept = default;
 
-		template <typename T>
+		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value>>
 		TupleLeaf& operator=(T&& t)
 		{
 			ValueType::operator=(eastl::forward<T>(t));
@@ -339,13 +341,15 @@ namespace Internal
 		TupleImpl& operator=(const TupleImpl&) = default;
 		TupleImpl& operator=(TupleImpl&&) noexcept = default;
 
-		template <typename OtherTuple>
+		// These (and TupleLeaf's operator=(T&&)) exclude their own class so that they can't stand in for a deleted
+		// copy or move: tuple<NonMovable> must not be move constructible or assignable.
+		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
 		TupleImpl(OtherTuple&& t)
 			: TupleLeaf<Indices, Ts>(eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...
 		{
 		}
 
-		template <typename OtherTuple>
+		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
 		TupleImpl& operator=(OtherTuple&& t)
 		{
 			swallow(TupleLeaf<Indices, Ts>::operator=(
