@@ -27,25 +27,11 @@
 
 // TODO:  move to platform specific cpp or header file
 #if  defined EA_PLATFORM_MICROSOFT
-	EA_DISABLE_ALL_VC_WARNINGS()
-
-	#ifndef WIN32_LEAN_AND_MEAN
-		#define WIN32_LEAN_AND_MEAN
-	#endif
-
-	#undef NOMINMAX
-	#define NOMINMAX
-
-	#include <Windows.h>
-
-	#ifdef min
-		#undef min
-	#endif
-	#ifdef max
-		#undef max
-	#endif
-
-	EA_RESTORE_ALL_VC_WARNINGS()
+	// Declared here rather than including <Windows.h>, whose macros would leak into the user's code.
+	// These match the Windows SDK declarations (BOOL is int, WINAPI is __stdcall, LARGE_INTEGER is
+	// union _LARGE_INTEGER), so <Windows.h> can be included before or after this header.
+	extern "C" __declspec(dllimport) int __stdcall QueryPerformanceFrequency(union _LARGE_INTEGER*);
+	extern "C" __declspec(dllimport) int __stdcall QueryPerformanceCounter(union _LARGE_INTEGER*);
 #endif
 
 #if defined(EA_PLATFORM_MICROSOFT) && !defined(EA_PLATFORM_MINGW)
@@ -89,8 +75,8 @@ namespace chrono
 	{
 	public:
 		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep zero() { return Rep(0); }
-		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep max()  { return eastl::numeric_limits<Rep>::max(); }
-		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep min()  { return eastl::numeric_limits<Rep>::lowest(); }
+		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep (max)()  { return (eastl::numeric_limits<Rep>::max)(); }
+		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep (min)()  { return eastl::numeric_limits<Rep>::lowest(); }
 	};
 
 
@@ -266,8 +252,8 @@ namespace chrono
 		// static accessors of special duration values 
 		///////////////////////////////////////////////////////////////////////////////
 		EA_CONSTEXPR inline static duration zero() { return duration(duration_values<Rep>::zero()); }
-		EA_CONSTEXPR inline static duration min()  { return duration(duration_values<Rep>::min()); }
-		EA_CONSTEXPR inline static duration max()  { return duration(duration_values<Rep>::max()); }
+		EA_CONSTEXPR inline static duration (min)()  { return duration((duration_values<Rep>::min)()); }
+		EA_CONSTEXPR inline static duration (max)()  { return duration((duration_values<Rep>::max)()); }
 
 		///////////////////////////////////////////////////////////////////////////////
 		// const arithmetic operations
@@ -456,8 +442,8 @@ namespace chrono
 		time_point& operator+=(const Duration& d) { mDuration += d; return *this; } 
 		time_point& operator-=(const Duration& d) { mDuration -= d; return *this; }
 
-		static EA_CONSTEXPR time_point min() { return time_point(Duration::min()); }
-		static EA_CONSTEXPR time_point max() { return time_point(Duration::max()); }
+		static EA_CONSTEXPR time_point (min)() { return time_point((Duration::min)()); }
+		static EA_CONSTEXPR time_point (max)() { return time_point((Duration::max)()); }
 	};
 
 
@@ -582,16 +568,16 @@ namespace chrono
 		#if defined EA_PLATFORM_MICROSOFT
 			auto queryFrequency = []
 			{
-				LARGE_INTEGER frequency;
-				QueryPerformanceFrequency(&frequency);
-				return double(1000000000.0L / (long double)frequency.QuadPart);  // nanoseconds per tick
+				long long frequency; // LARGE_INTEGER::QuadPart
+				QueryPerformanceFrequency(reinterpret_cast<union _LARGE_INTEGER*>(&frequency));
+				return double(1000000000.0L / (long double)frequency);  // nanoseconds per tick
 			};
 
 			auto queryCounter = []
 			{
-				LARGE_INTEGER counter;
-				QueryPerformanceCounter(&counter);
-				return counter.QuadPart;
+				long long counter; // LARGE_INTEGER::QuadPart
+				QueryPerformanceCounter(reinterpret_cast<union _LARGE_INTEGER*>(&counter));
+				return counter;
 			};
 
 			EA_DISABLE_VC_WARNING(4640)  // warning C4640: construction of local static object is not thread-safe (VS2013)
