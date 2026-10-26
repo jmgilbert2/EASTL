@@ -13,9 +13,10 @@
 
 using namespace eastl;
 
-// Verify char8_t support is present if the test build requested it.
-#if defined(EASTL_EXPECT_CHAR8T_SUPPORT) && !EA_CHAR8_UNIQUE
-static_assert(false, "Building with char8_t tests enabled, but EA_CHAR8_UNIQUE evaluates to false.");
+// Verify that EABase detects char8_t whenever the compiler provides it (C++20 and later); otherwise the
+// char8_t tests would be silently compiled out.
+#if defined(__cpp_char8_t) && !EA_CHAR8_UNIQUE
+static_assert(false, "The compiler provides char8_t, but EA_CHAR8_UNIQUE evaluates to false.");
 #endif
 
 

@@ -44,16 +44,6 @@ file(GLOB EASTLTEST_SOURCES "source/*.cpp")
 file(GLOB EASTLTEST_HEADERS "source/*.inl" "source/*.h")
 set(SOURCES ${EASTLTEST_SOURCES} ${EASTLTEST_HEADERS})
 
-# Compile a subset of tests with explicit char8_t support if available.
-if (EASTL_CHAR8T_FLAG)
-    message(STATUS "Building with char8_t support in tests.")
-    set(EASTLTEST_CHAR8T_SOURCES "source/TestString.cpp" "source/TestStringView.cpp")
-
-    set_source_files_properties(${EASTLTEST_CHAR8T_SOURCES} PROPERTIES
-        COMPILE_FLAGS ${EASTL_CHAR8T_FLAG}
-        COMPILE_DEFINITIONS "EASTL_EXPECT_CHAR8T_SUPPORT")
-endif()
-
 # include both source and headers in the files view in Visual Studio
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Header Files" FILES ${EASTLTEST_HEADERS})
 
