@@ -8,6 +8,7 @@
 
 
 #include <EABase/eabase.h>
+#include <EASTL/type_traits.h>
 
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	#include <compare>
