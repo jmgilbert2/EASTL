@@ -170,11 +170,11 @@ namespace eastl
 				make_space();
 
 				m_list.push_front(k);
-				return m_map.emplace(k, data_container_type(piecewise_construct, eastl::forward_as_tuple(eastl::forward<Args>(args)...), make_tuple(m_list.begin())));
+				return m_map.emplace(k, data_container_type(piecewise_construct, eastl::forward_as_tuple(eastl::forward<Args>(args)...), eastl::make_tuple(m_list.begin())));
 			}
 			else
 			{
-				return make_pair(it, false);
+				return eastl::make_pair(it, false);
 			}
 		}
 

@@ -9,6 +9,10 @@
 #include <EASTL/string.h>
 // #include <EASTL/deque.h>
 
+#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+	#include <string>
+#endif
+
 namespace TestLruCacheInternal
 {
 	struct Foo
@@ -413,6 +417,21 @@ int TestLruCache()
 	nErrorCount += TestLruCacheOfType<LruCacheMap>();
 	// could use a deque instead of a list, except that lru_cache requires the container have a reset_lose_memory() function.
 	// nErrorCount += TestLruCacheOfType<LruCacheDequeMap>();
+
+#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+	// emplace with std key and value types: argument-dependent lookup also finds std::make_tuple and std::make_pair.
+	{
+		using StdStringList = eastl::list<std::string>;
+		eastl::lru_cache<std::string, std::string, EASTLAllocatorType, StdStringList,
+		                 eastl::unordered_map<std::string, eastl::pair<std::string, StdStringList::iterator>, std::hash<std::string>>> lc(2);
+
+		EATEST_VERIFY(lc.emplace("a", "1").second);
+
+		auto [it, did_emplace] = lc.emplace("a", "2");
+		EATEST_VERIFY(!did_emplace);
+		EATEST_VERIFY(it->second.first == "1");
+	}
+#endif
 
 	return nErrorCount;
 }
