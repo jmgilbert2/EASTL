@@ -6,6 +6,7 @@
 #include <EASTL/bonus/lru_cache.h>
 #include <EASTL/unique_ptr.h>
 #include <EASTL/map.h>
+#include <EASTL/string.h>
 // #include <EASTL/deque.h>
 
 namespace TestLruCacheInternal
@@ -51,7 +52,42 @@ namespace TestLruCacheInternal
 
 		int mFooCreatedCount;
 	};
+
+	struct UserKey
+	{
+		int x;
+		int y;
+
+		bool operator==(const UserKey& other) const { return x == other.x && y == other.y; }
+		bool operator<(const UserKey& other) const { return x < other.x || (x == other.x && y < other.y); }
+	};
+
+	struct UserValue
+	{
+		eastl::string name;
+		int weight = 0;
+	};
 }
+
+namespace eastl
+{
+	template <>
+	struct hash<TestLruCacheInternal::UserKey>
+	{
+		size_t operator()(const TestLruCacheInternal::UserKey& k) const
+			{ return static_cast<size_t>(k.x) * 31 + static_cast<size_t>(k.y); }
+	};
+}
+
+// Template instantiations.
+// These tell the compiler to compile all the functions for the given class.
+template class eastl::lru_cache<int, int>;
+template class eastl::lru_cache<int, eastl::string>;
+template class eastl::lru_cache<eastl::string, int>;
+template class eastl::lru_cache<TestLruCacheInternal::UserKey, TestLruCacheInternal::UserValue>;
+template class eastl::lru_cache<int, int, EASTLAllocatorType, eastl::list<int>, eastl::map<int, eastl::pair<int, eastl::list<int>::iterator>>>;
+template class eastl::lru_cache<TestLruCacheInternal::UserKey, TestLruCacheInternal::UserValue, EASTLAllocatorType, eastl::list<TestLruCacheInternal::UserKey>,
+                                eastl::map<TestLruCacheInternal::UserKey, eastl::pair<TestLruCacheInternal::UserValue, eastl::list<TestLruCacheInternal::UserKey>::iterator>>>;
 
 
 template<template<typename, typename> typename LruCache>

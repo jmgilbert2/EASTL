@@ -343,14 +343,10 @@ namespace eastl
 		// standard container functions
 		iterator begin()               EA_NOEXCEPT { return m_map.begin(); }
 		iterator end()                 EA_NOEXCEPT { return m_map.end(); }
-		iterator rbegin()              EA_NOEXCEPT { return m_map.rbegin(); }
-		iterator rend()                EA_NOEXCEPT { return m_map.rend(); }
 		const_iterator begin() const   EA_NOEXCEPT { return m_map.begin(); }
 		const_iterator cbegin() const  EA_NOEXCEPT { return m_map.cbegin(); }
-		const_iterator crbegin() const EA_NOEXCEPT { return m_map.crbegin(); }
 		const_iterator end() const     EA_NOEXCEPT { return m_map.end(); }
 		const_iterator cend() const    EA_NOEXCEPT { return m_map.cend(); }
-		const_iterator crend() const   EA_NOEXCEPT { return m_map.crend(); }
 
 		bool empty() const             EA_NOEXCEPT { return m_map.empty(); }
 		size_type size() const         EA_NOEXCEPT { return m_map.size(); }
