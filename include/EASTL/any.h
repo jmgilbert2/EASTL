@@ -30,6 +30,8 @@
 
 #include <EASTL/internal/config.h>
 #include <EASTL/internal/in_place_t.h>
+#include <EASTL/allocator.h>
+#include <EASTL/utility.h>
 #if EASTL_RTTI_ENABLED
 	#include <typeinfo>
 #endif
