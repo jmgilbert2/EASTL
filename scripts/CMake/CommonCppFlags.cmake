@@ -63,6 +63,10 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_SIMULATE_ID MATCHES "MSVC") # clang-cl
     # Two-phase name lookup in every language mode: before C++20, clang-cl defaults to delayed template parsing.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
+    # Its MS-compatibility mode accepts some ill-formed code with only a warning (lookup into dependent bases, a missing
+    # typename, an implicit function pointer to void* conversion, ...): make those errors. -Wmicrosoft-enum-value stays
+    # off (its default): it flags well-formed enums whose underlying type follows the MS ABI (int), as cl's does.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=microsoft -Wno-microsoft-enum-value -Werror=typename-missing")
 endif()
 
 if(MSVC) # cl and clang-cl
