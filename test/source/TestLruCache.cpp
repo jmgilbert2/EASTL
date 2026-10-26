@@ -6,7 +6,12 @@
 #include <EASTL/bonus/lru_cache.h>
 #include <EASTL/unique_ptr.h>
 #include <EASTL/map.h>
+#include <EASTL/string.h>
 // #include <EASTL/deque.h>
+
+#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+	#include <string>
+#endif
 
 namespace TestLruCacheInternal
 {
@@ -51,7 +56,49 @@ namespace TestLruCacheInternal
 
 		int mFooCreatedCount;
 	};
+
+	struct UserKey
+	{
+		int x;
+		int y;
+
+		bool operator==(const UserKey& other) const { return x == other.x && y == other.y; }
+		bool operator<(const UserKey& other) const { return x < other.x || (x == other.x && y < other.y); }
+	};
+
+	struct UserValue
+	{
+		eastl::string name;
+		int weight = 0;
+	};
+
+	struct NoDefaultValue
+	{
+		explicit NoDefaultValue(int v) : value(v) {}
+
+		int value;
+	};
 }
+
+namespace eastl
+{
+	template <>
+	struct hash<TestLruCacheInternal::UserKey>
+	{
+		size_t operator()(const TestLruCacheInternal::UserKey& k) const
+			{ return static_cast<size_t>(k.x) * 31 + static_cast<size_t>(k.y); }
+	};
+}
+
+// Template instantiations.
+// These tell the compiler to compile all the functions for the given class.
+template class eastl::lru_cache<int, int>;
+template class eastl::lru_cache<int, eastl::string>;
+template class eastl::lru_cache<eastl::string, int>;
+template class eastl::lru_cache<TestLruCacheInternal::UserKey, TestLruCacheInternal::UserValue>;
+template class eastl::lru_cache<int, int, EASTLAllocatorType, eastl::list<int>, eastl::map<int, eastl::pair<int, eastl::list<int>::iterator>>>;
+template class eastl::lru_cache<TestLruCacheInternal::UserKey, TestLruCacheInternal::UserValue, EASTLAllocatorType, eastl::list<TestLruCacheInternal::UserKey>,
+                                eastl::map<TestLruCacheInternal::UserKey, eastl::pair<TestLruCacheInternal::UserValue, eastl::list<TestLruCacheInternal::UserKey>::iterator>>>;
 
 
 template<template<typename, typename> typename LruCache>
@@ -357,6 +404,92 @@ int TestLruCacheOfType()
 		VERIFY((it->second.first == TestObject{ 3, 2, 1 }));
 	}
 
+	// Test different key and value types
+	{
+		LruCache<int, eastl::string> lc(2);
+
+		EATEST_VERIFY(lc.insert(1, "one") == true);
+		EATEST_VERIFY(lc.insert(1, "uno") == false);
+		EATEST_VERIFY(lc.insert(2, "two") == true);
+		EATEST_VERIFY(lc.at(1).value() == "one");
+		EATEST_VERIFY(lc.touch(1) == true);
+
+		// 2 is the oldest
+		lc.insert_or_assign(3, "three");
+		EATEST_VERIFY(lc.contains(1) == true);
+		EATEST_VERIFY(lc.contains(2) == false);
+		EATEST_VERIFY(lc.contains(3) == true);
+		EATEST_VERIFY(lc.assign(3, "drei") == true);
+		EATEST_VERIFY(lc[3] == "drei");
+
+		// 1 is the oldest; get() default-constructs the missing value
+		EATEST_VERIFY(lc.get(4).empty());
+		EATEST_VERIFY(lc.contains(1) == false);
+
+		// 3 is the oldest
+		EATEST_VERIFY(lc.emplace(5, "five").first->second.first == "five");
+		EATEST_VERIFY(lc.contains(3) == false);
+		EATEST_VERIFY(lc.erase(4) == true);
+		EATEST_VERIFY(lc.size() == 1);
+	}
+
+	{
+		int deletedSum = 0;
+		LruCache<eastl::string, int> lc(2, EASTLAllocatorType("eastl lru_cache"),
+		                                [](eastl::string key) { return static_cast<int>(key.size()); },
+		                                [&deletedSum](const int& value) { deletedSum += value; });
+
+		// Created by the create callback from the key
+		EATEST_VERIFY(lc["abc"] == 3);
+		EATEST_VERIFY(lc.insert("hello", 10) == true);
+		EATEST_VERIFY(lc.contains("abc") == true);
+
+		// "abc" is the oldest
+		EATEST_VERIFY(lc.get("de") == 2);
+		EATEST_VERIFY(lc.contains("abc") == false);
+		EATEST_VERIFY(deletedSum == 3);
+
+		lc.clear();
+		EATEST_VERIFY(deletedSum == 15);
+		EATEST_VERIFY(lc.empty() == true);
+	}
+
+	{
+		using namespace TestLruCacheInternal;
+
+		LruCache<UserKey, UserValue> lc(2);
+
+		EATEST_VERIFY((lc.insert(UserKey{1, 2}, UserValue{"a", 1}) == true));
+		EATEST_VERIFY((lc.emplace(UserKey{3, 4}, UserValue{"b", 2}).second == true));
+		EATEST_VERIFY((lc.touch(UserKey{1, 2}) == true));
+
+		// {3, 4} is the oldest
+		lc.insert_or_assign(UserKey{5, 6}, UserValue{"c", 3});
+		EATEST_VERIFY((lc.contains(UserKey{1, 2}) == true));
+		EATEST_VERIFY((lc.contains(UserKey{3, 4}) == false));
+		EATEST_VERIFY((lc.at(UserKey{5, 6}).value().name == "c"));
+		EATEST_VERIFY((lc[UserKey{1, 2}].weight == 1));
+		EATEST_VERIFY(lc.size() == 2);
+	}
+
+	// A value type without a default constructor works with the members that don't default-construct values.
+	{
+		using namespace TestLruCacheInternal;
+
+		LruCache<int, NoDefaultValue> lc(2);
+
+		EATEST_VERIFY(lc.emplace(1, 10).second == true);
+		EATEST_VERIFY(lc.emplace(2, 20).second == true);
+		EATEST_VERIFY(lc.touch(1) == true);
+
+		// 2 is the oldest
+		EATEST_VERIFY(lc.emplace(3, 30).second == true);
+		EATEST_VERIFY(lc.contains(2) == false);
+		EATEST_VERIFY(lc.at(1).value().value == 10);
+		EATEST_VERIFY(lc.erase(3) == true);
+		EATEST_VERIFY(lc.size() == 1);
+	}
+
 	return nErrorCount;
 }
 
@@ -377,6 +510,21 @@ int TestLruCache()
 	nErrorCount += TestLruCacheOfType<LruCacheMap>();
 	// could use a deque instead of a list, except that lru_cache requires the container have a reset_lose_memory() function.
 	// nErrorCount += TestLruCacheOfType<LruCacheDequeMap>();
+
+#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+	// emplace with std key and value types: argument-dependent lookup also finds std::make_tuple and std::make_pair.
+	{
+		using StdStringList = eastl::list<std::string>;
+		eastl::lru_cache<std::string, std::string, EASTLAllocatorType, StdStringList,
+		                 eastl::unordered_map<std::string, eastl::pair<std::string, StdStringList::iterator>, std::hash<std::string>>> lc(2);
+
+		EATEST_VERIFY(lc.emplace("a", "1").second);
+
+		auto [it, did_emplace] = lc.emplace("a", "2");
+		EATEST_VERIFY(!did_emplace);
+		EATEST_VERIFY(it->second.first == "1");
+	}
+#endif
 
 	return nErrorCount;
 }

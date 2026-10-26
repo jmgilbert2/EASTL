@@ -170,11 +170,11 @@ namespace eastl
 				make_space();
 
 				m_list.push_front(k);
-				return m_map.emplace(k, data_container_type(piecewise_construct, eastl::forward_as_tuple(eastl::forward<Args>(args)...), make_tuple(m_list.begin())));
+				return m_map.emplace(k, data_container_type(piecewise_construct, eastl::forward_as_tuple(eastl::forward<Args>(args)...), eastl::make_tuple(m_list.begin())));
 			}
 			else
 			{
-				return make_pair(it, false);
+				return eastl::make_pair(it, false);
 			}
 		}
 
@@ -343,14 +343,10 @@ namespace eastl
 		// standard container functions
 		iterator begin()               EA_NOEXCEPT { return m_map.begin(); }
 		iterator end()                 EA_NOEXCEPT { return m_map.end(); }
-		iterator rbegin()              EA_NOEXCEPT { return m_map.rbegin(); }
-		iterator rend()                EA_NOEXCEPT { return m_map.rend(); }
 		const_iterator begin() const   EA_NOEXCEPT { return m_map.begin(); }
 		const_iterator cbegin() const  EA_NOEXCEPT { return m_map.cbegin(); }
-		const_iterator crbegin() const EA_NOEXCEPT { return m_map.crbegin(); }
 		const_iterator end() const     EA_NOEXCEPT { return m_map.end(); }
 		const_iterator cend() const    EA_NOEXCEPT { return m_map.cend(); }
-		const_iterator crend() const   EA_NOEXCEPT { return m_map.crend(); }
 
 		bool empty() const             EA_NOEXCEPT { return m_map.empty(); }
 		size_type size() const         EA_NOEXCEPT { return m_map.size(); }
