@@ -229,7 +229,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = !is_signed;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -349,7 +349,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = false;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -413,7 +413,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = !is_signed;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -721,7 +721,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = false;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -842,7 +842,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = false;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -962,7 +962,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = false;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -1082,7 +1082,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = false;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -1203,7 +1203,7 @@ namespace eastl
 			static constexpr int                max_exponent      = 0;
 			static constexpr int                max_exponent10    = 0;
 			static constexpr bool               is_bounded        = true;
-			static constexpr bool               is_modulo         = true;
+			static constexpr bool               is_modulo         = false;
 			static constexpr bool               traps             = true;
 			static constexpr bool               tinyness_before   = false;
 			static constexpr float_round_style  round_style       = round_toward_zero;
@@ -1254,7 +1254,7 @@ namespace eastl
 		static constexpr bool               is_specialized    = true;
 		static constexpr int                digits            = FLT_MANT_DIG;
 		static constexpr int                digits10          = FLT_DIG;
-		static constexpr int                max_digits10      = FLT_MANT_DIG;
+		static constexpr int                max_digits10      = 2 + (FLT_MANT_DIG * 643L) / 2136;   // 2 + digits * log10(2), the digits needed to round-trip (FLT_DECIMAL_DIG).
 		static constexpr bool               is_signed         = true;
 		static constexpr bool               is_integer        = false;
 		static constexpr bool               is_exact          = false;
@@ -1358,7 +1358,7 @@ namespace eastl
 		static constexpr bool               is_specialized    = true;
 		static constexpr int                digits            = DBL_MANT_DIG;
 		static constexpr int                digits10          = DBL_DIG;
-		static constexpr int                max_digits10      = DBL_MANT_DIG;
+		static constexpr int                max_digits10      = 2 + (DBL_MANT_DIG * 643L) / 2136;   // 2 + digits * log10(2), the digits needed to round-trip (DBL_DECIMAL_DIG).
 		static constexpr bool               is_signed         = true;
 		static constexpr bool               is_integer        = false;
 		static constexpr bool               is_exact          = false;
@@ -1462,7 +1462,7 @@ namespace eastl
 		static constexpr bool               is_specialized    = true;
 		static constexpr int                digits            = LDBL_MANT_DIG;
 		static constexpr int                digits10          = LDBL_DIG;
-		static constexpr int                max_digits10      = LDBL_MANT_DIG;
+		static constexpr int                max_digits10      = 2 + (LDBL_MANT_DIG * 643L) / 2136;  // 2 + digits * log10(2), the digits needed to round-trip (LDBL_DECIMAL_DIG).
 		static constexpr bool               is_signed         = true;
 		static constexpr bool               is_integer        = false;
 		static constexpr bool               is_exact          = false;
