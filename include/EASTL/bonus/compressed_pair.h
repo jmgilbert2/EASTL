@@ -362,8 +362,8 @@ namespace eastl
 							T1,
 							T2,
 							is_same<typename remove_cv<T1>::type, typename remove_cv<T2>::type>::value,
-							is_empty<T1>::value,
-							is_empty<T2>::value>::value>
+							is_empty<T1>::value && !is_final<T1>::value,
+							is_empty<T2>::value && !is_final<T2>::value>::value>
 	{
 	private:
 		typedef compressed_pair_imp<T1, T2,
@@ -371,8 +371,8 @@ namespace eastl
 						T1,
 						T2,
 						is_same<typename remove_cv<T1>::type, typename remove_cv<T2>::type>::value,
-						is_empty<T1>::value,
-						is_empty<T2>::value>::value> base;
+						is_empty<T1>::value && !is_final<T1>::value,
+						is_empty<T2>::value && !is_final<T2>::value>::value> base;
 	public:
 		typedef T1                                                 first_type;
 		typedef T2                                                 second_type;
@@ -406,8 +406,8 @@ namespace eastl
 							T,
 							T,
 							is_same<typename remove_cv<T>::type, typename remove_cv<T>::type>::value,
-							is_empty<T>::value,
-							is_empty<T>::value>::value>
+							is_empty<T>::value && !is_final<T>::value,
+							is_empty<T>::value && !is_final<T>::value>::value>
 	{
 	private:
 		typedef compressed_pair_imp<T, T,
@@ -415,8 +415,8 @@ namespace eastl
 						T,
 						T,
 						is_same<typename remove_cv<T>::type, typename remove_cv<T>::type>::value,
-						is_empty<T>::value,
-						is_empty<T>::value>::value> base;
+						is_empty<T>::value && !is_final<T>::value,
+						is_empty<T>::value && !is_final<T>::value>::value> base;
 	public:
 		typedef T                                                  first_type;
 		typedef T                                                  second_type;

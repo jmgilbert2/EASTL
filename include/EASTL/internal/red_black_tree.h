@@ -214,7 +214,7 @@ namespace eastl
 	// when its Compare template argument is an empty class.
 	///////////////////////////////////////////////////////////////////////////////
 
-	template <typename Compare, bool /*isEmpty*/ = is_empty<Compare>::value>
+	template <typename Compare, bool /*isEmpty*/ = is_empty<Compare>::value && !is_final<Compare>::value>
 	struct rb_base_compare_ebo
 	{
 	protected:

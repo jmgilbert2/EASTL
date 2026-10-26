@@ -781,6 +781,23 @@ int TestTuple()
 		[[maybe_unused]] auto& y = get<0>(t);
 	}
 
+	// Empty class types that are final cannot be inherited from, so they are stored as members.
+	{
+		struct EmptyTag {};
+		struct FinalTag final { int Value() const { return 7; } };
+
+		tuple<FinalTag> t1;
+		EATEST_VERIFY(get<0>(t1).Value() == 7);
+
+		tuple<FinalTag, int, FinalTag> t2(FinalTag(), 5, FinalTag());
+		EATEST_VERIFY(get<1>(t2) == 5);
+		EATEST_VERIFY(get<2>(t2).Value() == 7);
+		EATEST_VERIFY(static_cast<const void*>(&get<0>(t2)) != static_cast<const void*>(&get<2>(t2)));
+
+		// Non-final empty types still take no space.
+		static_assert(sizeof(tuple<EmptyTag, int>) == sizeof(int), "empty base optimization");
+	}
+
 	nErrorCount += TestTupleIncludedFirstComparisons();
 
 	return nErrorCount;
