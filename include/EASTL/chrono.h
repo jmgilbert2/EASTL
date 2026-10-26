@@ -25,6 +25,16 @@
 #include <EASTL/ratio.h>
 
 
+#if EASTL_NOMINMAX
+	#ifdef min
+		#undef min
+	#endif
+	#ifdef max
+		#undef max
+	#endif
+#endif
+
+
 // TODO:  move to platform specific cpp or header file
 #if  defined EA_PLATFORM_MICROSOFT
 	// Declared here rather than including <Windows.h>, whose macros would leak into the user's code.
@@ -75,8 +85,8 @@ namespace chrono
 	{
 	public:
 		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep zero() { return Rep(0); }
-		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep (max)()  { return (eastl::numeric_limits<Rep>::max)(); }
-		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep (min)()  { return eastl::numeric_limits<Rep>::lowest(); }
+		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep max()  { return eastl::numeric_limits<Rep>::max(); }
+		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep min()  { return eastl::numeric_limits<Rep>::lowest(); }
 	};
 
 
@@ -252,8 +262,8 @@ namespace chrono
 		// static accessors of special duration values 
 		///////////////////////////////////////////////////////////////////////////////
 		EA_CONSTEXPR inline static duration zero() { return duration(duration_values<Rep>::zero()); }
-		EA_CONSTEXPR inline static duration (min)()  { return duration((duration_values<Rep>::min)()); }
-		EA_CONSTEXPR inline static duration (max)()  { return duration((duration_values<Rep>::max)()); }
+		EA_CONSTEXPR inline static duration min()  { return duration(duration_values<Rep>::min()); }
+		EA_CONSTEXPR inline static duration max()  { return duration(duration_values<Rep>::max()); }
 
 		///////////////////////////////////////////////////////////////////////////////
 		// const arithmetic operations
@@ -442,8 +452,8 @@ namespace chrono
 		time_point& operator+=(const Duration& d) { mDuration += d; return *this; } 
 		time_point& operator-=(const Duration& d) { mDuration -= d; return *this; }
 
-		static EA_CONSTEXPR time_point (min)() { return time_point((Duration::min)()); }
-		static EA_CONSTEXPR time_point (max)() { return time_point((Duration::max)()); }
+		static EA_CONSTEXPR time_point min() { return time_point(Duration::min()); }
+		static EA_CONSTEXPR time_point max() { return time_point(Duration::max()); }
 	};
 
 

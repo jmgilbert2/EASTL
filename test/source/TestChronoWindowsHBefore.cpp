@@ -3,15 +3,16 @@
 /////////////////////////////////////////////////////////////////////////////
 
 
-// Compile-only test: <Windows.h> included before <EASTL/chrono.h>, without NOMINMAX or
-// WIN32_LEAN_AND_MEAN. <EASTL/chrono.h> must compile with the min and max macros it defines
-// and leave them, and its declarations must match <Windows.h>'s.
+// Compile-only test: <EASTL/vector.h>, then <Windows.h> without NOMINMAX or WIN32_LEAN_AND_MEAN,
+// then <EASTL/chrono.h>. <EASTL/chrono.h> must compile with the min and max macros <Windows.h>
+// defines (it #undefs them when EASTL_NOMINMAX is 1, the default, like vector.h) and must not
+// define NOMINMAX or WIN32_LEAN_AND_MEAN.
 // TestChronoWindowsHAfter.cpp includes <Windows.h> after <EASTL/chrono.h>.
 
 #include <EABase/eabase.h>
 
 #if defined(EA_PLATFORM_WINDOWS)
-	#include <EASTL/numeric_limits.h> // #undefs min and max when first included (EASTL_NOMINMAX).
+	#include <EASTL/vector.h> // #undefs min and max (EASTL_NOMINMAX) before <Windows.h> defines them.
 	#include <Windows.h>
 #endif
 
@@ -24,8 +25,8 @@
 	#if defined(NOMINMAX)
 		#error <EASTL/chrono.h> defined NOMINMAX
 	#endif
-	#if !defined(min) || !defined(max)
-		#error <EASTL/chrono.h> undefined min or max
+	#if EASTL_NOMINMAX && (defined(min) || defined(max))
+		#error <EASTL/chrono.h> did not #undef min and max (EASTL_NOMINMAX)
 	#endif
 
 	static_assert(eastl::is_same<decltype(&QueryPerformanceCounter), BOOL (WINAPI*)(LARGE_INTEGER*)>::value, "QueryPerformanceCounter");
