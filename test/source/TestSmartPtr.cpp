@@ -858,6 +858,25 @@ static int Test_unique_ptr()
 			//	EATEST_VERIFY(newPtr.get() == nullptr);
 			//}
 		}
+	// A final empty deleter cannot be a base class, so it is stored as a member.
+	{
+		struct EmptyDeleter { void operator()(int* p) const { delete p; } };
+		struct FinalDeleter final { void operator()(int* p) const { delete p; } };
+
+		unique_ptr<int, FinalDeleter> p(new int(5));
+		EATEST_VERIFY(*p == 5);
+		unique_ptr<int, FinalDeleter> q(eastl::move(p));
+		EATEST_VERIFY(!p && *q == 5);
+		q.reset();
+		EATEST_VERIFY(!q);
+
+		unique_ptr<int[], FinalDeleter> a(new int[2]);
+		EATEST_VERIFY(a.get() != nullptr);
+
+		// Non-final empty deleters still take no space.
+		static_assert(sizeof(unique_ptr<int, EmptyDeleter>) == sizeof(int*), "empty base optimization");
+	}
+
 	}
 
 	return nErrorCount;
