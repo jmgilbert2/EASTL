@@ -2143,7 +2143,7 @@ int TEST_STRING_NAME()
 		    using UserStringType = decltype(s);
 		    using TargetType = eastl::basic_string<typename UserStringType::value_type>;
 
-		    TargetType t(s.data());
+		    TargetType t(s.data(), s.size());
 		    return eastl::hash<TargetType>{}(t);
 	    };
 
@@ -2153,6 +2153,28 @@ int TEST_STRING_NAME()
 
 		VERIFY(LocalHash(sw1) != LocalHash(sw2));
 		VERIFY(LocalHash(sw2) == LocalHash(sw3));
+
+		// The hash covers all size() characters, including embedded NULs, and equals the hash of a basic_string_view
+		// or a fixed_string (also one that overflowed) of the same characters.
+		typedef eastl::basic_string_view<typename StringType::value_type> StringViewType;
+		typedef eastl::fixed_string<typename StringType::value_type, 4> FixedStringType; // Capacity 3.
+
+		StringType sw4(LITERAL("x\0y"), 3);
+		StringType sw5(LITERAL("x\0z"), 3);
+		StringType sw6(LITERAL("Hello\0World"), 11);
+
+		VERIFY(LocalHash(sw4) != LocalHash(sw5));
+		VERIFY(LocalHash(sw4) != LocalHash(StringType(LITERAL("x"))));
+		VERIFY(LocalHash(sw6) != LocalHash(sw3));
+		VERIFY(eastl::hash<StringType>{}(sw4) == LocalHash(sw4));
+
+		VERIFY(LocalHash(sw1) == eastl::hash<StringViewType>{}(StringViewType(sw1.data(), sw1.size())));
+		VERIFY(LocalHash(sw4) == eastl::hash<StringViewType>{}(StringViewType(sw4.data(), sw4.size())));
+		VERIFY(LocalHash(sw6) == eastl::hash<StringViewType>{}(StringViewType(sw6.data(), sw6.size())));
+
+		VERIFY(LocalHash(sw1) == eastl::hash<FixedStringType>{}(FixedStringType(sw1.data(), sw1.size())));
+		VERIFY(LocalHash(sw4) == eastl::hash<FixedStringType>{}(FixedStringType(sw4.data(), sw4.size())));
+		VERIFY(LocalHash(sw6) == eastl::hash<FixedStringType>{}(FixedStringType(sw6.data(), sw6.size())));
 	}
 
 	// test <=> operator

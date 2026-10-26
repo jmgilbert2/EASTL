@@ -187,6 +187,18 @@ int TestFixedSubstring()
 }
 
 
+// Returns true if hash<FixedStringType> equals hash<basic_string> and hash<basic_string_view> of the same characters.
+template <typename FixedStringType>
+static bool FixedStringHashMatchesString(const FixedStringType& fs)
+{
+	typedef typename FixedStringType::value_type CharT;
+
+	const size_t fsHash = eastl::hash<FixedStringType>{}(fs);
+	return (fsHash == eastl::hash<basic_string<CharT>>{}(basic_string<CharT>(fs.data(), fs.size()))) &&
+	       (fsHash == eastl::hash<basic_string_view<CharT>>{}(basic_string_view<CharT>(fs.data(), fs.size())));
+}
+
+
 int TestFixedString()
 {
 	int nErrorCount = 0;
@@ -259,6 +271,51 @@ int TestFixedString()
 		EATEST_VERIFY(fsc81Hash == sHash);
 		EATEST_VERIFY(fsc81Hash != fsc82Hash);
 		EATEST_VERIFY(fsc82Hash == fsc83Hash);
+	}
+
+	{
+		// The hash covers all size() characters, including embedded NULs and characters above 0x7F, and equals
+		// hash<basic_string> and hash<basic_string_view> of the same characters, also after an overflow.
+
+		// char
+		typedef fixed_string<char, 4> FixedString4; // Capacity 3.
+
+		FixedString4 fsc1("x\0y", 3);
+		FixedString4 fsc2("x\0z", 3);
+		FixedString4 fsc3("frost\0bite", 10); // Overflows.
+		FixedString4 fsc4("\xE9t\xE9", 3);
+
+		EATEST_VERIFY(eastl::hash<FixedString4>{}(fsc1) != eastl::hash<FixedString4>{}(fsc2));
+		EATEST_VERIFY(eastl::hash<FixedString4>{}(fsc1) != eastl::hash<FixedString4>{}(FixedString4("x")));
+		EATEST_VERIFY(FixedStringHashMatchesString(fsc1));
+		EATEST_VERIFY(FixedStringHashMatchesString(fsc3));
+		EATEST_VERIFY(FixedStringHashMatchesString(fsc4));
+
+		// wchar_t
+		typedef fixed_string<wchar_t, 4> FixedStringW4;
+
+		FixedStringW4 fswc1(L"x\0y", 3);
+		FixedStringW4 fswc2(L"x\0z", 3);
+		FixedStringW4 fswc3(L"frost\0bite", 10);
+		FixedStringW4 fswc4(L"\xE9t\xFFFF", 3);
+
+		EATEST_VERIFY(eastl::hash<FixedStringW4>{}(fswc1) != eastl::hash<FixedStringW4>{}(fswc2));
+		EATEST_VERIFY(eastl::hash<FixedStringW4>{}(fswc1) != eastl::hash<FixedStringW4>{}(FixedStringW4(L"x")));
+		EATEST_VERIFY(FixedStringHashMatchesString(fswc1));
+		EATEST_VERIFY(FixedStringHashMatchesString(fswc3));
+		EATEST_VERIFY(FixedStringHashMatchesString(fswc4));
+
+		// char8_t
+		typedef fixed_string<char8_t, 4> FixedString84;
+
+		FixedString84 fsc81(EA_CHAR8("x\0y"), 3);
+		FixedString84 fsc82(EA_CHAR8("x\0z"), 3);
+		FixedString84 fsc83(EA_CHAR8("frost\0bite"), 10);
+
+		EATEST_VERIFY(eastl::hash<FixedString84>{}(fsc81) != eastl::hash<FixedString84>{}(fsc82));
+		EATEST_VERIFY(eastl::hash<FixedString84>{}(fsc81) != eastl::hash<FixedString84>{}(FixedString84(EA_CHAR8("x"))));
+		EATEST_VERIFY(FixedStringHashMatchesString(fsc81));
+		EATEST_VERIFY(FixedStringHashMatchesString(fsc83));
 	}
 
 

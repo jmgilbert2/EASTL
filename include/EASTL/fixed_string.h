@@ -672,7 +672,8 @@ namespace eastl
 	{
 		size_t operator()(const fixed_string<T, nodeCount, bEnableOverflow, OverflowAllocator>& x) const
 		{
-			return hash_string(x.c_str());
+			// Same value as hash<basic_string<T>> and hash<basic_string_view<T>>: all size() characters, including embedded NULs.
+			return hash<typename fixed_string<T, nodeCount, bEnableOverflow, OverflowAllocator>::base_type>()(x);
 		}
 	};
 
