@@ -14,6 +14,11 @@
 #include <EASTL/fixed_vector.h>
 #include <EASTL/fixed_string.h>
 
+#if defined(EA_COMPILER_CPP20_ENABLED) && !defined(EA_COMPILER_NO_STANDARD_CPP_LIBRARY)
+	#include <algorithm>
+	#include <ranges>
+#endif
+
 
 
 using namespace eastl;
@@ -48,6 +53,43 @@ template class eastl::ring_buffer<int, RBFixedIntVector, RBFixedIntVector::overf
 typedef eastl::fixed_vector<int, 100> RBFixedIntVectorWithOverFlow;
 template class eastl::ring_buffer<int, RBFixedIntVectorWithOverFlow, RBFixedIntVectorWithOverFlow::overflow_allocator_type>; 
 // template class eastl::ring_buffer<int, RBFixedIntVectorWithOverFlow>; // currently fails to compile
+
+
+// Random access iterator operations, including between iterator and const_iterator. They use the positions
+// in the ring buffer, not in the container: here the ring buffer wraps around the end of the container.
+template <typename RingBuffer>
+static int TestRingBufferRandomAccess()
+{
+	int nErrorCount = 0;
+
+	RingBuffer rb(8);
+	for(int i = 0; i < 12; ++i)
+		rb.push_back(i); // Holds 4 to 11, with 9 to 11 at the start of the container.
+
+	typename RingBuffer::iterator       it  = rb.begin() + 2;  // 6
+	typename RingBuffer::const_iterator cit = rb.cbegin() + 6; // 10, past the wraparound
+
+	EATEST_VERIFY((*it == 6) && (*cit == 10));
+	EATEST_VERIFY((it[0] == 6) && (it[5] == 11) && (it[-2] == 4) && (cit[-6] == 4) && (cit[1] == 11));
+	EATEST_VERIFY((it < cit) && (cit > it) && (it <= cit) && (cit >= it) && !(cit < it) && !(it > cit) && (it <= it) && (it >= it) && !(it < it));
+	EATEST_VERIFY(((cit - it) == 4) && ((it - cit) == -4) && ((rb.end() - rb.begin()) == 8) && ((rb.begin() - rb.end()) == -8));
+	EATEST_VERIFY(((2 + it) == (it + 2)) && ((it + 4) == cit) && ((cit - 4) == it));
+
+	eastl::reverse(rb.begin(), rb.end()); // Uses operator< with random access iterators.
+	EATEST_VERIFY(VerifySequence(rb.begin(), rb.end(), int(), "ring_buffer reverse", 11, 10, 9, 8, 7, 6, 5, 4, -1));
+
+	#if defined(EA_COMPILER_CPP20_ENABLED) && defined(__cpp_lib_ranges) && EASTL_STD_ITERATOR_CATEGORY_ENABLED
+		static_assert(std::random_access_iterator<typename RingBuffer::iterator>, "");
+		static_assert(std::random_access_iterator<typename RingBuffer::const_iterator>, "");
+		static_assert(std::totally_ordered_with<typename RingBuffer::iterator, typename RingBuffer::const_iterator>, "");
+		static_assert(std::ranges::random_access_range<const RingBuffer>, "");
+
+		std::ranges::sort(rb);
+		EATEST_VERIFY(VerifySequence(rb.begin(), rb.end(), int(), "ring_buffer ranges::sort", 4, 5, 6, 7, 8, 9, 10, 11, -1));
+	#endif
+
+	return nErrorCount;
+}
 
 
 
@@ -1177,6 +1219,12 @@ int TestRingBuffer()
 			VERIFY(cacheMallocatorCount <  MallocAllocator::mAllocCountAll);
 			VERIFY(CountingAllocator::neverUsed());
 		}
+	}
+
+	{
+		// Random access with containers that have random access and bidirectional iterators.
+		nErrorCount += TestRingBufferRandomAccess<ring_buffer<int, vector<int>>>();
+		nErrorCount += TestRingBufferRandomAccess<ring_buffer<int, list<int>>>();
 	}
 
 	return nErrorCount;

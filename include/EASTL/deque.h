@@ -153,8 +153,8 @@ namespace eastl
 		typedef ptrdiff_t                                                 difference_type;
 		typedef eastl::random_access_iterator_tag                  iterator_category;
 		typedef T                                                         value_type;
-		typedef T*                                                        pointer;
-		typedef T&                                                        reference;
+		typedef Pointer                                                   pointer;
+		typedef Reference                                                 reference;
 
 	public:
 		DequeIterator();
@@ -175,6 +175,8 @@ namespace eastl
 
 		this_type operator+(difference_type n) const;
 		this_type operator-(difference_type n) const;
+
+		reference operator[](difference_type n) const;
 
 	protected:
 		template <typename, typename, typename, unsigned>
@@ -1065,6 +1067,14 @@ namespace eastl
 	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator-(difference_type n) const
 	{
 		return this_type(*this).operator+=(-n);
+	}
+
+
+	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
+	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::reference
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator[](difference_type n) const
+	{
+		return *(*this + n);
 	}
 
 
