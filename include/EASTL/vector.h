@@ -43,13 +43,11 @@
 #include <EASTL/numeric_limits.h>
 #include <EASTL/bonus/compressed_pair.h>
 
-EA_DISABLE_ALL_VC_WARNINGS()
 #include <new>
 #include <stddef.h>
 #if EASTL_EXCEPTIONS_ENABLED
 	#include <stdexcept> // std::out_of_range, std::length_error, std::logic_error.
 #endif
-EA_RESTORE_ALL_VC_WARNINGS()
 
 // 4530 - C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc
 // 4480 - nonstandard extension used: specifying underlying type for enum
@@ -1639,7 +1637,7 @@ namespace eastl
 	template <typename InputIterator>
 	inline void vector<T, Allocator>::DoInsertFromIterator(const_iterator position, InputIterator first, InputIterator last, eastl::input_iterator_tag)
 	{
-		for(; first != last; ++first, ++position)
+		for(; first != last; ++first, (void)++position)
 			position = insert(position, *first);
 	}
 

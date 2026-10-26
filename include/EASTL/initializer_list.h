@@ -23,9 +23,7 @@
 
 	// The initializer_list type must be declared in the std namespace, as that's the 
 	// namespace the compiler uses when generating code to use it.
-	EA_DISABLE_ALL_VC_WARNINGS()
 	#include <initializer_list>
-	EA_RESTORE_ALL_VC_WARNINGS()
 
 #else
 

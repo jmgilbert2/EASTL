@@ -129,6 +129,7 @@
 //      lexicographical_compare
 //      lexicographical_compare<Compare>
 //      lexicographical_compare_three_way
+//      lexicographical_compare_three_way<Compare>
 //      lower_bound
 //      lower_bound<Compare>
 //      make_heap                                   Found in heap.h
@@ -259,10 +260,10 @@ EA_DISABLE_ALL_VC_WARNINGS();
 		#include <intrin.h>
 	#endif
 
-	#include <stddef.h>
-	#include <string.h> // memcpy, memcmp, memmove
-
 EA_RESTORE_ALL_VC_WARNINGS();
+
+#include <stddef.h>
+#include <string.h> // memcpy, memcmp, memmove
 
 #if defined(EA_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
@@ -1023,9 +1024,8 @@ namespace eastl
 	/// Complexity: Exactly '(last - first) - 1' swaps.
 	///
 	/// Example usage:
-	///     struct Rand{ eastl_size_t operator()(eastl_size_t n) { return (eastl_size_t)(rand() % n); } }; // Note: The C rand function is poor and slow.
-	///     Rand randInstance;
-	///     shuffle(pArrayBegin, pArrayEnd, randInstance);
+	///     std::mt19937 rng(seed); // Or any other uniform random bit generator.
+	///     shuffle(pArrayBegin, pArrayEnd, rng);
 	///
 	// See the C++11 Standard, 26.5.1.3, Uniform random number generator requirements.
 	// Also http://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
@@ -1035,15 +1035,11 @@ namespace eastl
 	{
 		if(first != last)
 		{
-			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
-			typedef typename eastl::make_unsigned<difference_type>::type                   unsigned_difference_type;
-			typedef typename eastl::uniform_int_distribution<unsigned_difference_type>     uniform_int_distribution;
-			typedef typename uniform_int_distribution::param_type                          uniform_int_distribution_param_type;
-
-			uniform_int_distribution uid;
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type   difference_type;
+			typedef typename eastl::conditional<(sizeof(difference_type) <= 4), uint32_t, uint64_t>::type index_type; // 32-bit indexes don't need the 64-bit path.
 
 			for(RandomAccessIterator i = first + 1; i != last; ++i)
-				eastl::iter_swap(i, first + uid(urng, uniform_int_distribution_param_type(0, i - first)));
+				eastl::iter_swap(i, first + (difference_type)Internal::urng_value(urng, (index_type)(i - first)));
 		}
 	}
 
@@ -1759,7 +1755,7 @@ namespace eastl
 	EA_CPP14_CONSTEXPR inline InputIterator
 	for_each_n(InputIterator first, Size n, Function function)
 	{
-		for (Size i = 0; i < n; ++first, i++)
+		for (Size i = 0; i < n; ++first, (void)i++)
 			function(*first);
 		return first;
 	}
@@ -1794,7 +1790,7 @@ namespace eastl
 	inline OutputIterator
 	generate_n(OutputIterator first, Size n, Generator generator)
 	{
-		for(; n > 0; --n, ++first)
+		for(; n > 0; --n, (void)++first)
 			*first = generator();
 		return first;
 	}
@@ -1820,7 +1816,7 @@ namespace eastl
 	inline OutputIterator
 	transform(InputIterator first, InputIterator last, OutputIterator result, UnaryOperation unaryOperation)
 	{
-		for(; first != last; ++first, ++result)
+		for(; first != last; ++first, (void)++result)
 			*result = unaryOperation(*first);
 		return result;
 	}
@@ -1846,7 +1842,7 @@ namespace eastl
 	inline OutputIterator
 	transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, BinaryOperation binaryOperation)
 	{
-		for(; first1 != last1; ++first1, ++first2, ++result)
+		for(; first1 != last1; ++first1, (void)++first2, (void)++result)
 			*result = binaryOperation(*first1, *first2);
 		return result;
 	}
@@ -1867,7 +1863,7 @@ namespace eastl
 	template <typename InputIterator1, typename InputIterator2>
 	EA_CPP14_CONSTEXPR inline bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 	{
-		for(; first1 != last1; ++first1, ++first2)
+		for(; first1 != last1; ++first1, (void)++first2)
 		{
 			if(!(*first1 == *first2)) // Note that we always express value comparisons in terms of < or ==.
 				return false;
@@ -1928,7 +1924,7 @@ namespace eastl
 	inline bool
 	equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate predicate)
 	{
-		for(; first1 != last1; ++first1, ++first2)
+		for(; first1 != last1; ++first1, (void)++first2)
 		{
 			if(!predicate(*first1, *first2))
 				return false;
@@ -2007,7 +2003,7 @@ namespace eastl
 	inline bool
 	lexicographical_compare(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2)
 	{
-		for(; (first1 != last1) && (first2 != last2); ++first1, ++first2)
+		for(; (first1 != last1) && (first2 != last2); ++first1, (void)++first2)
 		{
 			if(*first1 < *first2)
 				return true;
@@ -2132,7 +2128,7 @@ namespace eastl
 	lexicographical_compare(InputIterator1 first1, InputIterator1 last1,
 							InputIterator2 first2, InputIterator2 last2, Compare compare)
 	{
-		for(; (first1 != last1) && (first2 != last2); ++first1, ++first2)
+		for(; (first1 != last1) && (first2 != last2); ++first1, (void)++first2)
 		{
 			if(compare(*first1, *first2))
 				return true;
@@ -2167,7 +2163,10 @@ namespace eastl
 	                                                 InputIterator2 first2, InputIterator2 last2,
 	                                                 Compare compare) -> decltype(compare(*first1, *first2))
 	{
-		for (; (first1 != last1) && (first2 != last2); ++first1, ++first2)
+		static_assert(!eastl::is_void_v<std::common_comparison_category_t<decltype(compare(*first1, *first2))>>,
+		              "lexicographical_compare_three_way: the comparator must return a comparison category type.");
+
+		for (; (first1 != last1) && (first2 != last2); ++first1, (void)++first2)
 		{
 			if (auto c = compare(*first1, *first2); c != 0)
 				return c;
@@ -2176,6 +2175,18 @@ namespace eastl
 		return (first1 != last1) ? std::strong_ordering::greater :
 		       (first2 != last2) ? std::strong_ordering::less :
 				std::strong_ordering::equal;
+	}
+
+	/// lexicographical_compare_three_way
+	///
+	/// Compares the elements with std::compare_three_way: the same as
+	/// lexicographical_compare_three_way(first1, last1, first2, last2, std::compare_three_way()).
+	///
+	template <typename InputIterator1, typename InputIterator2>
+	constexpr auto lexicographical_compare_three_way(InputIterator1 first1, InputIterator1 last1,
+	                                                 InputIterator2 first2, InputIterator2 last2)
+	{
+		return eastl::lexicographical_compare_three_way(first1, last1, first2, last2, std::compare_three_way{});
 	}
 #endif
 
@@ -2774,7 +2785,7 @@ namespace eastl
 	inline OutputIterator
 	replace_copy(InputIterator first, InputIterator last, OutputIterator result, const T& old_value, const T& new_value)
 	{
-		for(; first != last; ++first, ++result)
+		for(; first != last; ++first, (void)++result)
 			*result = (*first == old_value) ? new_value : *first;
 		return result;
 	}
@@ -2799,7 +2810,7 @@ namespace eastl
 	inline OutputIterator
 	replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate predicate, const T& new_value)
 	{
-		for(; first != last; ++first, ++result)
+		for(; first != last; ++first, (void)++result)
 			*result = predicate(*first) ? new_value : *first;
 		return result;
 	}
@@ -3030,11 +3041,11 @@ namespace eastl
 		if(count > d1)                                // ForwardIterator may not be a true iterator but instead something like a pointer.
 			return last;
 
-		for(; d1 >= count; ++first, --d1)
+		for(; d1 >= count; ++first, (void)--d1)
 		{
 			ForwardIterator i(first);
 
-			for(Size n = 0; n < count; ++n, ++i, --d1)
+			for(Size n = 0; n < count; ++n, (void)++i, (void)--d1)
 			{
 				if(!(*i == value)) // Note that we always express value comparisons in terms of < or ==.
 					goto not_found;

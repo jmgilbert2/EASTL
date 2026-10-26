@@ -71,12 +71,13 @@ namespace eastl
 		typedef eastl::random_access_iterator_tag                 iterator_category;
 
 	public:
-		Container*         mpContainer;
-		container_iterator mContainerIterator;
+		Container*                mpContainer;
+		container_iterator        mContainerIterator;
+		const container_iterator* mpBegin;            // The ring_buffer's begin, from which operator- and the relational operators measure positions.
 
 	public:
 		ring_buffer_iterator();
-		ring_buffer_iterator(Container* pContainer, const container_iterator& containerIterator);
+		ring_buffer_iterator(Container* pContainer, const container_iterator& containerIterator, const container_iterator* pBegin);
 		ring_buffer_iterator(const iterator& x);
 
 		ring_buffer_iterator& operator=(const iterator& x);
@@ -95,6 +96,8 @@ namespace eastl
 
 		this_type operator+(difference_type n) const;
 		this_type operator-(difference_type n) const;
+
+		reference operator[](difference_type n) const;
 
 	protected:
 		void increment(difference_type n, eastl::input_iterator_tag);
@@ -343,21 +346,21 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, typename Container>
 	ring_buffer_iterator<T, Pointer, Reference, Container>::ring_buffer_iterator()
-		: mpContainer(NULL), mContainerIterator()
+		: mpContainer(NULL), mContainerIterator(), mpBegin(NULL)
 	{
 	}
 
 
 	template <typename T, typename Pointer, typename Reference, typename Container>
-	ring_buffer_iterator<T, Pointer, Reference, Container>::ring_buffer_iterator(Container* pContainer, const container_iterator& containerIterator)
-		: mpContainer(pContainer), mContainerIterator(containerIterator)
+	ring_buffer_iterator<T, Pointer, Reference, Container>::ring_buffer_iterator(Container* pContainer, const container_iterator& containerIterator, const container_iterator* pBegin)
+		: mpContainer(pContainer), mContainerIterator(containerIterator), mpBegin(pBegin)
 	{
 	}
 
 
 	template <typename T, typename Pointer, typename Reference, typename Container>
 	ring_buffer_iterator<T, Pointer, Reference, Container>::ring_buffer_iterator(const iterator& x)
-		: mpContainer(x.mpContainer), mContainerIterator(x.mContainerIterator)
+		: mpContainer(x.mpContainer), mContainerIterator(x.mContainerIterator), mpBegin(x.mpBegin)
 	{
 	}
 
@@ -368,6 +371,7 @@ namespace eastl
 	{
 		mpContainer        = x.mpContainer;
 		mContainerIterator = x.mContainerIterator;
+		mpBegin            = x.mpBegin;
 		return *this;
 	}
 
@@ -468,11 +472,21 @@ namespace eastl
 
 
 	template <typename T, typename Pointer, typename Reference, typename Container>
+	typename ring_buffer_iterator<T, Pointer, Reference, Container>::reference
+	ring_buffer_iterator<T, Pointer, Reference, Container>::operator[](difference_type n) const
+	{
+		return *(*this + n);
+	}
+
+
+	template <typename T, typename Pointer, typename Reference, typename Container>
 	void ring_buffer_iterator<T, Pointer, Reference, Container>::increment(difference_type n, eastl::input_iterator_tag)
 	{
-		// n cannot be negative, as input iterators don't support reverse iteration.
-		while(n-- > 0)
+		// The container's iterators are at least bidirectional (see operator--), so n can be negative.
+		for(; n > 0; --n)
 			operator++();
+		for(; n < 0; ++n)
+			operator--();
 	}
 
 
@@ -515,25 +529,42 @@ namespace eastl
 	}
 
 
+	namespace Internal
+	{
+		// Returns the position of i in its ring buffer: 0 for begin() and size() for end().
+		template <typename T, typename Pointer, typename Reference, typename Container>
+		inline typename Container::difference_type
+		ring_buffer_position(const ring_buffer_iterator<T, Pointer, Reference, Container>& i, eastl::random_access_iterator_tag)
+		{
+			const typename Container::difference_type d = i.mContainerIterator - *i.mpBegin;
+			return (d < 0) ? (d + (typename Container::difference_type)i.mpContainer->size()) : d; // If i is past the wraparound.
+		}
+
+		template <typename T, typename Pointer, typename Reference, typename Container>
+		inline typename Container::difference_type
+		ring_buffer_position(const ring_buffer_iterator<T, Pointer, Reference, Container>& i, eastl::input_iterator_tag)
+		{
+			typename Container::difference_type d = 0;
+
+			for(ring_buffer_iterator<T, Pointer, Reference, Container> temp(i.mpContainer, *i.mpBegin, i.mpBegin); temp != i; ++temp)
+				++d;
+
+			return d;
+		}
+	}
+
+
 	// You can only add an integer to an iterator, but you can subtract two iterators.
+	// The difference is that of the positions in the ring buffer, so it's negative if a is before b.
+	// It takes constant time if the container has random access iterators; otherwise we iterate from begin.
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, typename Container>
 	inline typename ring_buffer_iterator<T, PointerA, ReferenceA, Container>::difference_type
 	operator-(const ring_buffer_iterator<T, PointerA, ReferenceA, Container>& a,
 			  const ring_buffer_iterator<T, PointerB, ReferenceB, Container>& b)
 	{
-		typedef typename ring_buffer_iterator<T, PointerA, ReferenceA, Container>::difference_type difference_type;
+		typedef typename eastl::iterator_traits<typename Container::iterator>::iterator_category IC;
 
-		// To do: If container_iterator is a random access iterator, then do a simple calculation.
-		// Otherwise, we have little choice but to iterate from a to b and count as we go.
-		// See the ring_buffer::size function for an implementation of this.
-
-		// Iteration implementation:
-		difference_type d = 0;
-
-		for(ring_buffer_iterator<T, PointerA, ReferenceA, Container> temp(b); temp != a; ++temp)
-			++d;
-
-		return d;
+		return Internal::ring_buffer_position(a, IC()) - Internal::ring_buffer_position(b, IC());
 	}
 
 
@@ -569,6 +600,39 @@ namespace eastl
 						   const ring_buffer_iterator<T, Pointer, Reference, Container>& b)
 	{
 		return !(a.mContainerIterator == b.mContainerIterator);
+	}
+
+
+	// The relational operators compare the positions in the ring buffer (see operator-), not in the container.
+	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, typename Container>
+	inline bool operator<(const ring_buffer_iterator<T, PointerA, ReferenceA, Container>& a,
+						  const ring_buffer_iterator<T, PointerB, ReferenceB, Container>& b)
+	{
+		return (a - b) < 0;
+	}
+
+
+	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, typename Container>
+	inline bool operator>(const ring_buffer_iterator<T, PointerA, ReferenceA, Container>& a,
+						  const ring_buffer_iterator<T, PointerB, ReferenceB, Container>& b)
+	{
+		return (a - b) > 0;
+	}
+
+
+	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, typename Container>
+	inline bool operator<=(const ring_buffer_iterator<T, PointerA, ReferenceA, Container>& a,
+						   const ring_buffer_iterator<T, PointerB, ReferenceB, Container>& b)
+	{
+		return (a - b) <= 0;
+	}
+
+
+	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, typename Container>
+	inline bool operator>=(const ring_buffer_iterator<T, PointerA, ReferenceA, Container>& a,
+						   const ring_buffer_iterator<T, PointerB, ReferenceB, Container>& b)
+	{
+		return (a - b) >= 0;
 	}
 
 
@@ -774,7 +838,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::iterator
 	ring_buffer<T, Container, Allocator>::begin() EA_NOEXCEPT
 	{
-		return iterator(&c, mBegin);
+		return iterator(&c, mBegin, &mBegin);
 	}
 
 
@@ -782,7 +846,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::const_iterator
 	ring_buffer<T, Container, Allocator>::begin() const EA_NOEXCEPT
 	{
-		return const_iterator(const_cast<Container*>(&c), mBegin); // We trust that the const_iterator will respect const-ness.
+		return const_iterator(const_cast<Container*>(&c), mBegin, &mBegin); // We trust that the const_iterator will respect const-ness.
 	}
 
 
@@ -790,7 +854,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::const_iterator
 	ring_buffer<T, Container, Allocator>::cbegin() const EA_NOEXCEPT
 	{
-		return const_iterator(const_cast<Container*>(&c), mBegin); // We trust that the const_iterator will respect const-ness.
+		return const_iterator(const_cast<Container*>(&c), mBegin, &mBegin); // We trust that the const_iterator will respect const-ness.
 	}
 
 
@@ -798,7 +862,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::iterator
 	ring_buffer<T, Container, Allocator>::end() EA_NOEXCEPT
 	{
-		return iterator(&c, mEnd);
+		return iterator(&c, mEnd, &mBegin);
 	}
 
 
@@ -806,7 +870,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::const_iterator
 	ring_buffer<T, Container, Allocator>::end() const EA_NOEXCEPT
 	{
-		return const_iterator(const_cast<Container*>(&c), mEnd); // We trust that the const_iterator will respect const-ness.
+		return const_iterator(const_cast<Container*>(&c), mEnd, &mBegin); // We trust that the const_iterator will respect const-ness.
 	}
 
 
@@ -814,7 +878,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::const_iterator
 	ring_buffer<T, Container, Allocator>::cend() const EA_NOEXCEPT
 	{
-		return const_iterator(const_cast<Container*>(&c), mEnd); // We trust that the const_iterator will respect const-ness.
+		return const_iterator(const_cast<Container*>(&c), mEnd, &mBegin); // We trust that the const_iterator will respect const-ness.
 	}
 
 
@@ -822,7 +886,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::reverse_iterator 
 	ring_buffer<T, Container, Allocator>::rbegin() EA_NOEXCEPT
 	{
-		return reverse_iterator(iterator(&c, mEnd));
+		return reverse_iterator(iterator(&c, mEnd, &mBegin));
 	}
 
 
@@ -830,7 +894,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::const_reverse_iterator
 	ring_buffer<T, Container, Allocator>::rbegin() const EA_NOEXCEPT
 	{
-		return const_reverse_iterator(const_iterator(const_cast<Container*>(&c), mEnd));
+		return const_reverse_iterator(const_iterator(const_cast<Container*>(&c), mEnd, &mBegin));
 	}
 
 
@@ -838,7 +902,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::const_reverse_iterator
 	ring_buffer<T, Container, Allocator>::crbegin() const EA_NOEXCEPT
 	{
-		return const_reverse_iterator(const_iterator(const_cast<Container*>(&c), mEnd));
+		return const_reverse_iterator(const_iterator(const_cast<Container*>(&c), mEnd, &mBegin));
 	}
 
 
@@ -846,7 +910,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::reverse_iterator
 	ring_buffer<T, Container, Allocator>::rend() EA_NOEXCEPT
 	{
-		return reverse_iterator(iterator(&c, mBegin));
+		return reverse_iterator(iterator(&c, mBegin, &mBegin));
 	}
 
 
@@ -854,7 +918,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::const_reverse_iterator
 	ring_buffer<T, Container, Allocator>::rend() const EA_NOEXCEPT
 	{
-		return const_reverse_iterator(const_iterator(const_cast<Container*>(&c), mBegin));
+		return const_reverse_iterator(const_iterator(const_cast<Container*>(&c), mBegin, &mBegin));
 	}
 
 
@@ -862,7 +926,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::const_reverse_iterator
 	ring_buffer<T, Container, Allocator>::crend() const EA_NOEXCEPT
 	{
-		return const_reverse_iterator(const_iterator(const_cast<Container*>(&c), mBegin));
+		return const_reverse_iterator(const_iterator(const_cast<Container*>(&c), mBegin, &mBegin));
 	}
 
 
@@ -1331,7 +1395,7 @@ namespace eastl
 		else
 			push_back();
 
-		iterator itPosition(position.mpContainer, position.mContainerIterator); // We merely copy from const_iterator to iterator.
+		iterator itPosition(position.mpContainer, position.mContainerIterator, position.mpBegin); // We merely copy from const_iterator to iterator.
 		eastl::copy_backward(itPosition, beforeEnd, end());
 		*itPosition = value;
 
@@ -1364,7 +1428,7 @@ namespace eastl
 		// To do: This can possibly be improved with a smarter version.
 		// However, this can be tricky if distance(first, last) is greater
 		// than the size of the container itself.
-		for(; first != last; ++first, ++position)
+		for(; first != last; ++first, (void)++position)
 			insert(position, *first);
 	}
 
@@ -1373,7 +1437,7 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::iterator
 	ring_buffer<T, Container, Allocator>::erase(const_iterator position)
 	{
-		iterator itPosition(position.mpContainer, position.mContainerIterator); // We merely copy from const_iterator to iterator.
+		iterator itPosition(position.mpContainer, position.mContainerIterator, position.mpBegin); // We merely copy from const_iterator to iterator.
 		iterator iNext(itPosition);
 
 		eastl::copy(++iNext, end(), itPosition);
@@ -1387,8 +1451,8 @@ namespace eastl
 	typename ring_buffer<T, Container, Allocator>::iterator
 	ring_buffer<T, Container, Allocator>::erase(const_iterator first, const_iterator last)
 	{
-		iterator itFirst(first.mpContainer, first.mContainerIterator); // We merely copy from const_iterator to iterator.
-		iterator itLast(last.mpContainer, last.mContainerIterator);
+		iterator itFirst(first.mpContainer, first.mContainerIterator, first.mpBegin); // We merely copy from const_iterator to iterator.
+		iterator itLast(last.mpContainer, last.mContainerIterator, last.mpBegin);
 
 		typename iterator::difference_type d = eastl::distance(itFirst, itLast);
 

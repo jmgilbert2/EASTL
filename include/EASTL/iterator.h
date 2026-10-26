@@ -14,21 +14,13 @@
 #include <EASTL/internal/memory_base.h>
 #include <EASTL/initializer_list.h>
 
-EA_DISABLE_ALL_VC_WARNINGS();
-
 #include <stddef.h>
-
-EA_RESTORE_ALL_VC_WARNINGS();
 
 // If the user has specified that we use std iterator
 // categories instead of EASTL iterator categories,
 // then #include <iterator>.
 #if EASTL_STD_ITERATOR_CATEGORY_ENABLED
-	EA_DISABLE_ALL_VC_WARNINGS();
-
 	#include <iterator>
-
-	EA_RESTORE_ALL_VC_WARNINGS();
 #endif
 
 

@@ -27,10 +27,8 @@
 #endif
 
 #if EASTL_EXCEPTIONS_ENABLED
-	EA_DISABLE_ALL_VC_WARNINGS()
 	#include <new>
 	#include <exception>
-	EA_RESTORE_ALL_VC_WARNINGS()
 #endif
 
 #define EASTL_EMPTY_FUNCTION_QUALIFIER
