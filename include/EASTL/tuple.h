@@ -179,7 +179,7 @@ namespace Internal
 
 	// TupleLeaf
 	//
-	template <size_t I, typename ValueType, bool IsEmpty = is_empty_v<ValueType>>
+	template <size_t I, typename ValueType, bool IsEmpty = is_empty_v<ValueType> && !is_final_v<ValueType>>
 	class TupleLeaf;
 
 	template <size_t I, typename ValueType, bool IsEmpty>
