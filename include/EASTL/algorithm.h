@@ -1023,9 +1023,8 @@ namespace eastl
 	/// Complexity: Exactly '(last - first) - 1' swaps.
 	///
 	/// Example usage:
-	///     struct Rand{ eastl_size_t operator()(eastl_size_t n) { return (eastl_size_t)(rand() % n); } }; // Note: The C rand function is poor and slow.
-	///     Rand randInstance;
-	///     shuffle(pArrayBegin, pArrayEnd, randInstance);
+	///     std::mt19937 rng(seed); // Or any other uniform random bit generator.
+	///     shuffle(pArrayBegin, pArrayEnd, rng);
 	///
 	// See the C++11 Standard, 26.5.1.3, Uniform random number generator requirements.
 	// Also http://en.cppreference.com/w/cpp/numeric/random/uniform_int_distribution
@@ -1035,15 +1034,11 @@ namespace eastl
 	{
 		if(first != last)
 		{
-			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
-			typedef typename eastl::make_unsigned<difference_type>::type                   unsigned_difference_type;
-			typedef typename eastl::uniform_int_distribution<unsigned_difference_type>     uniform_int_distribution;
-			typedef typename uniform_int_distribution::param_type                          uniform_int_distribution_param_type;
-
-			uniform_int_distribution uid;
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type   difference_type;
+			typedef typename eastl::conditional<(sizeof(difference_type) <= 4), uint32_t, uint64_t>::type index_type; // 32-bit indexes don't need the 64-bit path.
 
 			for(RandomAccessIterator i = first + 1; i != last; ++i)
-				eastl::iter_swap(i, first + uid(urng, uniform_int_distribution_param_type(0, i - first)));
+				eastl::iter_swap(i, first + (difference_type)Internal::urng_value(urng, (index_type)(i - first)));
 		}
 	}
 
