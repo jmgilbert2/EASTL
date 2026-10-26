@@ -71,6 +71,13 @@ namespace TestLruCacheInternal
 		eastl::string name;
 		int weight = 0;
 	};
+
+	struct NoDefaultValue
+	{
+		explicit NoDefaultValue(int v) : value(v) {}
+
+		int value;
+	};
 }
 
 namespace eastl
@@ -395,6 +402,92 @@ int TestLruCacheOfType()
 		auto [ it, did_emplace ] = lc.emplace(0, 9, 9, 9);
 		VERIFY(!did_emplace);
 		VERIFY((it->second.first == TestObject{ 3, 2, 1 }));
+	}
+
+	// Test different key and value types
+	{
+		LruCache<int, eastl::string> lc(2);
+
+		EATEST_VERIFY(lc.insert(1, "one") == true);
+		EATEST_VERIFY(lc.insert(1, "uno") == false);
+		EATEST_VERIFY(lc.insert(2, "two") == true);
+		EATEST_VERIFY(lc.at(1).value() == "one");
+		EATEST_VERIFY(lc.touch(1) == true);
+
+		// 2 is the oldest
+		lc.insert_or_assign(3, "three");
+		EATEST_VERIFY(lc.contains(1) == true);
+		EATEST_VERIFY(lc.contains(2) == false);
+		EATEST_VERIFY(lc.contains(3) == true);
+		EATEST_VERIFY(lc.assign(3, "drei") == true);
+		EATEST_VERIFY(lc[3] == "drei");
+
+		// 1 is the oldest; get() default-constructs the missing value
+		EATEST_VERIFY(lc.get(4).empty());
+		EATEST_VERIFY(lc.contains(1) == false);
+
+		// 3 is the oldest
+		EATEST_VERIFY(lc.emplace(5, "five").first->second.first == "five");
+		EATEST_VERIFY(lc.contains(3) == false);
+		EATEST_VERIFY(lc.erase(4) == true);
+		EATEST_VERIFY(lc.size() == 1);
+	}
+
+	{
+		int deletedSum = 0;
+		LruCache<eastl::string, int> lc(2, EASTLAllocatorType("eastl lru_cache"),
+		                                [](eastl::string key) { return static_cast<int>(key.size()); },
+		                                [&deletedSum](const int& value) { deletedSum += value; });
+
+		// Created by the create callback from the key
+		EATEST_VERIFY(lc["abc"] == 3);
+		EATEST_VERIFY(lc.insert("hello", 10) == true);
+		EATEST_VERIFY(lc.contains("abc") == true);
+
+		// "abc" is the oldest
+		EATEST_VERIFY(lc.get("de") == 2);
+		EATEST_VERIFY(lc.contains("abc") == false);
+		EATEST_VERIFY(deletedSum == 3);
+
+		lc.clear();
+		EATEST_VERIFY(deletedSum == 15);
+		EATEST_VERIFY(lc.empty() == true);
+	}
+
+	{
+		using namespace TestLruCacheInternal;
+
+		LruCache<UserKey, UserValue> lc(2);
+
+		EATEST_VERIFY((lc.insert(UserKey{1, 2}, UserValue{"a", 1}) == true));
+		EATEST_VERIFY((lc.emplace(UserKey{3, 4}, UserValue{"b", 2}).second == true));
+		EATEST_VERIFY((lc.touch(UserKey{1, 2}) == true));
+
+		// {3, 4} is the oldest
+		lc.insert_or_assign(UserKey{5, 6}, UserValue{"c", 3});
+		EATEST_VERIFY((lc.contains(UserKey{1, 2}) == true));
+		EATEST_VERIFY((lc.contains(UserKey{3, 4}) == false));
+		EATEST_VERIFY((lc.at(UserKey{5, 6}).value().name == "c"));
+		EATEST_VERIFY((lc[UserKey{1, 2}].weight == 1));
+		EATEST_VERIFY(lc.size() == 2);
+	}
+
+	// A value type without a default constructor works with the members that don't default-construct values.
+	{
+		using namespace TestLruCacheInternal;
+
+		LruCache<int, NoDefaultValue> lc(2);
+
+		EATEST_VERIFY(lc.emplace(1, 10).second == true);
+		EATEST_VERIFY(lc.emplace(2, 20).second == true);
+		EATEST_VERIFY(lc.touch(1) == true);
+
+		// 2 is the oldest
+		EATEST_VERIFY(lc.emplace(3, 30).second == true);
+		EATEST_VERIFY(lc.contains(2) == false);
+		EATEST_VERIFY(lc.at(1).value().value == 10);
+		EATEST_VERIFY(lc.erase(3) == true);
+		EATEST_VERIFY(lc.size() == 1);
 	}
 
 	return nErrorCount;
