@@ -443,6 +443,7 @@ namespace eastl
 		void DoInsert(ListNodeBase* pNode, InputIterator first, InputIterator last, false_type);
 
 		void DoInsertValues(ListNodeBase* pNode, size_type n, const value_type& value);
+		void DoInsertValues(ListNodeBase* pNode, size_type n);
 	   
 		template<typename... Args>
 		void DoInsertValue(ListNodeBase* pNode, Args&&... args);
@@ -797,7 +798,7 @@ namespace eastl
 	inline list<T, Allocator>::list(size_type n, const allocator_type& allocator)
 		: base_type(allocator)
 	{
-		DoInsertValues(&internalNode(), n, value_type());
+		DoInsertValues(&internalNode(), n);
 	}
 
 
@@ -1177,7 +1178,18 @@ namespace eastl
 	template <typename T, typename Allocator>
 	inline void list<T, Allocator>::resize(size_type n)
 	{
-		resize(n, value_type());
+		iterator current(internalNode().mpNext);
+		size_type i = 0;
+
+		while((current.mpNode != &internalNode()) && (i < n))
+		{
+			++current;  
+			++i;
+		}
+		if(i == n)
+			erase(current, &internalNode());
+		else
+			DoInsertValues(&internalNode(), n - i);
 	}
 
 
@@ -1974,6 +1986,14 @@ namespace eastl
 	{
 		for(; n > 0; --n)
 			DoInsertValue(pNode, value);
+	}
+
+
+	template <typename T, typename Allocator>
+	inline void list<T, Allocator>::DoInsertValues(ListNodeBase* pNode, size_type n)
+	{
+		for(; n > 0; --n)
+			DoInsertValue(pNode);
 	}
 
 
