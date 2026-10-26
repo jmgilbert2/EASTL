@@ -5,6 +5,7 @@
 #include "EASTLTest.h"
 #include <EASTL/list.h>
 #include <EASTL/sort.h>
+#include <EASTL/unique_ptr.h>
 #include <EASTL/fixed_allocator.h>
 
 using namespace eastl;
@@ -1087,6 +1088,31 @@ int TestList()
 		}
 #endif
 	}
+	// Member functions that must work with move-only element types, as they do in std::list.
+	{
+		eastl::list<eastl::unique_ptr<int> > c1(5); // list(size_type n)
+		EATEST_VERIFY(c1.size() == 5);
+		EATEST_VERIFY(eastl::all_of(c1.begin(), c1.end(), [](const eastl::unique_ptr<int>& p) { return p == nullptr; }));
+
+		c1.front().reset(new int(7));
+		c1.resize(8); // resize(size_type n), growing
+		EATEST_VERIFY(c1.size() == 8);
+		EATEST_VERIFY(*c1.front() == 7);
+		EATEST_VERIFY(eastl::all_of(++c1.begin(), c1.end(), [](const eastl::unique_ptr<int>& p) { return p == nullptr; }));
+
+		c1.resize(2); // resize(size_type n), shrinking
+		EATEST_VERIFY(c1.size() == 2);
+		EATEST_VERIFY(*c1.front() == 7);
+	}
+
+	// Value-initialization of the default-inserted elements.
+	{
+		eastl::list<int> c2(4);
+		c2.resize(7);
+		EATEST_VERIFY(c2.size() == 7);
+		EATEST_VERIFY(eastl::all_of(c2.begin(), c2.end(), [](int i) { return i == 0; }));
+	}
+
 	return nErrorCount;
 }
 
