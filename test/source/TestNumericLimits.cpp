@@ -6,6 +6,7 @@
 #include "EASTLTest.h"
 #include <EASTL/numeric_limits.h>
 #include <EASTL/numeric.h>
+#include <float.h>
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -125,6 +126,14 @@ int TestNumericLimits()
 
 	EATEST_VERIFY(eastl::isnan(eastl::numeric_limits<float>::quiet_NaN()));
 	EATEST_VERIFY(eastl::isnan(eastl::numeric_limits<float>::signaling_NaN()));
+
+	// max_digits10 is the number of decimal digits needed to round-trip a floating point value, and 0 for integers.
+	#if defined(FLT_DECIMAL_DIG) && defined(DBL_DECIMAL_DIG) && defined(LDBL_DECIMAL_DIG) // C11 / C++17 macros.
+		EATEST_VERIFY(eastl::numeric_limits<float>::max_digits10 == FLT_DECIMAL_DIG);
+		EATEST_VERIFY(eastl::numeric_limits<double>::max_digits10 == DBL_DECIMAL_DIG);
+		EATEST_VERIFY(eastl::numeric_limits<long double>::max_digits10 == LDBL_DECIMAL_DIG);
+	#endif
+	EATEST_VERIFY(eastl::numeric_limits<int>::max_digits10 == 0);
 
 	return nErrorCount;
 }

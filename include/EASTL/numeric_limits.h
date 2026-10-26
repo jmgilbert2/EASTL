@@ -1254,7 +1254,7 @@ namespace eastl
 		static constexpr bool               is_specialized    = true;
 		static constexpr int                digits            = FLT_MANT_DIG;
 		static constexpr int                digits10          = FLT_DIG;
-		static constexpr int                max_digits10      = FLT_MANT_DIG;
+		static constexpr int                max_digits10      = 2 + (FLT_MANT_DIG * 643L) / 2136;   // 2 + digits * log10(2), the digits needed to round-trip (FLT_DECIMAL_DIG).
 		static constexpr bool               is_signed         = true;
 		static constexpr bool               is_integer        = false;
 		static constexpr bool               is_exact          = false;
@@ -1358,7 +1358,7 @@ namespace eastl
 		static constexpr bool               is_specialized    = true;
 		static constexpr int                digits            = DBL_MANT_DIG;
 		static constexpr int                digits10          = DBL_DIG;
-		static constexpr int                max_digits10      = DBL_MANT_DIG;
+		static constexpr int                max_digits10      = 2 + (DBL_MANT_DIG * 643L) / 2136;   // 2 + digits * log10(2), the digits needed to round-trip (DBL_DECIMAL_DIG).
 		static constexpr bool               is_signed         = true;
 		static constexpr bool               is_integer        = false;
 		static constexpr bool               is_exact          = false;
@@ -1462,7 +1462,7 @@ namespace eastl
 		static constexpr bool               is_specialized    = true;
 		static constexpr int                digits            = LDBL_MANT_DIG;
 		static constexpr int                digits10          = LDBL_DIG;
-		static constexpr int                max_digits10      = LDBL_MANT_DIG;
+		static constexpr int                max_digits10      = 2 + (LDBL_MANT_DIG * 643L) / 2136;  // 2 + digits * log10(2), the digits needed to round-trip (LDBL_DECIMAL_DIG).
 		static constexpr bool               is_signed         = true;
 		static constexpr bool               is_integer        = false;
 		static constexpr bool               is_exact          = false;
