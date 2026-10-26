@@ -403,6 +403,7 @@ namespace eastl
 
 		node_type* DoInsertValueAfter(SListNodeBase* pNode);
 		node_type* DoInsertValuesAfter(SListNodeBase* pNode, size_type n, const value_type& value);
+		node_type* DoInsertValuesAfter(SListNodeBase* pNode, size_type n);
 
 		template<typename... Args>
 		node_type* DoInsertValueAfter(SListNodeBase* pNode, Args&&... args);
@@ -719,7 +720,7 @@ namespace eastl
 	inline slist<T, Allocator>::slist(size_type n, const allocator_type& allocator)
 		: base_type(allocator)
 	{
-		DoInsertValuesAfter(&internalNode(), n, value_type());
+		DoInsertValuesAfter(&internalNode(), n);
 	}
 
 
@@ -1092,7 +1093,15 @@ namespace eastl
 	template <typename T, typename Allocator>
 	inline void slist<T, Allocator>::resize(size_type n)
 	{
-		resize(n, value_type());
+		SListNodeBase* pNode = &internalNode();
+
+		for(; pNode->mpNext && (n > 0); --n)
+			pNode = pNode->mpNext;
+
+		if(pNode->mpNext)
+			DoEraseAfter(pNode, NULL);
+		else
+			DoInsertValuesAfter(pNode, n);
 	}
 
 
@@ -1702,6 +1711,16 @@ namespace eastl
 				++mSize; // We don't do a single mSize += n at the end because an exception may result in only a partial range insertion.
 			#endif
 		}
+		return static_cast<node_type*>((base_node_type*)pNode);
+	}
+
+
+	template <typename T, typename Allocator>
+	inline typename slist<T, Allocator>::node_type*
+	slist<T, Allocator>::DoInsertValuesAfter(SListNodeBase* pNode, size_type n)
+	{
+		for(size_type i = 0; i < n; ++i)
+			pNode = DoInsertValueAfter(pNode);
 		return static_cast<node_type*>((base_node_type*)pNode);
 	}
 
