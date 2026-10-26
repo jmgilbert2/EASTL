@@ -512,6 +512,12 @@ static int TestOptional_MonadicOperations()
 		
 
 
+#if defined(EASTL_OPTIONAL_ENABLED) && EASTL_OPTIONAL_ENABLED && EASTL_INLINE_VARIABLE_ENABLED
+// TestUtility.cpp checks that it sees the same nullopt object as this translation unit.
+const void* TestOptionalNulloptAddress() { return &eastl::nullopt; }
+#endif
+
+
 /////////////////////////////////////////////////////////////////////////////
 // TestOptional
 //
@@ -530,6 +536,14 @@ int TestOptional()
 			VERIFY( (is_same<optional<const volatile short>::value_type, const volatile short>::value));
 
 			VERIFY(is_empty<nullopt_t>::value);
+
+			// As the standard requires, nullopt_t has no default constructor (so that o = {} resets o instead of being
+			// ambiguous) and isn't an aggregate. As in the std implementations, its only constructor is explicit.
+			static_assert(!is_default_constructible<nullopt_t>::value, "nullopt_t must not be default constructible");
+			static_assert(!is_convertible<nullopt_tag_t, nullopt_t>::value, "nullopt_t's constructor must be explicit");
+			#if EASTL_TYPE_TRAIT_is_aggregate_CONFORMANCE
+				static_assert(!is_aggregate<nullopt_t>::value, "nullopt_t must not be an aggregate");
+			#endif
 
 			#if EASTL_TYPE_TRAIT_is_trivially_destructible_CONFORMANCE
 				VERIFY(is_trivially_destructible<int>::value);
@@ -643,6 +657,17 @@ int TestOptional()
 			o = nullopt;
 			VERIFY(!o);
 			VERIFY(o.value_or(0x8BADF00D) == (int)0x8BADF00D);
+		}
+
+		{
+			// o = {} resets o.
+			optional<int> o(42);
+			o = {};
+			VERIFY(!o);
+
+			optional<string> s(string("42"));
+			s = {};
+			VERIFY(!s);
 		}
 
 		{

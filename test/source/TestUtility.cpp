@@ -920,6 +920,25 @@ static int TestUtilityExchange()
 	return nErrorCount;
 }
 
+#if EASTL_INLINE_VARIABLE_ENABLED && EASTL_TUPLE_ENABLED && EASTL_OPTIONAL_ENABLED
+// Defined in TestTuple.cpp and TestOptional.cpp: the addresses of the tag objects in those translation units.
+const void* TestTupleIgnoreAddress();
+const void* TestTuplePiecewiseConstructAddress();
+const void* TestOptionalNulloptAddress();
+
+static int TestUtilityTagObjects()
+{
+	int nErrorCount = 0;
+
+	// Like the std ones, the tag objects are inline variables: every translation unit sees the same object.
+	EATEST_VERIFY(TestTupleIgnoreAddress() == &eastl::ignore);
+	EATEST_VERIFY(TestTuplePiecewiseConstructAddress() == &eastl::piecewise_construct);
+	EATEST_VERIFY(TestOptionalNulloptAddress() == &eastl::nullopt);
+
+	return nErrorCount;
+}
+#endif
+
 #if defined(EA_COMPILER_CPP17_ENABLED)
 template <typename T>
 static int TestCmpCommon()
@@ -1242,6 +1261,9 @@ int TestUtility()
 	nErrorCount += TestUtilityMove();
 	nErrorCount += TestUtilityIntegerSequence();
 	nErrorCount += TestUtilityExchange();
+#if EASTL_INLINE_VARIABLE_ENABLED && EASTL_TUPLE_ENABLED && EASTL_OPTIONAL_ENABLED
+	nErrorCount += TestUtilityTagObjects();
+#endif
 #if defined(EA_COMPILER_CPP17_ENABLED)
 	nErrorCount += TestUtilityIntegralComp();
 #endif

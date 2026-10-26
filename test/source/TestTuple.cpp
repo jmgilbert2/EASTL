@@ -78,6 +78,12 @@ int OperationCountingType::mDestructorCalls = 0;
 
 }  // namespace TestTupleInternal
 
+#if EASTL_INLINE_VARIABLE_ENABLED
+// TestUtility.cpp checks that it sees the same ignore and piecewise_construct objects as this translation unit.
+const void* TestTupleIgnoreAddress() { return &eastl::ignore; }
+const void* TestTuplePiecewiseConstructAddress() { return &eastl::piecewise_construct; }
+#endif
+
 int TestTuple()
 {
 	using namespace eastl;
@@ -336,6 +342,8 @@ int TestTuple()
 			int a = 0;
 			double b = 0.0f;
 			static_assert(is_assignable<const Internal::ignore_t&, int>::value, "ignore_t not assignable");
+			static_assert(noexcept(ignore = 1), "ignore_t assignment not noexcept");
+			static_assert(&(ignore = 1) == &ignore, "ignore_t assignment not constexpr");
 			static_assert(Internal::TupleAssignable<tuple<const Internal::ignore_t&>, tuple<int>>::value, "Not assignable");
 			tie(a, ignore, b) = make_tuple(1, 3, 5);
 			EATEST_VERIFY(a == 1 && b == 5.0f);

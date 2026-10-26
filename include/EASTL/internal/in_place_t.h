@@ -13,6 +13,8 @@
 	#pragma once
 #endif
 
+#include <EASTL/internal/config.h> // EASTL_CPP17_INLINE_VARIABLE
+
 namespace eastl
 {
 	///////////////////////////////////////////////////////////////////////////////
