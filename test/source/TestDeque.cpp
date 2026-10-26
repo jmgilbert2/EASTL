@@ -15,10 +15,8 @@
 #include "ConceptImpls.h"
 
 #if defined(EA_COMPILER_CPP20_ENABLED) && !defined(EA_COMPILER_NO_STANDARD_CPP_LIBRARY)
-	EA_DISABLE_ALL_VC_WARNINGS()
 	#include <algorithm>
 	#include <ranges>
-	EA_RESTORE_ALL_VC_WARNINGS()
 #endif
 
 
