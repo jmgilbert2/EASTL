@@ -135,6 +135,33 @@ int TestNumericLimits()
 	#endif
 	EATEST_VERIFY(eastl::numeric_limits<int>::max_digits10 == 0);
 
+	// is_modulo is true for unsigned integer types and false for signed ones, whose overflow is undefined behavior.
+	EATEST_VERIFY(!eastl::numeric_limits<bool>::is_modulo);
+	EATEST_VERIFY(eastl::numeric_limits<char>::is_modulo == !eastl::numeric_limits<char>::is_signed);
+	EATEST_VERIFY(!eastl::numeric_limits<signed char>::is_modulo);
+	EATEST_VERIFY(eastl::numeric_limits<unsigned char>::is_modulo);
+	EATEST_VERIFY(eastl::numeric_limits<wchar_t>::is_modulo == !eastl::numeric_limits<wchar_t>::is_signed);
+	#if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
+	EATEST_VERIFY(eastl::numeric_limits<char8_t>::is_modulo);
+	#endif
+	EATEST_VERIFY(eastl::numeric_limits<char16_t>::is_modulo);
+	EATEST_VERIFY(eastl::numeric_limits<char32_t>::is_modulo);
+	EATEST_VERIFY(!eastl::numeric_limits<signed short>::is_modulo);
+	EATEST_VERIFY(eastl::numeric_limits<unsigned short>::is_modulo);
+	EATEST_VERIFY(!eastl::numeric_limits<signed int>::is_modulo);
+	EATEST_VERIFY(eastl::numeric_limits<unsigned int>::is_modulo);
+	EATEST_VERIFY(!eastl::numeric_limits<signed long>::is_modulo);
+	EATEST_VERIFY(eastl::numeric_limits<unsigned long>::is_modulo);
+	EATEST_VERIFY(!eastl::numeric_limits<signed long long>::is_modulo);
+	EATEST_VERIFY(eastl::numeric_limits<unsigned long long>::is_modulo);
+	#if (EA_COMPILER_INTMAX_SIZE >= 16) && (defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_CLANG)) // If __int128_t/__uint128_t is supported...
+		EATEST_VERIFY(!eastl::numeric_limits<__int128_t>::is_modulo);
+		EATEST_VERIFY(eastl::numeric_limits<__uint128_t>::is_modulo);
+	#endif
+	EATEST_VERIFY(!eastl::numeric_limits<float>::is_modulo);
+	EATEST_VERIFY(!eastl::numeric_limits<double>::is_modulo);
+	EATEST_VERIFY(!eastl::numeric_limits<long double>::is_modulo);
+
 	return nErrorCount;
 }
 

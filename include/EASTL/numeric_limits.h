@@ -229,7 +229,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = !is_signed;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -349,7 +349,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = false;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -413,7 +413,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = !is_signed;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -721,7 +721,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = false;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -842,7 +842,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = false;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -962,7 +962,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = false;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -1082,7 +1082,7 @@ namespace eastl
 		static constexpr int                max_exponent      = 0;
 		static constexpr int                max_exponent10    = 0;
 		static constexpr bool               is_bounded        = true;
-		static constexpr bool               is_modulo         = true;
+		static constexpr bool               is_modulo         = false;
 		static constexpr bool               traps             = true;
 		static constexpr bool               tinyness_before   = false;
 		static constexpr float_round_style  round_style       = round_toward_zero;
@@ -1203,7 +1203,7 @@ namespace eastl
 			static constexpr int                max_exponent      = 0;
 			static constexpr int                max_exponent10    = 0;
 			static constexpr bool               is_bounded        = true;
-			static constexpr bool               is_modulo         = true;
+			static constexpr bool               is_modulo         = false;
 			static constexpr bool               traps             = true;
 			static constexpr bool               tinyness_before   = false;
 			static constexpr float_round_style  round_style       = round_toward_zero;
