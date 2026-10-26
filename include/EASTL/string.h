@@ -3869,9 +3869,10 @@ namespace eastl
 		size_t operator()(const basic_string<char, Allocator>& x) const
 		{
 			const unsigned char* p = (const unsigned char*)x.c_str(); // To consider: limit p to at most 256 chars.
-			unsigned int c, result = 2166136261U; // We implement an FNV-like string hash.
-			while((c = *p++) != 0) // Using '!=' disables compiler warnings.
-				result = (result * 16777619) ^ c;
+			const unsigned char* const pEnd = p + x.size(); // Hash all size() characters, including embedded NULs, like hash<string_view>.
+			unsigned int result = 2166136261U; // We implement an FNV-like string hash.
+			while(p != pEnd)
+				result = (result * 16777619) ^ (unsigned int)*p++;
 			return (size_t)result;
 		}
 	};
@@ -3883,9 +3884,10 @@ namespace eastl
 			size_t operator()(const basic_string<char8_t, Allocator>& x) const
 			{
 				const char8_t* p = (const char8_t*)x.c_str();
-				unsigned int c, result = 2166136261U;
-				while((c = *p++) != 0)
-					result = (result * 16777619) ^ c;
+				const char8_t* const pEnd = p + x.size();
+				unsigned int result = 2166136261U;
+				while(p != pEnd)
+					result = (result * 16777619) ^ (unsigned int)*p++;
 				return (size_t)result;
 			}
 		};
@@ -3897,9 +3899,10 @@ namespace eastl
 		size_t operator()(const basic_string<char16_t, Allocator>& x) const
 		{
 			const char16_t* p = x.c_str();
-			unsigned int c, result = 2166136261U;
-			while((c = *p++) != 0)
-				result = (result * 16777619) ^ c;
+			const char16_t* const pEnd = p + x.size();
+			unsigned int result = 2166136261U;
+			while(p != pEnd)
+				result = (result * 16777619) ^ (unsigned int)*p++;
 			return (size_t)result;
 		}
 	};
@@ -3910,9 +3913,10 @@ namespace eastl
 		size_t operator()(const basic_string<char32_t, Allocator>& x) const
 		{
 			const char32_t* p = x.c_str();
-			unsigned int c, result = 2166136261U;
-			while((c = (unsigned int)*p++) != 0)
-				result = (result * 16777619) ^ c;
+			const char32_t* const pEnd = p + x.size();
+			unsigned int result = 2166136261U;
+			while(p != pEnd)
+				result = (result * 16777619) ^ (unsigned int)*p++;
 			return (size_t)result;
 		}
 	};
@@ -3924,9 +3928,10 @@ namespace eastl
 			size_t operator()(const basic_string<wchar_t, Allocator>& x) const
 			{
 				const wchar_t* p = x.c_str();
-				unsigned int c, result = 2166136261U;
-				while((c = (unsigned int)*p++) != 0)
-					result = (result * 16777619) ^ c;
+				const wchar_t* const pEnd = p + x.size();
+				unsigned int result = 2166136261U;
+				while(p != pEnd)
+					result = (result * 16777619) ^ (unsigned int)*p++;
 				return (size_t)result;
 			}
 		};
