@@ -25,29 +25,17 @@
 #include <EASTL/ratio.h>
 
 
-// TODO:  move to platform specific cpp or header file
-#if  defined EA_PLATFORM_MICROSOFT
-	EA_DISABLE_ALL_VC_WARNINGS()
-
-	#ifndef WIN32_LEAN_AND_MEAN
-		#define WIN32_LEAN_AND_MEAN
-	#endif
-
-	#undef NOMINMAX
-	#define NOMINMAX
-
-	#include <Windows.h>
-
+#if EASTL_NOMINMAX
 	#ifdef min
 		#undef min
 	#endif
 	#ifdef max
 		#undef max
 	#endif
-
-	EA_RESTORE_ALL_VC_WARNINGS()
 #endif
 
+
+// TODO:  move to platform specific cpp or header file
 #if defined(EA_PLATFORM_MICROSOFT) && !defined(EA_PLATFORM_MINGW)
 	// Nothing to do
 #elif defined(EA_PLATFORM_SONY)
@@ -577,28 +565,12 @@ namespace chrono
 		///////////////////////////////////////////////////////////////////////////////
 		// Internal::GetTicks 
 		///////////////////////////////////////////////////////////////////////////////
+	#if defined EA_PLATFORM_MICROSOFT
+		EASTL_API uint64_t GetTicks(); // Defined in source/chrono.cpp, which keeps <Windows.h> out of this header.
+	#else
 		inline uint64_t GetTicks()
 		{
-		#if defined EA_PLATFORM_MICROSOFT
-			auto queryFrequency = []
-			{
-				LARGE_INTEGER frequency;
-				QueryPerformanceFrequency(&frequency);
-				return double(1000000000.0L / (long double)frequency.QuadPart);  // nanoseconds per tick
-			};
-
-			auto queryCounter = []
-			{
-				LARGE_INTEGER counter;
-				QueryPerformanceCounter(&counter);
-				return counter.QuadPart;
-			};
-
-			EA_DISABLE_VC_WARNING(4640)  // warning C4640: construction of local static object is not thread-safe (VS2013)
-			static auto frequency = queryFrequency(); // cache cpu frequency on first call
-			EA_RESTORE_VC_WARNING()
-			return uint64_t(frequency * (double)queryCounter());
-		#elif defined EA_PLATFORM_SONY
+		#if defined EA_PLATFORM_SONY
 			auto queryFrequency = []
 			{
 				// nanoseconds/seconds / ticks/seconds
@@ -647,6 +619,7 @@ namespace chrono
 			#error "chrono not implemented for platform"
 		#endif
 		}
+	#endif
 	} // namespace Internal
 
 
