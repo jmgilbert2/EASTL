@@ -97,7 +97,6 @@
 #include <EASTL/initializer_list.h>
 #include <EASTL/bonus/compressed_pair.h>
 
-EA_DISABLE_ALL_VC_WARNINGS()
 #include <stddef.h>             // size_t, ptrdiff_t, etc.
 #include <stdarg.h>             // vararg functionality.
 
@@ -114,7 +113,6 @@ EA_RESTORE_GCC_WARNING()
 #if EASTL_EXCEPTIONS_ENABLED
 	#include <stdexcept> // std::out_of_range, std::length_error, std::logic_error.
 #endif
-EA_RESTORE_ALL_VC_WARNINGS()
 
 
 // 4530 - C++ exception handler used, but unwind semantics are not enabled. Specify /EHsc

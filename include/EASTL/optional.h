@@ -36,9 +36,7 @@
 #include <EASTL/internal/special_member_functions_variant_optional.h>
 
 #if EASTL_EXCEPTIONS_ENABLED
-	EA_DISABLE_ALL_VC_WARNINGS()
 	#include <stdexcept> // std::logic_error.
-	EA_RESTORE_ALL_VC_WARNINGS()
 #endif
 
 #if defined(EASTL_OPTIONAL_ENABLED) && EASTL_OPTIONAL_ENABLED

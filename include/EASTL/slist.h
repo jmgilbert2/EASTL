@@ -38,11 +38,7 @@
 #include <stdexcept>
 #endif
 
-EA_DISABLE_ALL_VC_WARNINGS();
-
-	#include <new>
-
-EA_RESTORE_ALL_VC_WARNINGS();
+#include <new>
 
 EA_DISABLE_SN_WARNING(828); // The EDG SN compiler has a bug in its handling of variadic template arguments and mistakenly reports "parameter "args" was never referenced"
 

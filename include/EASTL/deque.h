@@ -79,15 +79,11 @@
 #include <EASTL/memory.h>
 #include <EASTL/initializer_list.h>
 
-EA_DISABLE_ALL_VC_WARNINGS()
 #include <new>
 #include <stddef.h>
-EA_RESTORE_ALL_VC_WARNINGS()
 
 #if EASTL_EXCEPTIONS_ENABLED
-	EA_DISABLE_ALL_VC_WARNINGS()
 	#include <stdexcept> // std::out_of_range, std::length_error, std::logic_error.
-	EA_RESTORE_ALL_VC_WARNINGS()
 #endif
 
 
