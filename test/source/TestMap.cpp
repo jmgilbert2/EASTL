@@ -320,6 +320,19 @@ int TestMap()
 
 		nErrorCount += TestAssociativeContainerHeterogeneousErasure(m);
 	}
+	// A final empty comparator cannot be a base class, so it is stored as a member.
+	{
+		struct EmptyLess { bool operator()(int a, int b) const { return a < b; } };
+		struct FinalLess final { bool operator()(int a, int b) const { return a < b; } };
+
+		eastl::map<int, int, FinalLess> m;
+		m[2] = 20; m[1] = 10; m[3] = 30;
+		EATEST_VERIFY(m.begin()->first == 1 && m.size() == 3 && m.find(2)->second == 20);
+
+		// Non-final empty comparators still take no space.
+		static_assert(sizeof(eastl::map<int, int, EmptyLess>) < sizeof(eastl::map<int, int, FinalLess>), "empty base optimization");
+	}
+
 
 	return nErrorCount;
 }
