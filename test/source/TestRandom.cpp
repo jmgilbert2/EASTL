@@ -189,6 +189,15 @@ int TestRandom()
 	}
 
 	{
+		// The 64x64->128-bit product that the 64-bit draws use (__int128, _umul128, __umulh or 32-bit halves).
+		uint64_t low = 0;
+		EATEST_VERIFY((eastl::Internal::urng_mul128(UINT64_MAX, UINT64_MAX, low) == UINT64_MAX - 1) && (low == 1));
+		EATEST_VERIFY((eastl::Internal::urng_mul128(UINT64_C(0x123456789abcdef0), UINT64_C(0xfedcba9876543210), low) == UINT64_C(0x121fa00ad77d7422)) && (low == UINT64_C(0x236d88fe5618cf00)));
+		EATEST_VERIFY((eastl::Internal::urng_mul128(UINT64_C(1) << 32, UINT64_C(1) << 32, low) == 1) && (low == 0));
+		EATEST_VERIFY((eastl::Internal::urng_mul128(1000000007, 3, low) == 0) && (low == 3000000021));
+	}
+
+	{
 		// uniform_int_distribution with signed and 64-bit types, generators narrower or wider than the
 		// result type, and generators whose range isn't a power of two.
 		EASTLTest_Rand rng(EA::UnitTest::GetRandSeed());

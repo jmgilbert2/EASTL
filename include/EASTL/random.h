@@ -18,6 +18,10 @@
 #include <EASTL/internal/config.h>
 #include <EASTL/numeric_limits.h>
 
+#if defined(EA_COMPILER_MSVC) && !EASTL_GCC_STYLE_INT128_SUPPORTED && (defined(EA_PROCESSOR_X86_64) || defined(EA_PROCESSOR_ARM64))
+	#include <intrin.h> // _umul128, __umulh
+#endif
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,53 +104,120 @@ namespace eastl
 			return value;
 		}
 
-		// The rare step of urng_value below, out of line so that the common case doesn't pay for it: rejects the
-		// products that would bias the result, or returns the drawn bits if [0, maxValue] holds every 32-bit value.
-		template <typename URNG>
-		EA_NO_INLINE uint64_t urng_value_reject(URNG& urng, uint32_t maxValue, uint32_t bits, uint64_t product)
+		// Returns the high half of the 128-bit product a * b and stores its low half in low.
+		inline uint64_t urng_mul128(uint64_t a, uint64_t b, uint64_t& low)
 		{
-			if(maxValue == 0xffffffffu)
-				return (uint64_t)bits << 32;
-
-			const uint32_t n = maxValue + 1;
-			const uint32_t threshold = (uint32_t)(0 - n) % n; // (2^32 - n) % n == 2^32 % n
-			while((uint32_t)product < threshold)
-				product = (uint64_t)urng_get_bits<uint32_t>(urng) * n;
-			return product;
+		#if EASTL_GCC_STYLE_INT128_SUPPORTED
+			const __uint128_t product = (__uint128_t)a * b;
+			low = (uint64_t)product;
+			return (uint64_t)(product >> 64);
+		#elif defined(EA_COMPILER_MSVC) && defined(EA_PROCESSOR_X86_64)
+			uint64_t high;
+			low = _umul128(a, b, &high);
+			return high;
+		#elif defined(EA_COMPILER_MSVC) && defined(EA_PROCESSOR_ARM64)
+			low = a * b;
+			return __umulh(a, b);
+		#else
+			const uint64_t ll = (a & 0xffffffffu) * (b & 0xffffffffu), lh = (a & 0xffffffffu) * (b >> 32);
+			const uint64_t hl = (a >> 32) * (b & 0xffffffffu),         hh = (a >> 32) * (b >> 32);
+			const uint64_t middle = (ll >> 32) + (lh & 0xffffffffu) + (hl & 0xffffffffu);
+			low = (middle << 32) | (ll & 0xffffffffu);
+			return hh + (lh >> 32) + (hl >> 32) + (middle >> 32);
+		#endif
 		}
+
+		// Whether urng_mul128 is a single multiply on this target.
+		#if EASTL_GCC_STYLE_INT128_SUPPORTED || (defined(EA_COMPILER_MSVC) && (defined(EA_PROCESSOR_X86_64) || defined(EA_PROCESSOR_ARM64)))
+			const bool kUrngNativeMul128 = true;
+		#else
+			const bool kUrngNativeMul128 = false;
+		#endif
 
 		// Returns a uniformly distributed random value in [0, maxValue]. Like the MSVC STL's _Rng_from_urng_v2, uses
 		// Lemire's multiply-shift method with rejection ("Fast Random Integer Generation in an Interval", 2019):
-		// one 32-bit draw and a 32x32->64 multiply per value, and almost never a division.
+		// one 32-bit draw and a 32x32->64 multiply per value. The division that sets the rejection threshold is
+		// only needed when the low half of the product is at most maxValue, which is rare unless the range is wide.
 		template <typename URNG>
-		inline uint32_t urng_value(URNG& urng, uint32_t maxValue)
+		inline uint32_t urng_value32(URNG& urng, uint32_t maxValue)
 		{
+			const uint32_t n = maxValue + 1; // 0 if maxValue is 2^32 - 1.
 			const uint32_t bits = urng_get_bits<uint32_t>(urng);
-			uint64_t product = (uint64_t)bits * (uint32_t)(maxValue + 1); // 0 if maxValue is 2^32 - 1.
+			uint64_t product = (uint64_t)bits * n;
 
-			if((uint32_t)product <= maxValue) // Only then can the low half be below 2^32 % (maxValue + 1), the values to reject.
-				product = urng_value_reject(urng, maxValue, bits, product);
+			if((uint32_t)product <= maxValue) // Only then can the low half be below 2^32 % n, the values to reject.
+			{
+				if(n == 0)
+					return bits;
+
+				const uint32_t threshold = (uint32_t)~maxValue % n; // (2^32 - n) % n == 2^32 % n
+				while((uint32_t)product < threshold)
+					product = (uint64_t)urng_get_bits<uint32_t>(urng) * n;
+			}
 
 			return (uint32_t)(product >> 32);
 		}
 
+		// As urng_value32, with 64 random bits and a 128-bit product.
+		template <typename URNG>
+		inline uint64_t urng_value64(URNG& urng, uint64_t maxValue)
+		{
+			const uint64_t n = maxValue + 1; // 0 if maxValue is 2^64 - 1.
+			uint64_t bits = urng_get_bits<uint64_t>(urng);
+			uint64_t low;
+			uint64_t high = urng_mul128(bits, n, low);
+
+			if(low <= maxValue)
+			{
+				if(n == 0)
+					return bits;
+
+				const uint64_t threshold = ~maxValue % n; // (2^64 - n) % n == 2^64 % n
+				while(low < threshold)
+				{
+					bits = urng_get_bits<uint64_t>(urng);
+					high = urng_mul128(bits, n, low);
+				}
+			}
+
+			return high;
+		}
+
+		// The 64-bit method is for ranges above 2^32, and for every range with generators that give 64 bits
+		// where the 128-bit product is a single multiply, as in the MSVC STL: it then rarely needs the division.
+		template <typename URNG>
+		struct urng_use_value64 : public eastl::integral_constant<bool, kUrngNativeMul128 && (urng_bits<URNG>::kBits >= 64)> {};
+
+		template <typename URNG>
+		inline uint32_t urng_value(URNG& urng, uint32_t maxValue, eastl::true_type)
+			{ return (uint32_t)urng_value64(urng, maxValue); }
+
+		template <typename URNG>
+		inline uint32_t urng_value(URNG& urng, uint32_t maxValue, eastl::false_type)
+			{ return urng_value32(urng, maxValue); }
+
+		template <typename URNG>
+		inline uint64_t urng_value(URNG& urng, uint64_t maxValue, eastl::true_type)
+			{ return urng_value64(urng, maxValue); }
+
+		// Ranges above 2^32 with generators that give fewer than 64 bits, or without a native 128-bit product:
+		// rare, and out of line so that the code for them doesn't take registers from the common case.
+		template <typename URNG>
+		EA_NO_INLINE uint64_t urng_value64_wide(URNG& urng, uint64_t maxValue)
+			{ return urng_value64(urng, maxValue); }
+
+		template <typename URNG>
+		inline uint64_t urng_value(URNG& urng, uint64_t maxValue, eastl::false_type)
+			{ return (maxValue <= 0xffffffffu) ? (uint64_t)urng_value32(urng, (uint32_t)maxValue) : urng_value64_wide(urng, maxValue); }
+
+		// Returns a uniformly distributed random value in [0, maxValue].
+		template <typename URNG>
+		inline uint32_t urng_value(URNG& urng, uint32_t maxValue)
+			{ return urng_value(urng, maxValue, urng_use_value64<URNG>()); }
+
 		template <typename URNG>
 		inline uint64_t urng_value(URNG& urng, uint64_t maxValue)
-		{
-			if(maxValue <= 0xffffffffu)
-				return urng_value(urng, (uint32_t)maxValue);
-
-			// More than 2^32 values: draw 64 bits and reject those outside [0, maxValue] in the smallest
-			// power-of-two range that holds it.
-			uint64_t mask = maxValue;
-			mask |= mask >> 1; mask |= mask >> 2; mask |= mask >> 4; mask |= mask >> 8; mask |= mask >> 16; mask |= mask >> 32;
-
-			uint64_t value;
-			do
-				value = urng_get_bits<uint64_t>(urng) & mask;
-			while(value > maxValue);
-			return value;
-		}
+			{ return urng_value(urng, maxValue, urng_use_value64<URNG>()); }
 	}
 
 	// Implements a uniform distribution of values generated by a Generator, 
@@ -273,9 +344,10 @@ namespace eastl
 		typedef typename eastl::make_unsigned<result_type>::type                                   unsigned_type;
 		typedef typename eastl::conditional<(sizeof(result_type) <= 4), uint32_t, uint64_t>::type range_type;
 
-		const range_type range = (range_type)(unsigned_type)((unsigned_type)params.b() - (unsigned_type)params.a());
+		const unsigned_type a     = (unsigned_type)params.a(); // Read before calling g, so that it needn't be reloaded after.
+		const range_type    range = (range_type)(unsigned_type)((unsigned_type)params.b() - a);
 
-		return (result_type)(unsigned_type)((unsigned_type)params.a() + (unsigned_type)Internal::urng_value(g, range));
+		return (result_type)(unsigned_type)(a + (unsigned_type)Internal::urng_value(g, range));
 	}
 
 	template<class IntType>
