@@ -84,6 +84,8 @@ const void* TestTupleIgnoreAddress() { return &eastl::ignore; }
 const void* TestTuplePiecewiseConstructAddress() { return &eastl::piecewise_construct; }
 #endif
 
+int TestTupleIncludedFirstComparisons();
+
 int TestTuple()
 {
 	using namespace eastl;
@@ -778,6 +780,8 @@ int TestTuple()
 		tuple<NoCopyMoveNonEmpty&> t{x};
 		[[maybe_unused]] auto& y = get<0>(t);
 	}
+
+	nErrorCount += TestTupleIncludedFirstComparisons();
 
 	return nErrorCount;
 }
