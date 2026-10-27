@@ -3003,14 +3003,18 @@ namespace eastl
 		typedef typename eastl::iterator_traits<ForwardIterator1>::difference_type difference_type_1;
 		typedef typename eastl::iterator_traits<ForwardIterator2>::difference_type difference_type_2;
 
-		difference_type_2 d2 = eastl::distance(first2, last2);
-
-		if(d2 != 0)
+		if(first2 != last2)
 		{
+			const difference_type_2 d2 = eastl::distance(first2, last2);
+			difference_type_1 d1 = eastl::distance(first1, last1);
+
+			if(d1 < d2)
+				return last1;
+
 			ForwardIterator1 i(first1);
 			eastl::advance(i, d2);
 
-			for(difference_type_1 d1 = eastl::distance(first1, last1); d1 >= d2; --d1)
+			for(; d1 >= d2; --d1)
 			{
 				if(eastl::equal<ForwardIterator1, ForwardIterator2, BinaryPredicate>(first1, i, first2, predicate))
 					return first1;
