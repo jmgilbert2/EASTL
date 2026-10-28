@@ -850,7 +850,7 @@ int TestTuple()
 		static_assert(!is_default_constructible_v<tuple<NonDefaultIdentityTag, OtherIdentityTag>>, "retain deleted empty default construction");
 		static_assert(!is_copy_constructible_v<tuple<NonCopyIdentityTag, OtherIdentityTag>>, "retain deleted empty copy construction");
 		static_assert(!is_copy_assignable_v<tuple<NonAssignableIdentityTag, OtherIdentityTag>>, "retain deleted empty assignment");
-		constexpr EmptyPair constantEmptyPair;
+		constexpr EmptyPair constantEmptyPair{};
 		EA_UNUSED(constantEmptyPair);
 
 		tuple<IdentityTag, tuple<IdentityTag>> nested;
