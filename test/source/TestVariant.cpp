@@ -2165,6 +2165,49 @@ namespace
 		VariantDeletedList() = default;
 		VariantDeletedList(std::initializer_list<int>) = delete;
 	};
+
+	struct VariantListForwarding
+	{
+		VariantListForwarding(std::initializer_list<int>& values, int& offset, std::unique_ptr<int>&& payload)
+			: mSum(offset), mPayload(std::move(payload))
+		{
+			for(int value : values)
+				mSum += value;
+			++offset;
+		}
+
+		int mSum;
+		std::unique_ptr<int> mPayload;
+	};
+}
+
+int TestVariantListEmplaceForwarding()
+{
+	int nErrorCount = 0;
+	eastl::variant<int, VariantListForwarding> actual;
+	std::variant<int, VariantListForwarding> expected;
+	int actualOffset = 10;
+	int expectedOffset = 10;
+	auto actualPayload = std::make_unique<int>(42);
+	auto expectedPayload = std::make_unique<int>(42);
+
+	auto& actualValue = actual.emplace<VariantListForwarding>({ 1, 2 }, actualOffset, std::move(actualPayload));
+	auto& expectedValue = expected.emplace<VariantListForwarding>({ 1, 2 }, expectedOffset, std::move(expectedPayload));
+	EATEST_VERIFY(&actualValue == &eastl::get<1>(actual));
+	EATEST_VERIFY(actualValue.mSum == expectedValue.mSum);
+	EATEST_VERIFY(*actualValue.mPayload == *expectedValue.mPayload);
+	EATEST_VERIFY(actualOffset == expectedOffset);
+	EATEST_VERIFY(!actualPayload && !expectedPayload);
+
+	// The index overload must preserve the same lvalue and move-only arguments.
+	auto& indexedValue = actual.emplace<1>({ 3, 4 }, actualOffset, std::make_unique<int>(99));
+	auto& expectedIndexed = expected.emplace<1>({ 3, 4 }, expectedOffset, std::make_unique<int>(99));
+	EATEST_VERIFY(&indexedValue == &eastl::get<1>(actual));
+	EATEST_VERIFY(indexedValue.mSum == expectedIndexed.mSum);
+	EATEST_VERIFY(*indexedValue.mPayload == *expectedIndexed.mPayload);
+	EATEST_VERIFY(actualOffset == expectedOffset);
+
+	return nErrorCount;
 }
 
 int TestVariantInPlaceConstraints()
@@ -2281,6 +2324,7 @@ int TestVariant()
 	nErrorCount += TestVariantBasic();
 	nErrorCount += TestVariantConvertingConstraints();
 	nErrorCount += TestVariantInPlaceConstraints();
+	nErrorCount += TestVariantListEmplaceForwarding();
 	nErrorCount += TestVariantSize();
 	nErrorCount += TestVariantAlternative();
 	nErrorCount += TestVariantValuelessByException();

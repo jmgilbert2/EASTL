@@ -877,7 +877,7 @@ namespace eastl
 		                                               meta::duplicate_type_check<T, Types...>>, bool> = true>
 		EA_CPP20_CONSTEXPR decltype(auto) emplace(std::initializer_list<U> il, Args&&... args)
 		{
-			return emplace<I>(il, eastl::forward<T>(args)...);
+			return emplace<I>(il, eastl::forward<Args>(args)...);
 		}
 
 		// First, destroys the currently contained value (if any). Then direct-initializes the contained value as if
