@@ -76,6 +76,29 @@ int OperationCountingType::mCopyAssignmentCalls = 0;
 int OperationCountingType::mMoveAssignmentCalls = 0;
 int OperationCountingType::mDestructorCalls = 0;
 
+struct IdentityTag {};
+struct FinalIdentityTag final {};
+struct DerivedIdentityTag : IdentityTag {};
+struct OtherDerivedIdentityTag : IdentityTag {};
+struct FinalDerivedIdentityTag final : IdentityTag {};
+struct IdentityTagAggregate { IdentityTag mTag; };
+union IdentityTagUnion
+{
+	IdentityTag mTag;
+	char mByte;
+	IdentityTagUnion() : mTag() {}
+};
+
+template <typename T, typename U>
+bool HaveDistinctAddresses(const T& a, const U& b)
+{
+	// Comparing the numeric addresses through volatile objects prevents the compiler from
+	// assuming that distinct same-type subobjects must have different addresses already.
+	volatile uintptr_t addressA = reinterpret_cast<uintptr_t>(&a);
+	volatile uintptr_t addressB = reinterpret_cast<uintptr_t>(&b);
+	return addressA != addressB;
+}
+
 }  // namespace TestTupleInternal
 
 #if EASTL_INLINE_VARIABLE_ENABLED
@@ -796,6 +819,111 @@ int TestTuple()
 
 		// Non-final empty types still take no space.
 		static_assert(sizeof(tuple<EmptyTag, int>) == sizeof(int), "empty base optimization");
+	}
+
+	// An empty element must not overlap a same-type subobject of another element.
+	{
+		tuple<IdentityTag, tuple<IdentityTag>> nested;
+		EATEST_VERIFY(HaveDistinctAddresses(get<0>(nested), get<0>(get<1>(nested))));
+
+		tuple<tuple<IdentityTag>, IdentityTag> reversed;
+		EATEST_VERIFY(HaveDistinctAddresses(get<0>(get<0>(reversed)), get<1>(reversed)));
+
+		tuple<IdentityTag, tuple<tuple<IdentityTag>>> deep;
+		EATEST_VERIFY(HaveDistinctAddresses(get<0>(deep), get<0>(get<0>(get<1>(deep)))));
+
+		tuple<tuple<IdentityTag>, tuple<IdentityTag>> siblings;
+		EATEST_VERIFY(HaveDistinctAddresses(get<0>(get<0>(siblings)), get<0>(get<1>(siblings))));
+
+		tuple<IdentityTag, IdentityTagAggregate> aggregate;
+		EATEST_VERIFY(HaveDistinctAddresses(get<0>(aggregate), get<1>(aggregate).mTag));
+
+		tuple<IdentityTag, IdentityTagUnion> unionElement;
+		EATEST_VERIFY(HaveDistinctAddresses(get<0>(unionElement), get<1>(unionElement).mTag));
+
+		tuple<IdentityTag, IdentityTag[2]> arrayElement;
+		EATEST_VERIFY(HaveDistinctAddresses(get<0>(arrayElement), get<1>(arrayElement)[0]));
+		EATEST_VERIFY(HaveDistinctAddresses(get<0>(arrayElement), get<1>(arrayElement)[1]));
+
+		tuple<IdentityTag, FinalDerivedIdentityTag> finalDerived;
+		EATEST_VERIFY(HaveDistinctAddresses(get<0>(finalDerived), static_cast<IdentityTag&>(get<1>(finalDerived))));
+
+		// A repeated empty base also needs enough storage to remain distinct in adjacent tuples.
+		tuple<IdentityTag, IdentityTag> repeated[2];
+		EATEST_VERIFY(HaveDistinctAddresses(get<0>(repeated[0]), get<1>(repeated[0])));
+		EATEST_VERIFY(HaveDistinctAddresses(get<1>(repeated[0]), get<0>(repeated[1])));
+
+		tuple<IdentityTag, tuple<IdentityTag>> adjacent[2];
+		EATEST_VERIFY(HaveDistinctAddresses(get<0>(get<1>(adjacent[0])), get<0>(adjacent[1])));
+
+		// Different empty element types can contain the same base type, too.
+		DerivedIdentityTag left[2];
+		OtherDerivedIdentityTag right[2];
+		EATEST_VERIFY(HaveDistinctAddresses(static_cast<IdentityTag&>(left[0]), static_cast<IdentityTag&>(left[1])));
+		EATEST_VERIFY(HaveDistinctAddresses(static_cast<IdentityTag&>(right[0]), static_cast<IdentityTag&>(right[1])));
+		tuple<DerivedIdentityTag, OtherDerivedIdentityTag> commonBases[2];
+		EATEST_VERIFY(HaveDistinctAddresses(static_cast<IdentityTag&>(get<0>(commonBases[0])),
+		                                   static_cast<IdentityTag&>(get<1>(commonBases[0]))));
+		EATEST_VERIFY(HaveDistinctAddresses(static_cast<IdentityTag&>(get<1>(commonBases[0])),
+		                                   static_cast<IdentityTag&>(get<0>(commonBases[1]))));
+
+		static_assert(sizeof(tuple<IdentityTag, int>) == sizeof(int), "retain scalar EBO");
+		static_assert(sizeof(tuple<IdentityTag, tuple<int>>) == sizeof(int), "retain disjoint nested EBO");
+		static_assert(sizeof(tuple<FinalIdentityTag, int>) == sizeof(tuple<char, int>), "retain final member storage");
+	}
+
+	{
+		using Nested = tuple<IdentityTag, int>;
+		using IdentityTuple = tuple<IdentityTag, Nested, IdentityTag>;
+		auto verifyIdentity = [&nErrorCount](const IdentityTuple& value)
+		{
+			EATEST_VERIFY(HaveDistinctAddresses(get<0>(value), get<0>(get<1>(value))));
+			EATEST_VERIFY(HaveDistinctAddresses(get<0>(value), get<2>(value)));
+			EATEST_VERIFY(HaveDistinctAddresses(get<0>(get<1>(value)), get<2>(value)));
+			EATEST_VERIFY(&get<Nested>(value) == &get<1>(value));
+		};
+
+		IdentityTuple original(IdentityTag{}, Nested(IdentityTag{}, 7), IdentityTag{});
+		IdentityTuple copied(original);
+		verifyIdentity(original);
+		verifyIdentity(copied);
+		EATEST_VERIFY(get<1>(get<1>(copied)) == 7);
+
+		IdentityTuple moved(eastl::move(copied));
+		verifyIdentity(moved);
+		EATEST_VERIFY(get<1>(get<1>(moved)) == 7);
+
+		get<1>(get<1>(original)) = 9;
+		moved = original;
+		verifyIdentity(moved);
+		EATEST_VERIFY(get<1>(get<1>(moved)) == 9);
+		copied = eastl::move(moved);
+		verifyIdentity(copied);
+		EATEST_VERIFY(get<1>(get<1>(copied)) == 9);
+		get<1>(get<1>(original)) = 11;
+		original.swap(copied);
+		verifyIdentity(original);
+		verifyIdentity(copied);
+		EATEST_VERIFY(get<1>(get<1>(original)) == 9);
+		EATEST_VERIFY(get<1>(get<1>(copied)) == 11);
+
+		using UniqueTagTuple = tuple<IdentityTag, Nested>;
+		static_assert(is_same_v<decltype(get<0>(eastl::declval<UniqueTagTuple&>())), IdentityTag&>, "mutable accessor");
+		static_assert(is_same_v<decltype(get<0>(eastl::declval<const UniqueTagTuple&>())), const IdentityTag&>, "const accessor");
+		static_assert(is_same_v<decltype(get<0>(eastl::declval<UniqueTagTuple&&>())), IdentityTag&&>, "rvalue accessor");
+		static_assert(is_same_v<decltype(get<IdentityTag>(eastl::declval<UniqueTagTuple&>())), IdentityTag&>, "typed mutable accessor");
+		static_assert(is_same_v<decltype(get<IdentityTag>(eastl::declval<const UniqueTagTuple&>())), const IdentityTag&>, "typed const accessor");
+		static_assert(is_same_v<decltype(get<IdentityTag>(eastl::declval<UniqueTagTuple&&>())), IdentityTag&&>, "typed rvalue accessor");
+		static_assert(is_trivially_copy_constructible_v<IdentityTuple>, "retain trivial copy construction");
+		static_assert(is_trivially_destructible_v<IdentityTuple>, "retain trivial destruction");
+
+		IdentityTag shared;
+		tuple<IdentityTag&, tuple<IdentityTag&>> aliases(shared, tuple<IdentityTag&>(shared));
+		EATEST_VERIFY(&get<0>(aliases) == &shared);
+		EATEST_VERIFY(&get<0>(get<1>(aliases)) == &shared);
+		const auto& constAliases = aliases;
+		EATEST_VERIFY(&get<0>(constAliases) == &shared);
+		EATEST_VERIFY(&get<0>(get<1>(constAliases)) == &shared);
 	}
 
 	nErrorCount += TestTupleIncludedFirstComparisons();

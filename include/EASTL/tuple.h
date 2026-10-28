@@ -287,6 +287,42 @@ namespace Internal
 	};
 
 
+	#if defined(EA_COMPILER_MSVC)
+		// The MSVC ABI can overlap an empty base with a same-type subobject in another element,
+		// including bases of an otherwise empty class. Treat opaque classes conservatively. Nested
+		// tuples can be checked recursively, retaining EBO when their elements cannot contain a class.
+		template <typename EmptyType, typename T>
+		struct TupleElementMayContainEmpty
+			: bool_constant<is_class_v<T> || is_union_v<T>> {};
+
+		template <typename EmptyType, typename T, size_t N>
+		struct TupleElementMayContainEmpty<EmptyType, T[N]>
+			: TupleElementMayContainEmpty<EmptyType, remove_cv_t<T>> {};
+
+		template <typename EmptyType, typename... Ts>
+		struct TupleElementMayContainEmpty<EmptyType, tuple<Ts...>>
+			: disjunction<is_base_of<tuple<Ts...>, EmptyType>,
+			              TupleElementMayContainEmpty<EmptyType, remove_cv_t<Ts>>...> {};
+
+		template <size_t I, typename EmptyType, typename Indices, typename... Ts>
+		struct TupleOtherElementsMayContainEmpty;
+
+		template <size_t I, typename EmptyType, size_t... Indices, typename... Ts>
+		struct TupleOtherElementsMayContainEmpty<I, EmptyType, index_sequence<Indices...>, Ts...>
+			: disjunction<conjunction<bool_constant<I != Indices>,
+			                          TupleElementMayContainEmpty<EmptyType, remove_cv_t<Ts>>>...> {};
+	#endif
+
+	template <size_t I, typename ValueType, typename... Ts>
+	using TupleLeafFor = TupleLeaf<I, ValueType,
+		conjunction<is_empty<ValueType>, negation<is_final<ValueType>>
+		#if defined(EA_COMPILER_MSVC)
+			, negation<TupleOtherElementsMayContainEmpty<I, remove_cv_t<ValueType>,
+			                                            make_index_sequence<sizeof...(Ts)>, Ts...>>
+		#endif
+		>::value>;
+
+
 
 	// MakeTupleTypes
 	//
@@ -323,7 +359,7 @@ namespace Internal
 	//
 
 	template <size_t... Indices, typename... Ts>
-	struct TupleImpl<integer_sequence<size_t, Indices...>, Ts...> : public TupleLeaf<Indices, Ts>...
+	struct TupleImpl<integer_sequence<size_t, Indices...>, Ts...> : public TupleLeafFor<Indices, Ts, Ts...>...
 	{
 		EA_CONSTEXPR TupleImpl() = default;
 
@@ -332,7 +368,7 @@ namespace Internal
 		// 
 		template <typename... Us, typename... ValueTypes>
 		explicit TupleImpl(integer_sequence<size_t, Indices...>, TupleTypes<Us...>, ValueTypes&&... values)
-			: TupleLeaf<Indices, Ts>(eastl::forward<ValueTypes>(values))...
+			: TupleLeafFor<Indices, Ts, Ts...>(eastl::forward<ValueTypes>(values))...
 		{
 		}
 
@@ -345,61 +381,61 @@ namespace Internal
 		// copy or move: tuple<NonMovable> must not be move constructible or assignable.
 		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
 		TupleImpl(OtherTuple&& t)
-			: TupleLeaf<Indices, Ts>(eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...
+			: TupleLeafFor<Indices, Ts, Ts...>(eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...
 		{
 		}
 
 		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
 		TupleImpl& operator=(OtherTuple&& t)
 		{
-			swallow(TupleLeaf<Indices, Ts>::operator=(
+			swallow(TupleLeafFor<Indices, Ts, Ts...>::operator=(
 						eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...);
 			return *this;
 		}
 
-		void swap(TupleImpl& t) { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<TupleLeaf<Indices, Ts>&>(t))...); }
+		void swap(TupleImpl& t) { swallow(TupleLeafFor<Indices, Ts, Ts...>::swap(static_cast<TupleLeafFor<Indices, Ts, Ts...>&>(t))...); }
 	};
 
 	template <size_t I, typename Indices, typename... Ts>
 	inline tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
-		return static_cast<TupleLeaf<I, Type>&>(t).getInternal();
+		return static_cast<TupleLeafFor<I, Type, Ts...>&>(t).getInternal();
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
 	inline const_tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(const TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
-		return static_cast<const TupleLeaf<I, Type>&>(t).getInternal();
+		return static_cast<const TupleLeafFor<I, Type, Ts...>&>(t).getInternal();
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
 	inline tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(TupleImpl<Indices, Ts...>&& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
-		return static_cast<Type&&>(static_cast<TupleLeaf<I, Type>&>(t).getInternal());
+		return static_cast<Type&&>(static_cast<TupleLeafFor<I, Type, Ts...>&>(t).getInternal());
 	}
 
 	template <typename T, typename Indices, typename... Ts>
 	inline T& getImpl(TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
-		return static_cast<TupleLeaf<Index::index, T>&>(t).getInternal();
+		return static_cast<TupleLeafFor<Index::index, T, Ts...>&>(t).getInternal();
 	}
 
 	template <typename T, typename Indices, typename... Ts>
 	inline const T& getImpl(const TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
-		return static_cast<const TupleLeaf<Index::index, T>&>(t).getInternal();
+		return static_cast<const TupleLeafFor<Index::index, T, Ts...>&>(t).getInternal();
 	}
 
 	template <typename T, typename Indices, typename... Ts>
 	inline T&& getImpl(TupleImpl<Indices, Ts...>&& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
-		return static_cast<T&&>(static_cast<TupleLeaf<Index::index, T>&>(t).getInternal());
+		return static_cast<T&&>(static_cast<TupleLeafFor<Index::index, T, Ts...>&>(t).getInternal());
 	}
 
 
