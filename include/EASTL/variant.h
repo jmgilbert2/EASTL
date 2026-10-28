@@ -690,10 +690,7 @@ namespace eastl
 	// conversions are excluded. Keep one overload per alternative: duplicate types must
 	// remain ambiguous rather than being collapsed into a single candidate.
 	template <typename T>
-	struct variant_conversion_array
-	{
-		T value[1];
-	};
+	void variant_conversion_array(T (&&)[1]);
 
 	template <typename T, typename Source, size_t I, typename = void>
 	struct variant_conversion_overload
@@ -703,7 +700,7 @@ namespace eastl
 
 	template <typename T, typename Source, size_t I>
 	struct variant_conversion_overload<T, Source, I,
-		void_t<decltype(variant_conversion_array<T>{{eastl::declval<Source>()}})>>
+		void_t<decltype(variant_conversion_array<T>({eastl::declval<Source>()}))>>
 	{
 		static integral_constant<size_t, I> select(T);
 	};
