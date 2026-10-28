@@ -2698,11 +2698,11 @@ int TestAlgorithm()
 		const Iterator first(haystack, haystack + 1, &advancedPastEnd);
 		const Iterator last(haystack + 1, haystack + 1, &advancedPastEnd);
 
-		EATEST_VERIFY(search(first, last, needle, needle + 3, equal_to<int>()) == last);
+		EATEST_VERIFY(eastl::search(first, last, needle, needle + 3, eastl::equal_to<int>()) == last);
 		EATEST_VERIFY(!advancedPastEnd);
-		EATEST_VERIFY(search(last, last, needle, needle + 3, equal_to<int>()) == last);
+		EATEST_VERIFY(eastl::search(last, last, needle, needle + 3, eastl::equal_to<int>()) == last);
 		EATEST_VERIFY(!advancedPastEnd);
-		EATEST_VERIFY(search(first, last, needle, needle, equal_to<int>()) == first);
+		EATEST_VERIFY(eastl::search(first, last, needle, needle, eastl::equal_to<int>()) == first);
 		EATEST_VERIFY(!advancedPastEnd);
 	}
 
