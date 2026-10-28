@@ -8,6 +8,10 @@
 #include <EASTL/algorithm.h>
 #include <EASTL/sort.h>
 #include <EASTL/bonus/overloaded.h>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <variant>
 
 // 4512/4626 - 'class' : assignment operator could not be generated.  // This disabling would best be put elsewhere.
 EA_DISABLE_VC_WARNING(4512 4626);
@@ -2121,11 +2125,107 @@ int TestSpecialMembersDisabled()
 	return nErrorCount;
 }
 
+namespace
+{
+	template <typename Source, typename... Types>
+	constexpr bool VariantConversionMatchesStd()
+	{
+		return std::is_constructible_v<eastl::variant<Types...>, Source> ==
+		           std::is_constructible_v<std::variant<Types...>, Source> &&
+		       std::is_assignable_v<eastl::variant<Types...>&, Source> ==
+		           std::is_assignable_v<std::variant<Types...>&, Source>;
+	}
+
+	struct VariantRefQualifiedConversion
+	{
+		operator long() & { return 17; }
+		operator int() && { return 23; }
+	};
+
+	struct VariantExplicitConversion
+	{
+		explicit VariantExplicitConversion(int) {}
+	};
+}
+
+int TestVariantConvertingConstraints()
+{
+	int nErrorCount = 0;
+
+	static_assert(!std::is_constructible_v<eastl::variant<float>, int>, "Reject narrowing construction");
+	static_assert(!std::is_assignable_v<eastl::variant<float>&, int>, "Reject narrowing assignment");
+	static_assert(!std::is_constructible_v<eastl::variant<bool>, const char*>, "Reject pointer to bool");
+	static_assert(!std::is_constructible_v<eastl::variant<int, int>, int>, "Duplicate alternatives are ambiguous");
+	static_assert(!std::is_assignable_v<eastl::variant<int, int>&, int>, "Duplicate assignment is ambiguous");
+	static_assert(VariantConversionMatchesStd<int, float>(), "Narrowing participation matches std");
+	static_assert(VariantConversionMatchesStd<int, float, long>(), "Select a non-narrowing alternative");
+	static_assert(VariantConversionMatchesStd<const char*, bool>(), "Pointer conversion matches std");
+	static_assert(VariantConversionMatchesStd<void*, bool>(), "Void pointer conversion matches std");
+	static_assert(VariantConversionMatchesStd<void (*)(), bool>(), "Function pointer conversion matches std");
+	static_assert(VariantConversionMatchesStd<std::nullptr_t, bool>(), "Null pointer conversion matches std");
+	static_assert(VariantConversionMatchesStd<bool, bool>(), "Exact bool conversion matches std");
+	static_assert(VariantConversionMatchesStd<short, int, long>(), "Integral promotion matches std");
+	static_assert(VariantConversionMatchesStd<unsigned, int, unsigned>(), "Signedness selection matches std");
+	static_assert(VariantConversionMatchesStd<int, int, int>(), "Duplicate arithmetic alternatives match std");
+	static_assert(VariantConversionMatchesStd<const char*, std::string, std::string>(), "Duplicate class alternatives match std");
+	static_assert(VariantConversionMatchesStd<const char (&)[5], std::string, bool>(), "String literals select string");
+	static_assert(VariantConversionMatchesStd<int, const int>(), "Preserve cv-qualified alternatives");
+	static_assert(VariantConversionMatchesStd<int, int, const int>(), "Cv-qualified duplicates remain ambiguous");
+	static_assert(VariantConversionMatchesStd<VariantRefQualifiedConversion&, int, long>(), "Preserve lvalue conversions");
+	static_assert(VariantConversionMatchesStd<VariantRefQualifiedConversion, int, long>(), "Preserve rvalue conversions");
+	static_assert(VariantConversionMatchesStd<int, VariantExplicitConversion>(), "Explicit conversions are not candidates");
+	static_assert(VariantConversionMatchesStd<std::unique_ptr<int>&, std::unique_ptr<int>>(), "Reject copying move-only values");
+	static_assert(VariantConversionMatchesStd<std::unique_ptr<int>, std::unique_ptr<int>>(), "Accept moving move-only values");
+
+	{
+		eastl::variant<float, long> actual(0);
+		std::variant<float, long> expected(0);
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<long>(actual) == std::get<long>(expected));
+		actual = 16777217;
+		expected = 16777217;
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<long>(actual) == std::get<long>(expected));
+	}
+	{
+		eastl::variant<std::string, bool> actual("text");
+		std::variant<std::string, bool> expected("text");
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<std::string>(actual) == std::get<std::string>(expected));
+		actual = true;
+		expected = true;
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<bool>(actual) == std::get<bool>(expected));
+		actual = "next";
+		expected = "next";
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<std::string>(actual) == std::get<std::string>(expected));
+	}
+	{
+		VariantRefQualifiedConversion source;
+		eastl::variant<int, long> actual(source);
+		std::variant<int, long> expected(source);
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<long>(actual) == 17);
+		actual = eastl::move(source);
+		expected = std::move(source);
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<int>(actual) == 23);
+	}
+	{
+		eastl::variant<const int> value(42);
+		EATEST_VERIFY(eastl::get<0>(value) == 42);
+	}
+
+	return nErrorCount;
+}
+
 int TestVariant()
 {
 	int nErrorCount = 0;
 
 	nErrorCount += TestVariantBasic();
+	nErrorCount += TestVariantConvertingConstraints();
 	nErrorCount += TestVariantSize();
 	nErrorCount += TestVariantAlternative();
 	nErrorCount += TestVariantValuelessByException();
