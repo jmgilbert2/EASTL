@@ -2146,6 +2146,60 @@ namespace
 	{
 		explicit VariantExplicitConversion(int) {}
 	};
+
+	struct VariantListOnly
+	{
+		VariantListOnly() = delete;
+
+		explicit VariantListOnly(std::initializer_list<int>& values) : mSum(0)
+		{
+			for(int value : values)
+				mSum += value;
+		}
+
+		int mSum;
+	};
+
+	struct VariantDeletedList
+	{
+		VariantDeletedList() = default;
+		VariantDeletedList(std::initializer_list<int>) = delete;
+	};
+}
+
+int TestVariantInPlaceConstraints()
+{
+	int nErrorCount = 0;
+	using List = std::initializer_list<int>;
+	using Actual = eastl::variant<int, VariantListOnly, VariantDeletedList>;
+	using Expected = std::variant<int, VariantListOnly, VariantDeletedList>;
+
+	static_assert(!std::is_constructible_v<Actual, eastl::in_place_index_t<3>>, "Reject an out-of-range index");
+	static_assert(!std::is_constructible_v<Expected, std::in_place_index_t<3>>, "Std rejects an out-of-range index");
+	static_assert(!std::is_constructible_v<Actual, eastl::in_place_index_t<size_t(-1)>, List>, "Reject a large index with a list");
+	static_assert(!std::is_constructible_v<Expected, std::in_place_index_t<size_t(-1)>, List>, "Std rejects a large index with a list");
+	static_assert(std::is_constructible_v<Actual, eastl::in_place_index_t<1>, List>, "Include the list in the index constraint");
+	static_assert(std::is_constructible_v<Expected, std::in_place_index_t<1>, List>, "Std accepts a list-only alternative");
+	static_assert(std::is_constructible_v<Actual, eastl::in_place_type_t<VariantListOnly>, List>, "Include the list in the type constraint");
+	static_assert(std::is_constructible_v<Expected, std::in_place_type_t<VariantListOnly>, List>, "Std accepts a list-only type");
+	static_assert(!std::is_constructible_v<Actual, eastl::in_place_index_t<2>, List>, "Reject a deleted list constructor by index");
+	static_assert(!std::is_constructible_v<Expected, std::in_place_index_t<2>, List>, "Std rejects a deleted list constructor by index");
+	static_assert(!std::is_constructible_v<Actual, eastl::in_place_type_t<VariantDeletedList>, List>, "Reject a deleted list constructor by type");
+	static_assert(!std::is_constructible_v<Expected, std::in_place_type_t<VariantDeletedList>, List>, "Std rejects a deleted list constructor by type");
+	static_assert(!std::is_constructible_v<Actual, eastl::in_place_type_t<long>, int>, "Reject absent types");
+	static_assert(!std::is_constructible_v<eastl::variant<int, int>, eastl::in_place_type_t<int>, int>, "Reject duplicate types");
+	static_assert(std::is_constructible_v<eastl::variant<int, int>, eastl::in_place_index_t<1>, int>, "Index construction permits duplicate types");
+
+	Actual byIndex(eastl::in_place_index<1>, { 1, 2, 3 });
+	Expected expectedIndex(std::in_place_index<1>, { 1, 2, 3 });
+	EATEST_VERIFY(byIndex.index() == expectedIndex.index());
+	EATEST_VERIFY(eastl::get<1>(byIndex).mSum == std::get<1>(expectedIndex).mSum);
+	Actual byType(eastl::in_place_type<VariantListOnly>, { 4, 5 });
+	Expected expectedType(std::in_place_type<VariantListOnly>, { 4, 5 });
+	EATEST_VERIFY(byType.index() == expectedType.index());
+	EATEST_VERIFY(eastl::get<1>(byType).mSum == std::get<1>(expectedType).mSum);
+
+	return nErrorCount;
 }
 
 int TestVariantConvertingConstraints()
@@ -2226,6 +2280,7 @@ int TestVariant()
 
 	nErrorCount += TestVariantBasic();
 	nErrorCount += TestVariantConvertingConstraints();
+	nErrorCount += TestVariantInPlaceConstraints();
 	nErrorCount += TestVariantSize();
 	nErrorCount += TestVariantAlternative();
 	nErrorCount += TestVariantValuelessByException();

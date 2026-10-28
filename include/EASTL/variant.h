@@ -817,15 +817,16 @@ namespace eastl
 			class T,
 			class U,
 			class... Args,
-			enable_if_t<conjunction_v<meta::duplicate_type_check<T, Types...>, is_constructible<T, Args...>>, bool> = true>
+			enable_if_t<conjunction_v<meta::duplicate_type_check<T, Types...>,
+				is_constructible<T, std::initializer_list<U>&, Args...>>, bool> = true>
 			EA_CPP14_CONSTEXPR explicit variant(in_place_type_t<T>, std::initializer_list<U> il, Args&&... args)
 			: variant(in_place_index<meta::get_type_index_v<T, Types...>>, il, eastl::forward<Args>(args)...)
 		{}
 
 		template <size_t I,
 			class... Args,
-			enable_if_t<conjunction_v<integral_constant<bool, (I < sizeof...(Types))>,
-			is_constructible<meta::get_type_at_t<I, Types...>, Args...>>, bool> = true>
+			enable_if_t<(I < sizeof...(Types)), bool> = true,
+			enable_if_t<is_constructible_v<meta::get_type_at_t<I, Types...>, Args...>, bool> = true>
 			EA_CPP14_CONSTEXPR explicit variant(in_place_index_t<I>, Args&&... args)
 		{
 			this->template construct_as<I>(eastl::forward<Args>(args)...);
@@ -834,8 +835,8 @@ namespace eastl
 		template <size_t I,
 			class U,
 			class... Args,
-			enable_if_t<conjunction_v<integral_constant<bool, (I < sizeof...(Types))>,
-			is_constructible<meta::get_type_at_t<I, Types...>, Args...>>, bool> = true>
+			enable_if_t<(I < sizeof...(Types)), bool> = true,
+			enable_if_t<is_constructible_v<meta::get_type_at_t<I, Types...>, std::initializer_list<U>&, Args...>, bool> = true>
 			EA_CPP14_CONSTEXPR explicit variant(in_place_index_t<I>, std::initializer_list<U> il, Args&&... args)
 		{
 			this->template construct_as<I>(il, eastl::forward<Args>(args)...);
