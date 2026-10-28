@@ -1425,7 +1425,7 @@ namespace eastl
 	/// This is because both versions would have three parameters and there could be ambiguity.
 	///
 	template <typename InputIterator, typename T>
-	inline InputIterator
+	EA_CPP14_CONSTEXPR inline InputIterator
 	find(InputIterator first, InputIterator last, const T& value)
 	{
 		while((first != last) && !(*first == value)) // Note that we always express value comparisons in terms of < or ==.
@@ -1437,7 +1437,7 @@ namespace eastl
 	// C++ doesn't define a find with predicate, as it can effectively be synthesized via find_if
 	// with an appropriate predicate. However, it's often simpler to just have find with a predicate.
 	template <typename InputIterator, typename T, typename Predicate>
-	inline InputIterator
+	EA_CPP14_CONSTEXPR inline InputIterator
 	find(InputIterator first, InputIterator last, const T& value, Predicate predicate)
 	{
 		while((first != last) && !predicate(*first, value))
@@ -1921,7 +1921,7 @@ namespace eastl
 	/// Complexity: At most last1 first1 applications of the corresponding predicate.
 	///
 	template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-	inline bool
+	EA_CPP14_CONSTEXPR inline bool
 	equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate predicate)
 	{
 		for(; first1 != last1; ++first1, (void)++first2)
@@ -2900,7 +2900,7 @@ namespace eastl
 	/// Complexity: At most (last1 first1) * (last2 first2) applications of the corresponding predicate.
 	///
 	template <typename ForwardIterator1, typename ForwardIterator2>
-	ForwardIterator1
+	EA_CPP14_CONSTEXPR ForwardIterator1
 	search(ForwardIterator1 first1, ForwardIterator1 last1,
 		   ForwardIterator2 first2, ForwardIterator2 last2)
 	{
@@ -2914,7 +2914,6 @@ namespace eastl
 			if(temp2 != last2) // If what we are searching for has a length > 1...
 			{
 				ForwardIterator1 cur1(first1);
-				ForwardIterator2 p2;
 
 				while(first1 != last1)
 				{
@@ -2924,7 +2923,7 @@ namespace eastl
 
 					if(first1 != last1)
 					{
-						p2   = temp2;
+						ForwardIterator2 p2(temp2);
 						cur1 = first1;
 
 						if(++cur1 != last1)
@@ -2995,7 +2994,7 @@ namespace eastl
 	/// Complexity: At most (last1 first1) * (last2 first2) applications of the corresponding predicate.
 	///
 	template <typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
-	ForwardIterator1
+	EA_CPP14_CONSTEXPR ForwardIterator1
 	search(ForwardIterator1 first1, ForwardIterator1 last1,
 		   ForwardIterator2 first2, ForwardIterator2 last2,
 		   BinaryPredicate predicate)

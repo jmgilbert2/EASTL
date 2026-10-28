@@ -990,7 +990,67 @@ namespace SearchTest
 		const int* mpEnd = nullptr;
 		bool* mpAdvancedPastEnd = nullptr;
 	};
+
+	struct SameLastDigit
+	{
+		EA_CONSTEXPR bool operator()(int haystackValue, int needleValue) const { return (haystackValue % 10) == needleValue; }
+	};
 }
+
+
+static EA_CPP14_CONSTEXPR bool TestConstexprFindSearch()
+{
+	const int values[] = { 11, 22, 13, 24 };
+	const int needle[] = { 13, 24 };
+	const int digits[] = { 3, 4 };
+	const int absent[] = { 13, 25 };
+	const SearchTest::SameLastDigit predicate;
+
+	if(eastl::find(values, values + 4, 22) != values + 1 ||
+	   eastl::find(values, values + 4, 7) != values + 4 ||
+	   eastl::find(values, values, 11) != values ||
+	   eastl::find(values, values + 4, 2, predicate) != values + 1)
+		return false;
+
+	if(eastl::search(values, values + 4, needle, needle + 2) != values + 2 ||
+	   eastl::search(values, values + 4, values + 1, values + 2) != values + 1 ||
+	   eastl::search(values, values + 4, absent, absent + 2) != values + 4 ||
+	   eastl::search(values, values + 4, needle, needle) != values ||
+	   eastl::search(values, values, needle, needle + 2) != values ||
+	   eastl::search(values, values + 1, needle, needle + 2) != values + 1)
+		return false;
+
+	if(eastl::search(values, values + 4, digits, digits + 2, predicate) != values + 2 ||
+	   eastl::search(values, values + 4, digits, digits, predicate) != values ||
+	   eastl::search(values, values, digits, digits + 2, predicate) != values ||
+	   eastl::search(values, values + 1, digits, digits + 2, predicate) != values + 1)
+		return false;
+
+	bool advancedPastEnd = false;
+	typedef SearchTest::Iterator<> ForwardIterator;
+	const ForwardIterator first(values, values + 4, &advancedPastEnd);
+	const ForwardIterator last(values + 4, values + 4, &advancedPastEnd);
+	const ForwardIterator match(values + 2, values + 4, &advancedPastEnd);
+	if(eastl::find(first, last, 13) != match ||
+	   eastl::search(first, last, needle, needle + 2) != match ||
+	   eastl::search(first, last, digits, digits + 2, predicate) != match ||
+	   advancedPastEnd)
+		return false;
+
+	// Predicate search also depends on the signed and unsigned bidirectional advance helpers.
+	typedef SearchTest::Iterator<eastl::bidirectional_iterator_tag> BidirectionalIterator;
+	BidirectionalIterator position(values + 1, values + 4);
+	eastl::advance(position, 1);
+	if(position != BidirectionalIterator(values + 2, values + 4))
+		return false;
+	eastl::advance(position, -2);
+	if(position != BidirectionalIterator(values, values + 4))
+		return false;
+	eastl::advance(position, 3u);
+	return position == BidirectionalIterator(values + 3, values + 4);
+}
+
+static_assert(TestConstexprFindSearch(), "find and search must support constant evaluation");
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1009,6 +1069,7 @@ int TestAlgorithm()
 	nErrorCount += TestMinMax();
 	nErrorCount += TestClamp();
 	nErrorCount += TestCommaHostileIterators();
+	EATEST_VERIFY(TestConstexprFindSearch());
 
 
 	// bool all_of (InputIterator first, InputIterator last, Predicate p);
