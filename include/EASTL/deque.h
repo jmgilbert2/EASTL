@@ -2587,6 +2587,9 @@ namespace eastl
 				EASTL_FAIL_MSG("deque::insert -- invalid iterator");
 		#endif
 
+		if(n == 0)
+			return begin() + (position - cbegin());
+
 		// This implementation is nearly identical to DoInsertFromIterator above. 
 		// If you make a bug fix to one, you will likely want to fix the other.
 		if(position.mpCurrent == mItBegin.mpCurrent) // If inserting at the beginning...

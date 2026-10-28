@@ -553,7 +553,7 @@ struct DequeMoveSensitiveValue
 
 
 template <typename Value, unsigned kSubarraySize>
-int TestDequeEmptyRangeInsert()
+int TestDequeEmptyInsert()
 {
 	typedef eastl::deque<Value, EASTLAllocatorType, kSubarraySize> Deque;
 	int nErrorCount = 0;
@@ -590,7 +590,10 @@ int TestDequeEmptyRangeInsert()
 			verifyUnchanged(d.insert(d.begin() + nPosition, inputFirst, inputFirst));
 
 			if constexpr(eastl::is_copy_constructible_v<Value>)
+			{
 				verifyUnchanged(d.insert(d.begin() + nPosition, &source, &source));
+				verifyUnchanged(d.insert(d.begin() + nPosition, static_cast<typename Deque::size_type>(0), source));
+			}
 		}
 	}
 
@@ -601,10 +604,10 @@ int TestDequeEmptyRangeInsert()
 int TestDeque()
 {
 	int nErrorCount = 0;
-	nErrorCount += TestDequeEmptyRangeInsert<DequeMoveSensitiveValue, 1>();
-	nErrorCount += TestDequeEmptyRangeInsert<DequeMoveSensitiveValue, 4>();
-	nErrorCount += TestDequeEmptyRangeInsert<MoveOnlyType, 1>();
-	nErrorCount += TestDequeEmptyRangeInsert<MoveOnlyType, 4>();
+	nErrorCount += TestDequeEmptyInsert<DequeMoveSensitiveValue, 1>();
+	nErrorCount += TestDequeEmptyInsert<DequeMoveSensitiveValue, 4>();
+	nErrorCount += TestDequeEmptyInsert<MoveOnlyType, 1>();
+	nErrorCount += TestDequeEmptyInsert<MoveOnlyType, 4>();
 
 	{   // Test construction
 		nErrorCount += TestDequeConstruction<IntDeque>();
