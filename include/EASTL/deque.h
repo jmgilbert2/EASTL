@@ -2436,6 +2436,9 @@ namespace eastl
 	typename deque<T, Allocator, kDequeSubarraySize>::iterator
 	deque<T, Allocator, kDequeSubarraySize>::DoInsertFromIterator(const_iterator position, const ForwardIterator& first, const ForwardIterator& last, eastl::forward_iterator_tag)
 	{
+		if(first == last)
+			return begin() + (position - cbegin());
+
 		const size_type n = (size_type)eastl::distance(first, last);
 
 		// This implementation is nearly identical to DoInsertValues below. 

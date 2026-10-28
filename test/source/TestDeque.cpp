@@ -530,9 +530,81 @@ int TestDequeComplexMutation()
 }
 
 
+struct DequeMoveSensitiveValue
+{
+	explicit DequeMoveSensitiveValue(int value) : mVal(value) {}
+	DequeMoveSensitiveValue(const DequeMoveSensitiveValue&) = default;
+	DequeMoveSensitiveValue& operator=(const DequeMoveSensitiveValue&) = default;
+
+	DequeMoveSensitiveValue(DequeMoveSensitiveValue&& other) EA_NOEXCEPT : mVal(other.mVal)
+	{
+		other.mVal = 0;
+	}
+
+	DequeMoveSensitiveValue& operator=(DequeMoveSensitiveValue&& other) EA_NOEXCEPT
+	{
+		mVal = other.mVal;
+		other.mVal = 0;
+		return *this;
+	}
+
+	int mVal;
+};
+
+
+template <typename Value, unsigned kSubarraySize>
+int TestDequeEmptyRangeInsert()
+{
+	typedef eastl::deque<Value, EASTLAllocatorType, kSubarraySize> Deque;
+	int nErrorCount = 0;
+	const int sizes[] = { 0, 1, (int)kSubarraySize - 1, (int)kSubarraySize, (int)kSubarraySize + 1, 2 * (int)kSubarraySize + 1 };
+
+	for(int nSize : sizes)
+	{
+		for(int nPosition = 0; nPosition <= nSize; ++nPosition)
+		{
+			Deque d;
+			for(int i = 0; i < nSize; ++i)
+				d.emplace_back(i + 1);
+			Value source(999);
+
+			auto verifyUnchanged = [&](typename Deque::iterator result)
+			{
+				EATEST_VERIFY(result == d.begin() + nPosition);
+				EATEST_VERIFY(d.size() == (eastl_size_t)nSize);
+				EATEST_VERIFY(d.validate());
+				for(int i = 0; i < nSize; ++i)
+					EATEST_VERIFY(d[(eastl_size_t)i].mVal == i + 1);
+				EATEST_VERIFY(source.mVal == 999);
+			};
+
+			// These values may change on self-move, even though the source range is external and empty.
+			auto moveFirst = eastl::make_move_iterator(&source);
+			verifyUnchanged(d.insert(d.begin() + nPosition, moveFirst, moveFirst));
+
+			auto forwardFirst = eastl::make_move_iterator(to_forward_iterator(&source));
+			verifyUnchanged(d.insert(d.begin() + nPosition, forwardFirst, forwardFirst));
+
+			// Input iterators use a separate insertion loop, which must also leave an empty range alone.
+			auto inputFirst = eastl::make_move_iterator(to_input_iterator(&source));
+			verifyUnchanged(d.insert(d.begin() + nPosition, inputFirst, inputFirst));
+
+			if constexpr(eastl::is_copy_constructible_v<Value>)
+				verifyUnchanged(d.insert(d.begin() + nPosition, &source, &source));
+		}
+	}
+
+	return nErrorCount;
+}
+
+
 int TestDeque()
 {
 	int nErrorCount = 0;
+	nErrorCount += TestDequeEmptyRangeInsert<DequeMoveSensitiveValue, 1>();
+	nErrorCount += TestDequeEmptyRangeInsert<DequeMoveSensitiveValue, 4>();
+	nErrorCount += TestDequeEmptyRangeInsert<MoveOnlyType, 1>();
+	nErrorCount += TestDequeEmptyRangeInsert<MoveOnlyType, 4>();
 
 	{   // Test construction
 		nErrorCount += TestDequeConstruction<IntDeque>();
