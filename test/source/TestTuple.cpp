@@ -77,6 +77,21 @@ int OperationCountingType::mMoveAssignmentCalls = 0;
 int OperationCountingType::mDestructorCalls = 0;
 
 struct IdentityTag {};
+struct OtherIdentityTag {};
+struct NonDefaultIdentityTag
+{
+	NonDefaultIdentityTag() = delete;
+};
+struct NonCopyIdentityTag
+{
+	NonCopyIdentityTag() = default;
+	NonCopyIdentityTag(const NonCopyIdentityTag&) = delete;
+	NonCopyIdentityTag(NonCopyIdentityTag&&) = default;
+};
+struct NonAssignableIdentityTag
+{
+	NonAssignableIdentityTag& operator=(const NonAssignableIdentityTag&) = delete;
+};
 struct FinalIdentityTag final {};
 struct DerivedIdentityTag : IdentityTag {};
 struct OtherDerivedIdentityTag : IdentityTag {};
@@ -823,6 +838,21 @@ int TestTuple()
 
 	// An empty element must not overlap a same-type subobject of another element.
 	{
+		// Choosing member storage for an empty element must retain its former contracts.
+		using EmptyPair = tuple<IdentityTag, OtherIdentityTag>;
+		static_assert(is_nothrow_default_constructible_v<EmptyPair>, "retain empty default noexcept");
+		static_assert(is_nothrow_copy_assignable_v<EmptyPair>, "retain empty copy-assignment noexcept");
+		static_assert(is_nothrow_move_constructible_v<EmptyPair>, "retain empty move noexcept");
+		static_assert(is_nothrow_move_assignable_v<EmptyPair>, "retain empty move-assignment noexcept");
+		static_assert(is_trivially_default_constructible_v<EmptyPair>, "retain trivial empty default construction");
+		static_assert(is_trivially_copy_constructible_v<EmptyPair>, "retain trivial empty copying");
+		static_assert(is_trivially_copy_assignable_v<EmptyPair>, "retain trivial empty assignment");
+		static_assert(!is_default_constructible_v<tuple<NonDefaultIdentityTag, OtherIdentityTag>>, "retain deleted empty default construction");
+		static_assert(!is_copy_constructible_v<tuple<NonCopyIdentityTag, OtherIdentityTag>>, "retain deleted empty copy construction");
+		static_assert(!is_copy_assignable_v<tuple<NonAssignableIdentityTag, OtherIdentityTag>>, "retain deleted empty assignment");
+		constexpr EmptyPair constantEmptyPair;
+		EA_UNUSED(constantEmptyPair);
+
 		tuple<IdentityTag, tuple<IdentityTag>> nested;
 		EATEST_VERIFY(HaveDistinctAddresses(get<0>(nested), get<0>(get<1>(nested))));
 

@@ -179,17 +179,18 @@ namespace Internal
 
 	// TupleLeaf
 	//
-	template <size_t I, typename ValueType, bool IsEmpty = is_empty_v<ValueType> && !is_final_v<ValueType>>
+	template <size_t I, typename ValueType,
+	          bool IsEmpty = is_empty_v<ValueType> && !is_final_v<ValueType>, bool StoreEmpty = false>
 	class TupleLeaf;
 
-	template <size_t I, typename ValueType, bool IsEmpty>
-	inline void swap(TupleLeaf<I, ValueType, IsEmpty>& a, TupleLeaf<I, ValueType, IsEmpty>& b)
+	template <size_t I, typename ValueType, bool IsEmpty, bool StoreEmpty>
+	inline void swap(TupleLeaf<I, ValueType, IsEmpty, StoreEmpty>& a, TupleLeaf<I, ValueType, IsEmpty, StoreEmpty>& b)
 	{
 		using eastl::swap; // Unqualified so that user-defined swaps are found via argument-dependent lookup.
 		swap(a.getInternal(), b.getInternal());
 	}
 
-	template <size_t I, typename ValueType, bool IsEmpty>
+	template <size_t I, typename ValueType, bool IsEmpty, bool StoreEmpty>
 	class TupleLeaf
 	{
 	public:
@@ -249,7 +250,7 @@ namespace Internal
 
 	// TupleLeaf: partial specialization for when we can use the Empty Base Class Optimization
 	template <size_t I, typename ValueType>
-	class TupleLeaf<I, ValueType, true> : private ValueType
+	class TupleLeaf<I, ValueType, true, false> : private ValueType
 	{
 	public:
 		TupleLeaf() = default;
@@ -286,6 +287,45 @@ namespace Internal
 		const ValueType& getInternal() const { return static_cast<const ValueType&>(*this); }
 	};
 
+	// Empty elements that need distinct storage retain the defaulted special members of
+	// the EBO leaf. The general member leaf also handles references and has different
+	// assignment/default-construction contracts, so it cannot be reused for this case.
+	template <size_t I, typename ValueType>
+	class TupleLeaf<I, ValueType, true, true>
+	{
+	public:
+		TupleLeaf() = default;
+
+		explicit TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
+
+		template <typename T, typename = enable_if_t<is_constructible_v<ValueType, T&&>>>
+		explicit TupleLeaf(T&& t) : mValue(eastl::forward<T>(t)) {}
+
+		TupleLeaf(const TupleLeaf&) = default;
+		TupleLeaf(TupleLeaf&&) noexcept = default;
+		TupleLeaf& operator=(const TupleLeaf&) = default;
+		TupleLeaf& operator=(TupleLeaf&&) noexcept = default;
+
+		template <typename T, typename = enable_if_t<!is_same_v<remove_cvref_t<T>, TupleLeaf>>>
+		TupleLeaf& operator=(T&& t)
+		{
+			mValue = eastl::forward<T>(t);
+			return *this;
+		}
+
+		int swap(TupleLeaf& t)
+		{
+			eastl::Internal::swap(*this, t);
+			return 0;
+		}
+
+		ValueType& getInternal() { return mValue; }
+		const ValueType& getInternal() const { return mValue; }
+
+	private:
+		ValueType mValue;
+	};
+
 
 	#if defined(EA_COMPILER_MSVC)
 		// The MSVC ABI can overlap an empty base with a same-type subobject in another element,
@@ -315,12 +355,13 @@ namespace Internal
 
 	template <size_t I, typename ValueType, typename... Ts>
 	using TupleLeafFor = TupleLeaf<I, ValueType,
-		conjunction<is_empty<ValueType>, negation<is_final<ValueType>>
+		is_empty_v<ValueType> && !is_final_v<ValueType>
 		#if defined(EA_COMPILER_MSVC)
-			, negation<TupleOtherElementsMayContainEmpty<I, remove_cv_t<ValueType>,
-			                                            make_index_sequence<sizeof...(Ts)>, Ts...>>
+			, conjunction<is_empty<ValueType>, negation<is_final<ValueType>>,
+			              TupleOtherElementsMayContainEmpty<I, remove_cv_t<ValueType>,
+			                                                make_index_sequence<sizeof...(Ts)>, Ts...>>::value
 		#endif
-		>::value>;
+		>;
 
 
 
