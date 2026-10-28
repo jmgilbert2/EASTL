@@ -507,19 +507,6 @@ namespace eastl
 			this->mIndex = I;
 		}
 
-		template <size_t I, typename U, typename... Args>
-		void construct_as(std::initializer_list<U> il, Args&&... args)
-		{
-			using alternative_type = variant_alternative_t<I, variant<Types...>>;
-
-			// NOTE(rparolin): If this assert fires there is an EASTL problem picking the size of the local buffer which
-			// variant_storage used to store types. The size selected should be large enough to hold the largest type in
-			// the user provided variant type-list.
-			static_assert(sizeof(aligned_storage_impl_t) >= sizeof(alternative_type), "alternative_type is larger than local buffer size");
-
-			new (&this->mBuffer) alternative_type(il, eastl::forward<Args>(args)...);
-			this->mIndex = I;
-		}
 		EA_RESTORE_VC_WARNING()
 
 		template<typename T>

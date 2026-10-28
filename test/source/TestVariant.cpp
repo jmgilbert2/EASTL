@@ -2179,6 +2179,54 @@ namespace
 		int mSum;
 		std::unique_ptr<int> mPayload;
 	};
+
+	struct VariantRvalueList
+	{
+		VariantRvalueList(std::initializer_list<int>&& values) EA_NOEXCEPT : mSum(0)
+		{
+			for(int value : values)
+				mSum += value;
+		}
+
+		int mSum;
+	};
+}
+
+int TestVariantListValueCategory()
+{
+	int nErrorCount = 0;
+	using List = std::initializer_list<int>;
+	using Actual = eastl::variant<int, VariantRvalueList>;
+	using Expected = std::variant<int, VariantRvalueList>;
+
+	static_assert(!std::is_constructible_v<VariantRvalueList, List&>, "Require an rvalue list");
+	static_assert(VariantConversionMatchesStd<List, int, VariantRvalueList>(), "Rvalue list conversion matches std");
+
+	Actual byType(eastl::in_place_type<VariantRvalueList>, List{ 1, 2 });
+	Expected expectedType(std::in_place_type<VariantRvalueList>, List{ 1, 2 });
+	EATEST_VERIFY(eastl::get<1>(byType).mSum == std::get<1>(expectedType).mSum);
+	Actual byIndex(eastl::in_place_index<1>, List{ 3, 4 });
+	Expected expectedIndex(std::in_place_index<1>, List{ 3, 4 });
+	EATEST_VERIFY(eastl::get<1>(byIndex).mSum == std::get<1>(expectedIndex).mSum);
+
+	byType.emplace<VariantRvalueList>(List{ 5, 6 });
+	expectedType.emplace<VariantRvalueList>(List{ 5, 6 });
+	EATEST_VERIFY(eastl::get<1>(byType).mSum == std::get<1>(expectedType).mSum);
+	byIndex.emplace<1>(List{ 7, 8 });
+	expectedIndex.emplace<1>(List{ 7, 8 });
+	EATEST_VERIFY(eastl::get<1>(byIndex).mSum == std::get<1>(expectedIndex).mSum);
+
+	Actual converted(List{ 9, 10 });
+	Expected expectedConverted(List{ 9, 10 });
+	EATEST_VERIFY(eastl::get<1>(converted).mSum == std::get<1>(expectedConverted).mSum);
+	converted = 42;
+	expectedConverted = 42;
+	converted = List{ 11, 12 };
+	expectedConverted = List{ 11, 12 };
+	EATEST_VERIFY(converted.index() == expectedConverted.index());
+	EATEST_VERIFY(eastl::get<1>(converted).mSum == std::get<1>(expectedConverted).mSum);
+
+	return nErrorCount;
 }
 
 int TestVariantListEmplaceForwarding()
@@ -2325,6 +2373,7 @@ int TestVariant()
 	nErrorCount += TestVariantConvertingConstraints();
 	nErrorCount += TestVariantInPlaceConstraints();
 	nErrorCount += TestVariantListEmplaceForwarding();
+	nErrorCount += TestVariantListValueCategory();
 	nErrorCount += TestVariantSize();
 	nErrorCount += TestVariantAlternative();
 	nErrorCount += TestVariantValuelessByException();
