@@ -672,9 +672,6 @@ int TestTuple()
 		tuple<int, NoDataMembers> tupleWithEmptyMember3;
 		EA_UNUSED(tupleWithEmptyMember3);
 
-		static_assert(sizeof(tuple<NoDataMembers, int>) <= sizeof(tuple<int>));
-		static_assert(sizeof(tuple<int, NoDataMembers>) <= sizeof(tuple<int>));
-
 		tuple<NoDataMembers> tupleWithEmptyMember4(NoDataMembers{});
 		EA_UNUSED(tupleWithEmptyMember4);
 
@@ -781,10 +778,12 @@ int TestTuple()
 		[[maybe_unused]] auto& y = get<0>(t);
 	}
 
-	// Empty class types that are final cannot be inherited from, so they are stored as members.
+	// Empty class types, final or not, are stored as members, so distinct elements of the same type have distinct
+	// addresses. With the Empty Base Class Optimization, the Microsoft ABI gave them the same address.
 	{
 		struct EmptyTag {};
 		struct FinalTag final { int Value() const { return 7; } };
+		struct HasTag { EmptyTag mTag; };
 
 		tuple<FinalTag> t1;
 		EATEST_VERIFY(get<0>(t1).Value() == 7);
@@ -792,10 +791,32 @@ int TestTuple()
 		tuple<FinalTag, int, FinalTag> t2(FinalTag(), 5, FinalTag());
 		EATEST_VERIFY(get<1>(t2) == 5);
 		EATEST_VERIFY(get<2>(t2).Value() == 7);
-		EATEST_VERIFY(static_cast<const void*>(&get<0>(t2)) != static_cast<const void*>(&get<2>(t2)));
 
-		// Non-final empty types still take no space.
-		static_assert(sizeof(tuple<EmptyTag, int>) == sizeof(int), "empty base optimization");
+		// Compare through volatile so the compiler can't assume distinct same-type objects have distinct addresses.
+		auto distinct = [](const void* a, const void* b)
+		{
+			volatile uintptr_t addressA = reinterpret_cast<uintptr_t>(a);
+			volatile uintptr_t addressB = reinterpret_cast<uintptr_t>(b);
+			return addressA != addressB;
+		};
+
+		EATEST_VERIFY(distinct(&get<0>(t2), &get<2>(t2)));
+
+		tuple<EmptyTag, tuple<EmptyTag>> nested;
+		EATEST_VERIFY(distinct(&get<0>(nested), &get<0>(get<1>(nested))));
+
+		tuple<EmptyTag, HasTag> member;
+		EATEST_VERIFY(distinct(&get<0>(member), &get<1>(member).mTag));
+
+		tuple<EmptyTag, EmptyTag> adjacent[2];
+		EATEST_VERIFY(distinct(&get<0>(adjacent[0]), &get<1>(adjacent[0])));
+		EATEST_VERIFY(distinct(&get<1>(adjacent[0]), &get<0>(adjacent[1])));
+
+		// Empty elements stay trivial.
+		static_assert(is_trivially_default_constructible_v<tuple<EmptyTag, FinalTag>>, "trivial default construction");
+		static_assert(is_trivially_copy_constructible_v<tuple<EmptyTag, FinalTag>>, "trivial copy construction");
+		constexpr tuple<EmptyTag> constantEmpty{};
+		EA_UNUSED(constantEmpty);
 	}
 
 	nErrorCount += TestTupleIncludedFirstComparisons();
