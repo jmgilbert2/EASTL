@@ -36,9 +36,9 @@ constexpr auto constantMadeTuple = eastl::make_tuple(11, short(13));
 static_assert(eastl::get<0>(constantMadeTuple) == 11 && eastl::get<1>(constantMadeTuple) == 13, "make_tuple is usable in constant expressions");
 
 constexpr eastl::tuple<ConstantTupleEmpty> constantEmptyTuple(ConstantTupleEmpty{});
-static_assert(&eastl::get<0>(constantEmptyTuple) == &eastl::get<ConstantTupleEmpty>(constantEmptyTuple), "constant empty-base leaf access");
-constexpr eastl::tuple<ConstantTupleEmpty, ConstantTupleEmpty> constantStoredEmptyTuple{};
-static_assert(&eastl::get<0>(constantStoredEmptyTuple) != &eastl::get<1>(constantStoredEmptyTuple), "constant stored-empty leaf access");
+static_assert(&eastl::get<0>(constantEmptyTuple) == &eastl::get<ConstantTupleEmpty>(constantEmptyTuple), "constant empty-member access");
+constexpr eastl::tuple<ConstantTupleEmpty, ConstantTupleEmpty> constantRepeatedEmptyTuple{};
+static_assert(&eastl::get<0>(constantRepeatedEmptyTuple) != &eastl::get<1>(constantRepeatedEmptyTuple), "constant repeated-empty member access");
 
 constexpr int constantTupleReferent = 17;
 constexpr eastl::tuple<const int&> constantReferenceTuple(constantTupleReferent);
