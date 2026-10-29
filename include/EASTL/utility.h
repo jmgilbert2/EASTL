@@ -21,6 +21,7 @@
 #include <EASTL/internal/tuple_fwd_decls.h>
 #include <EASTL/internal/in_place_t.h>
 #include <EASTL/internal/piecewise_construct_t.h>
+#include <EASTL/internal/reference_constructs_from_temporary.h>
 
 
 // 4619 - There is no warning number 'number'.
@@ -402,19 +403,6 @@ namespace eastl
 		template <typename T>
 		struct IsPairImplicitlyDefaultConstructible<T, eastl::void_t<decltype(Internal::PairImplicitDefault<T>({}))>>
 			: eastl::true_type {};
-
-		// Constructor arguments are reference expressions. A conversion can nevertheless create a temporary
-		// inside the constructor; in C++23 the corresponding overload must be deleted, rather than removed
-		// from overload resolution, so that a const-reference overload cannot silently take its place.
-		template <typename T, typename Source, bool = is_reference_v<T>>
-		struct ReferenceConstructsFromTemporary : false_type {};
-
-	#if (__cplusplus > 202002L) && (EA_COMPILER_HAS_BUILTIN(__reference_constructs_from_temporary) || \
-		(defined(_MSC_VER) && !defined(__clang__) && (_MSC_VER >= 1951)))
-		template <typename T, typename Source>
-		struct ReferenceConstructsFromTemporary<T, Source, true>
-			: bool_constant<__reference_constructs_from_temporary(T, Source)> {};
-	#endif
 	}
 
 	
