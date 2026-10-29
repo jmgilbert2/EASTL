@@ -545,11 +545,13 @@ static int TestUtilityPair()
 		};
 		struct ByReference
 		{
+			explicit ByReference(Value& value) : mValue(value) {}
 			Value& mValue;
 			operator Value&() const { return mValue; }
 		};
 		struct ByRvalueReference
 		{
+			explicit ByRvalueReference(Value& value) : mValue(value) {}
 			Value& mValue;
 			operator Value&&() const { return eastl::move(mValue); }
 		};
