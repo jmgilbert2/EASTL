@@ -39,11 +39,7 @@ namespace eastl
 
 	// const typename for tuple_element_t, for when tuple or TupleImpl cannot itself be const
 	template <size_t I, typename Tuple>
-	using const_tuple_element_t = typename conditional<
-						is_lvalue_reference<tuple_element_t<I, Tuple>>::value,
-							 typename add_lvalue_reference<const typename remove_reference<tuple_element_t<I, Tuple>>::type>::type,
-							 const tuple_element_t<I, Tuple>
-						>::type;
+	using const_tuple_element_t = const tuple_element_t<I, Tuple>;
 
 	// get
 	template <size_t I, typename... Ts_>
@@ -55,6 +51,9 @@ namespace eastl
 	template <size_t I, typename... Ts_>
 	tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t);
 
+	template <size_t I, typename... Ts_>
+	const_tuple_element_t<I, tuple<Ts_...>>&& get(const tuple<Ts_...>&& t);
+
 	template <typename T, typename... ts_>
 	T& get(tuple<ts_...>& t);
 
@@ -63,6 +62,9 @@ namespace eastl
 
 	template <typename T, typename... ts_>
 	T&& get(tuple<ts_...>&& t);
+
+	template <typename T, typename... ts_>
+	const T&& get(const tuple<ts_...>&& t);
 }
 
 #endif  // EASTL_VARIADIC_TEMPLATES_ENABLED

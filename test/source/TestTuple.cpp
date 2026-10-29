@@ -76,6 +76,37 @@ int OperationCountingType::mCopyAssignmentCalls = 0;
 int OperationCountingType::mMoveAssignmentCalls = 0;
 int OperationCountingType::mDestructorCalls = 0;
 
+struct IdentityTag {};
+struct NonDefaultMember
+{
+	NonDefaultMember() = delete;
+	int mValue;
+};
+struct ExplicitDefaultMember
+{
+	explicit ExplicitDefaultMember() : mValue(7) {}
+	int mValue;
+};
+struct EmptyCopyMoveCounter
+{
+	EmptyCopyMoveCounter() = default;
+	EmptyCopyMoveCounter(const EmptyCopyMoveCounter&) { ++sCopyCalls; }
+	EmptyCopyMoveCounter(EmptyCopyMoveCounter&&) { ++sMoveCalls; }
+	static int sCopyCalls;
+	static int sMoveCalls;
+};
+int EmptyCopyMoveCounter::sCopyCalls = 0;
+int EmptyCopyMoveCounter::sMoveCalls = 0;
+
+template <typename T>
+void AcceptTupleDefault(const T&);
+
+template <typename T, typename = decltype(AcceptTupleDefault<T>({}))>
+eastl::true_type CanCopyListDefaultTuple(int);
+
+template <typename T>
+eastl::false_type CanCopyListDefaultTuple(...);
+
 }  // namespace TestTupleInternal
 
 #if EASTL_INLINE_VARIABLE_ENABLED
@@ -817,6 +848,69 @@ int TestTuple()
 		static_assert(is_trivially_copy_constructible_v<tuple<EmptyTag, FinalTag>>, "trivial copy construction");
 		constexpr tuple<EmptyTag> constantEmpty{};
 		EA_UNUSED(constantEmpty);
+	}
+
+	// Default construction must reflect the element's participation and explicitness.
+	{
+		static_assert(!is_default_constructible_v<tuple<int&>>, "a reference needs an initializer");
+		static_assert(!is_default_constructible_v<tuple<int&&>>, "an rvalue reference needs an initializer");
+		static_assert(!is_default_constructible_v<tuple<NonDefaultMember>>, "a member cannot bypass its deleted constructor");
+		static_assert(!is_default_constructible_v<tuple<int, NonDefaultMember>>, "check every element");
+		static_assert(decltype(CanCopyListDefaultTuple<tuple<int, IdentityTag>>(0))::value, "implicit element defaults remain implicit");
+		#if defined(EA_COMPILER_CPP20_ENABLED)
+			static_assert(!decltype(CanCopyListDefaultTuple<tuple<ExplicitDefaultMember>>(0))::value, "explicit element defaults make the tuple explicit");
+			static_assert(!decltype(CanCopyListDefaultTuple<tuple<int, ExplicitDefaultMember>>(0))::value, "check every element's default explicitness");
+		#endif
+		tuple<ExplicitDefaultMember> explicitDefault;
+		EATEST_VERIFY(get<0>(explicitDefault).mValue == 7);
+	}
+
+	// A const tuple does not make its stored references const, and moving references assigns lvalues.
+	{
+		using ReferenceTuple = tuple<OperationCountingType&>;
+		static_assert(is_same_v<decltype(get<0>(eastl::declval<const ReferenceTuple&>())), OperationCountingType&>, "indexed const reference access");
+		static_assert(is_same_v<decltype(get<0>(eastl::declval<const ReferenceTuple&&>())), OperationCountingType&>, "indexed const rvalue reference access");
+		static_assert(is_same_v<decltype(get<OperationCountingType&>(eastl::declval<const ReferenceTuple&>())), OperationCountingType&>, "typed const reference access");
+		static_assert(is_same_v<decltype(get<OperationCountingType&>(eastl::declval<const ReferenceTuple&&>())), OperationCountingType&>, "typed const rvalue reference access");
+		static_assert(is_same_v<decltype(get<0>(eastl::declval<const tuple<int>&&>())), const int&&>, "indexed const rvalue access");
+		static_assert(is_same_v<decltype(get<int>(eastl::declval<const tuple<int>&&>())), const int&&>, "typed const rvalue access");
+		static_assert(is_nothrow_move_assignable_v<ReferenceTuple>, "retain the stronger tuple move-assignment contract");
+
+		OperationCountingType left(3), right(9);
+		ReferenceTuple target(left), source(right);
+		OperationCountingType::ResetCounters();
+		target = eastl::move(source);
+		EATEST_VERIFY(left.mVal == 9 && right.mVal == 9);
+		EATEST_VERIFY(OperationCountingType::mCopyAssignmentCalls == 1);
+		EATEST_VERIFY(OperationCountingType::mMoveAssignmentCalls == 0);
+		const ReferenceTuple& constTarget = target;
+		get<0>(constTarget).mVal = 11;
+		EATEST_VERIFY(left.mVal == 11);
+
+		const tuple<int> value(17);
+		const int&& indexed = get<0>(eastl::move(value));
+		const int&& typed = get<int>(eastl::move(value));
+		EATEST_VERIFY(&indexed == &get<0>(value) && &typed == &get<0>(value));
+	}
+
+	// Empty member storage preserves element qualifiers.
+	{
+		static_assert(!is_copy_assignable_v<tuple<const IdentityTag>>, "const empty elements cannot be assigned");
+		static_assert(!is_move_assignable_v<tuple<const IdentityTag>>, "const empty elements cannot be move assigned");
+		static_assert(!is_copy_constructible_v<tuple<volatile IdentityTag>>, "copying requires a volatile-aware element constructor");
+		static_assert(!is_move_constructible_v<tuple<volatile IdentityTag>>, "moving requires a volatile-aware element constructor");
+		static_assert(is_nothrow_move_constructible_v<tuple<const EmptyCopyMoveCounter>>, "retain the stronger tuple move-construction contract");
+		static_assert(sizeof(tuple<IdentityTag, int>) == sizeof(tuple<char, int>), "unqualified empty elements have member storage");
+		static_assert(sizeof(tuple<const IdentityTag, int>) == sizeof(tuple<char, int>), "cv-qualified empty elements have member storage");
+		EmptyCopyMoveCounter::sCopyCalls = 0;
+		EmptyCopyMoveCounter::sMoveCalls = 0;
+		tuple<const EmptyCopyMoveCounter> source;
+		tuple<const EmptyCopyMoveCounter> copied(source);
+		tuple<const EmptyCopyMoveCounter> moved(eastl::move(source));
+		EA_UNUSED(copied);
+		EA_UNUSED(moved);
+		EATEST_VERIFY(EmptyCopyMoveCounter::sCopyCalls == 2);
+		EATEST_VERIFY(EmptyCopyMoveCounter::sMoveCalls == 0);
 	}
 
 	nErrorCount += TestTupleIncludedFirstComparisons();

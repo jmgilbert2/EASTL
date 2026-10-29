@@ -193,6 +193,7 @@ namespace Internal
 	class TupleLeaf
 	{
 	public:
+		template <typename T = ValueType, enable_if_t<is_default_constructible_v<T>, int> = 0>
 		TupleLeaf() : mValue() {}
 
 		// We shouldn't need this explicit constructor as it should be handled by the template below but OSX clang
@@ -223,7 +224,7 @@ namespace Internal
 		}
 		TupleLeaf& operator=(conditional_t<is_move_assignable<ValueType>::value, TupleLeaf&&, nonesuch&&> t) noexcept
 		{
-			mValue = eastl::move(t.getInternal());
+			mValue = eastl::forward<ValueType>(t.getInternal());
 			return *this;
 		}
 
@@ -387,6 +388,13 @@ namespace Internal
 		return static_cast<Type&&>(static_cast<TupleLeaf<I, Type>&>(t).getInternal());
 	}
 
+	template <size_t I, typename Indices, typename... Ts>
+	inline const_tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(const TupleImpl<Indices, Ts...>&& t)
+	{
+		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
+		return static_cast<const Type&&>(static_cast<const TupleLeaf<I, Type>&>(t).getInternal());
+	}
+
 	template <typename T, typename Indices, typename... Ts>
 	inline T& getImpl(TupleImpl<Indices, Ts...>& t)
 	{
@@ -406,6 +414,13 @@ namespace Internal
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<T&&>(static_cast<TupleLeaf<Index::index, T>&>(t).getInternal());
+	}
+
+	template <typename T, typename Indices, typename... Ts>
+	inline const T&& getImpl(const TupleImpl<Indices, Ts...>&& t)
+	{
+		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
+		return static_cast<const T&&>(static_cast<const TupleLeaf<Index::index, T>&>(t).getInternal());
 	}
 
 
@@ -541,6 +556,19 @@ namespace Internal
 	template<typename TargetTupleType, typename... FromTypes>
 	using TupleExplicitlyConvertible_t = enable_if_t<TupleExplicitlyConvertible<TargetTupleType, FromTypes...>::value, bool>;
 
+	// Copy-list initialization distinguishes an implicit default constructor from an explicit one.
+	template <typename T>
+	void TupleImplicitDefaultSink(const T&);
+
+	template <typename T, typename = decltype(TupleImplicitDefaultSink<T>({}))>
+	true_type TupleImplicitDefaultTest(int);
+
+	template <typename T>
+	false_type TupleImplicitDefaultTest(...);
+
+	template <typename T>
+	using IsTupleImplicitlyDefaultConstructible = decltype(TupleImplicitDefaultTest<T>(0));
+
 
 	// TupleEqual
 	//
@@ -630,7 +658,14 @@ template <typename T, typename... Ts>
 class tuple<T, Ts...>
 {
 public:
-	EA_CONSTEXPR tuple() = default;
+	#if defined(EA_COMPILER_CPP20_ENABLED)
+		explicit(!conjunction<Internal::IsTupleImplicitlyDefaultConstructible<T>,
+		                      Internal::IsTupleImplicitlyDefaultConstructible<Ts>...>::value)
+		EA_CONSTEXPR tuple() requires (conjunction<is_default_constructible<T>, is_default_constructible<Ts>...>::value) = default;
+	#else
+		// Retain the defaulted constructor and trivial empty-tuple construction in C++17.
+		EA_CONSTEXPR tuple() = default;
+	#endif
 	
 	template <typename T2 = T, 
 		Internal::TupleImplicitlyConvertible_t<tuple, const T2&, const Ts&...> = 0>
@@ -692,6 +727,9 @@ private:
 	template <size_t I, typename... Ts_>
 	friend tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t);
 
+	template <size_t I, typename... Ts_>
+	friend const_tuple_element_t<I, tuple<Ts_...>>&& get(const tuple<Ts_...>&& t);
+
 	template <typename T_, typename... ts_>
 	friend T_& get(tuple<ts_...>& t);
 
@@ -700,6 +738,9 @@ private:
 
 	template <typename T_, typename... ts_>
 	friend T_&& get(tuple<ts_...>&& t);
+
+	template <typename T_, typename... ts_>
+	friend const T_&& get(const tuple<ts_...>&& t);
 };
 
 // template specialization for an empty tuple
@@ -728,6 +769,12 @@ inline tuple_element_t<I, tuple<Ts...>>&& get(tuple<Ts...>&& t)
 	return Internal::getImpl<I>(eastl::move(t.mImpl));
 }
 
+template <size_t I, typename... Ts>
+inline const_tuple_element_t<I, tuple<Ts...>>&& get(const tuple<Ts...>&& t)
+{
+	return Internal::getImpl<I>(eastl::move(t.mImpl));
+}
+
 template <typename T, typename... Ts>
 inline T& get(tuple<Ts...>& t)
 {
@@ -742,6 +789,12 @@ inline const T& get(const tuple<Ts...>& t)
 
 template <typename T, typename... Ts>
 inline T&& get(tuple<Ts...>&& t)
+{
+	return Internal::getImpl<T>(eastl::move(t.mImpl));
+}
+
+template <typename T, typename... Ts>
+inline const T&& get(const tuple<Ts...>&& t)
 {
 	return Internal::getImpl<T>(eastl::move(t.mImpl));
 }
