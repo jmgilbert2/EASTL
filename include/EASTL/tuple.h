@@ -1124,6 +1124,11 @@ namespace detail
 template <typename T, typename Tuple, size_t... I>
 constexpr eastl::enable_if_t<eastl::is_constructible_v<T, decltype(eastl::get<I>(eastl::declval<Tuple>()))...>, T> make_from_tuple_impl(Tuple&& t, eastl::index_sequence<I...>)
 {
+	if constexpr (sizeof...(I) == 1)
+	{
+		static_assert(!Internal::ReferenceConstructsFromTemporary<T, decltype(eastl::get<0>(eastl::declval<Tuple>()))>::value,
+			"make_from_tuple cannot bind a reference to a temporary.");
+	}
 	return T(eastl::get<I>(eastl::forward<Tuple>(t))...);
 }
 }  // namespace detail

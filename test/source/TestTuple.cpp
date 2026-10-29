@@ -757,6 +757,49 @@ int TestTuple()
 
 	// make_from_tuple
 	{
+		// The one-element lifetime check must preserve references to existing objects, and must not
+		// instantiate get<0> for an empty argument tuple or constrain an ordinary multi-argument construction.
+		{
+			struct Value { int mValue = 7; };
+			struct Derived : Value {};
+			struct ByReference
+			{
+				Value& mValue;
+				operator Value&() const { return mValue; }
+			};
+			struct ByRvalueReference
+			{
+				Value& mValue;
+				operator Value&&() const { return eastl::move(mValue); }
+			};
+
+			Value value{7};
+			Derived derived{{9}};
+			ByReference reference{value};
+			ByRvalueReference rvalueReference{value};
+			eastl::tuple<> empty;
+			eastl::tuple<Value&> lvalue(value);
+			const eastl::tuple<Value> constValue(value);
+			eastl::tuple<Value> ownedValue(value);
+			eastl::tuple<Derived&> base(derived);
+			eastl::tuple<ByReference&> byReference(reference);
+			const eastl::tuple<ByReference&> constByReference(reference);
+			eastl::tuple<ByRvalueReference&> byRvalueReference(rvalueReference);
+			Value zero = eastl::make_from_tuple<Value>(empty);
+			Value& alias = eastl::make_from_tuple<Value&>(lvalue);
+			const Value& constAlias = eastl::make_from_tuple<const Value&>(constValue);
+			const Value& movedAlias = eastl::make_from_tuple<const Value&>(eastl::move(ownedValue));
+			const Value& baseAlias = eastl::make_from_tuple<const Value&>(base);
+			Value& convertedAlias = eastl::make_from_tuple<Value&>(byReference);
+			Value&& rvalueAlias = eastl::make_from_tuple<Value&&>(byRvalueReference);
+			Value& constRvalueAlias = eastl::make_from_tuple<Value&>(eastl::move(constByReference));
+			EATEST_VERIFY(zero.mValue == 7);
+			EATEST_VERIFY((&alias == &value) && (&constAlias == &eastl::get<0>(constValue)));
+			EATEST_VERIFY((&movedAlias == &eastl::get<0>(ownedValue)) && (&baseAlias == &derived));
+			EATEST_VERIFY((&convertedAlias == &value) && (&rvalueAlias == &value));
+			EATEST_VERIFY(&constRvalueAlias == &value);
+		}
+
 		{
 			TestObject x = eastl::make_from_tuple<TestObject>(eastl::make_tuple(1, true));
 			EATEST_VERIFY(x.mX == 1);
