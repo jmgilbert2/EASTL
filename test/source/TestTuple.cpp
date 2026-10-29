@@ -684,6 +684,77 @@ int TestTuple()
 		}
 	}
 
+	// Conversions to an existing reference are valid. A conversion that creates a temporary inside tuple
+	// must instead select a deleted constructor in C++23, including conversions from another tuple or pair.
+	{
+		struct Value { int mValue; };
+		struct Derived : Value {};
+		struct ByValue
+		{
+			operator Value() const { return {42}; }
+		};
+		struct LvalueByValue
+		{
+			operator Value() & { return {43}; }
+		};
+		struct ByReference
+		{
+			Value& mValue;
+			operator Value&() const { return mValue; }
+		};
+		struct ByRvalueReference
+		{
+			Value& mValue;
+			operator Value&&() const { return eastl::move(mValue); }
+		};
+
+		Value value{7};
+		Derived derived{{9}};
+		ByReference reference{value};
+		ByRvalueReference rvalueReference{value};
+		eastl::tuple<const Value&> t1(reference);
+		eastl::tuple<Value&&> t2(rvalueReference);
+		eastl::tuple<const Value&> t3(eastl::move(derived));
+		const eastl::tuple<ByReference> source(reference);
+		eastl::tuple<const Value&> t4(source);
+		const eastl::pair<ByReference, int> pairSource(reference, 4);
+		eastl::tuple<const Value&, int> t5(pairSource);
+		EATEST_VERIFY((&eastl::get<0>(t1) == &value) && (eastl::get<0>(t1).mValue == 7));
+		EATEST_VERIFY(&eastl::get<0>(t2) == &value);
+		EATEST_VERIFY((&eastl::get<0>(t3) == &derived) && (eastl::get<0>(t3).mValue == 9));
+		EATEST_VERIFY(&eastl::get<0>(t4) == &value);
+		EATEST_VERIFY((&eastl::get<0>(t5) == &value) && (eastl::get<1>(t5) == 4));
+
+		// The lifetime predicate must only inspect an eligible constructor. These elements bind to
+		// the whole source, so an ineligible unpacking conversion must not delete the valid overload.
+		eastl::tuple<int> wholeSource(11);
+		const auto& constWholeSource = wholeSource;
+		eastl::tuple<const eastl::tuple<int>&> wholeLvalue(wholeSource);
+		eastl::tuple<const eastl::tuple<int>&> wholeConstLvalue(constWholeSource);
+		eastl::tuple<const eastl::tuple<int>&> wholeRvalue(eastl::move(wholeSource));
+		eastl::tuple<const eastl::tuple<int>&> wholeConstRvalue(eastl::move(constWholeSource));
+		eastl::tuple<eastl::tuple<int>&&> wholeRvalueReference(eastl::move(wholeSource));
+		eastl::pair<int, int> wholePairSource(13, 17);
+		eastl::tuple<const decltype(wholePairSource)&> wholePair(wholePairSource);
+		EATEST_VERIFY((&eastl::get<0>(wholeLvalue) == &wholeSource) && (&eastl::get<0>(wholeConstLvalue) == &wholeSource));
+		EATEST_VERIFY((&eastl::get<0>(wholeRvalue) == &wholeSource) && (&eastl::get<0>(wholeConstRvalue) == &wholeSource));
+		EATEST_VERIFY((&eastl::get<0>(wholeRvalueReference) == &wholeSource) && (&eastl::get<0>(wholePair) == &wholePairSource));
+
+	#if (__cplusplus > 202002L) && (EA_COMPILER_HAS_BUILTIN(__reference_constructs_from_temporary) || \
+		(defined(_MSC_VER) && !defined(__clang__) && (_MSC_VER >= 1951)))
+		static_assert(!eastl::is_constructible_v<eastl::tuple<const Value&>, ByValue>, "forwarding must not bind a temporary");
+		static_assert(!eastl::is_constructible_v<eastl::tuple<const Value&>, ByValue&>, "an lvalue conversion can create a temporary");
+		static_assert(!eastl::is_constructible_v<eastl::tuple<int, const Value&>, int, ByValue>, "check later elements too");
+		static_assert(!eastl::is_constructible_v<eastl::tuple<const Value&, const Value&>, ByValue, ByValue>, "check all elements");
+		static_assert(!eastl::is_constructible_v<eastl::tuple<const int&>, short&>, "numeric conversion can create a temporary");
+		static_assert(!eastl::is_constructible_v<eastl::tuple<const Value&>, const eastl::tuple<ByValue>&>, "converting copy must not bind a temporary");
+		static_assert(!eastl::is_constructible_v<eastl::tuple<const Value&>, eastl::tuple<ByValue>&&>, "converting move must not bind a temporary");
+		static_assert(!eastl::is_constructible_v<eastl::tuple<const Value&, int>, const eastl::pair<ByValue, int>&>, "pair conversion must not bind a temporary");
+		static_assert(!eastl::is_constructible_v<eastl::tuple<const Value&>, const eastl::tuple<LvalueByValue&>&>, "const tuple does not make its reference element const");
+		static_assert(!eastl::is_constructible_v<eastl::tuple<const Value&>, const eastl::tuple<LvalueByValue&>&&>, "const-rvalue access preserves an lvalue reference element");
+	#endif
+	}
+
 	// make_from_tuple
 	{
 		{

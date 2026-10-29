@@ -506,6 +506,35 @@ namespace Internal
 	};
 
 
+	template <bool IsSameSize, typename TargetTuple, typename... Sources>
+	struct TupleReferenceConstructsFromTemporaryImpl : false_type {};
+
+	template <typename... Types, typename... Sources>
+	struct TupleReferenceConstructsFromTemporaryImpl<true, tuple<Types...>, Sources...>
+		: disjunction<ReferenceConstructsFromTemporary<Types, Sources>...> {};
+
+	template <typename TargetTuple, typename... Sources>
+	using TupleReferenceConstructsFromTemporary = TupleReferenceConstructsFromTemporaryImpl<
+		tuple_size<TargetTuple>::value == sizeof...(Sources), TargetTuple, Sources...>;
+
+	template <bool IsSameSize, typename From, typename To, typename Indices, typename = void>
+	struct TupleLikeReferenceConstructsFromTemporaryImpl : false_type {};
+
+	template <typename From, typename... Types, size_t... I>
+	struct TupleLikeReferenceConstructsFromTemporaryImpl<true, From, tuple<Types...>, index_sequence<I...>,
+		void_t<decltype(eastl::get<I>(eastl::declval<From>()))...>>
+		: disjunction<ReferenceConstructsFromTemporary<Types, decltype(eastl::get<I>(eastl::declval<From>()))>...> {};
+
+	template <typename From, typename To, bool = TupleLike<remove_reference_t<From>>::value>
+	struct TupleLikeReferenceConstructsFromTemporary : false_type {};
+
+	template <typename From, typename To>
+	struct TupleLikeReferenceConstructsFromTemporary<From, To, true>
+		: TupleLikeReferenceConstructsFromTemporaryImpl<
+			tuple_size<remove_reference_t<From>>::value == tuple_size<To>::value,
+			From, To, make_index_sequence<tuple_size<To>::value>> {};
+
+
 	// TupleAssignable
 	//
 	//
@@ -718,7 +747,8 @@ public:
 
 	template <typename U, typename... Us,
 		enable_if_t<Internal::TupleForwardConstructorAllowed<tuple, U>::value, int> = 0,
-		Internal::TupleImplicitlyConvertible_t<tuple, U, Us...> = 0>
+		Internal::TupleImplicitlyConvertible_t<tuple, U, Us...> = 0,
+		enable_if_t<!Internal::TupleReferenceConstructsFromTemporary<tuple, U&&, Us&&...>::value, int> = 0>
 		EA_CONSTEXPR tuple(U&& u, Us&&... us)
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
 					eastl::forward<Us>(us)...)
@@ -727,16 +757,25 @@ public:
 
 	template <typename U, typename... Us,
 		enable_if_t<Internal::TupleForwardConstructorAllowed<tuple, U>::value, int> = 0,
-		Internal::TupleExplicitlyConvertible_t<tuple, U, Us...> = 0>
+		Internal::TupleExplicitlyConvertible_t<tuple, U, Us...> = 0,
+		enable_if_t<!Internal::TupleReferenceConstructsFromTemporary<tuple, U&&, Us&&...>::value, int> = 0>
 		explicit EA_CONSTEXPR tuple(U&& u, Us&&... us)
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
 					eastl::forward<Us>(us)...)
 	{
 	}
 
+	template <typename U, typename... Us,
+		enable_if_t<Internal::TupleForwardConstructorAllowed<tuple, U>::value, int> = 0,
+		enable_if_t<(Internal::TupleImplicitlyConvertible<tuple, U, Us...>::value ||
+		             Internal::TupleExplicitlyConvertible<tuple, U, Us...>::value) &&
+		            Internal::TupleReferenceConstructsFromTemporary<tuple, U&&, Us&&...>::value, int> = 0>
+	tuple(U&&, Us&&...) = delete;
+
 	template <typename OtherTuple,
 		enable_if_t<conjunction<Internal::TupleConstructible<OtherTuple&&, tuple>,
-		                        Internal::TupleConvertible<OtherTuple&&, tuple>>::value, int> = 0>
+		                        Internal::TupleConvertible<OtherTuple&&, tuple>,
+		                        negation<Internal::TupleLikeReferenceConstructsFromTemporary<OtherTuple&&, tuple>>>::value, int> = 0>
 	EA_CONSTEXPR tuple(OtherTuple&& t)
 		: mImpl(eastl::forward<OtherTuple>(t))
 	{
@@ -744,11 +783,17 @@ public:
 
 	template <typename OtherTuple,
 		enable_if_t<conjunction<Internal::TupleConstructible<OtherTuple&&, tuple>,
-		                        negation<Internal::TupleConvertible<OtherTuple&&, tuple>>>::value, int> = 0>
+		                        negation<Internal::TupleConvertible<OtherTuple&&, tuple>>,
+		                        negation<Internal::TupleLikeReferenceConstructsFromTemporary<OtherTuple&&, tuple>>>::value, int> = 0>
 	explicit EA_CONSTEXPR tuple(OtherTuple&& t)
 		: mImpl(eastl::forward<OtherTuple>(t))
 	{
 	}
+
+	template <typename OtherTuple,
+		enable_if_t<conjunction<Internal::TupleConstructible<OtherTuple&&, tuple>,
+		                        Internal::TupleLikeReferenceConstructsFromTemporary<OtherTuple&&, tuple>>::value, int> = 0>
+	tuple(OtherTuple&&) = delete;
 
 	template <typename OtherTuple,
 			  typename enable_if<Internal::TupleAssignable<tuple, OtherTuple>::value, bool>::type = false>
