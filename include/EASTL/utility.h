@@ -390,6 +390,20 @@ namespace eastl
 	struct pair_first_construct_t {};
 	EA_CONSTEXPR pair_first_construct_t pair_first_construct = pair_first_construct_t();
 
+	namespace Internal
+	{
+		// Passing {} to a parameter uses copy-list-initialization, which excludes explicit default constructors.
+		template <typename T>
+		void PairImplicitDefault(const T&);
+
+		template <typename T, typename = void>
+		struct IsPairImplicitlyDefaultConstructible : eastl::false_type {};
+
+		template <typename T>
+		struct IsPairImplicitlyDefaultConstructible<T, eastl::void_t<decltype(Internal::PairImplicitDefault<T>({}))>>
+			: eastl::true_type {};
+	}
+
 	
 	///////////////////////////////////////////////////////////////////////
 	/// pair
@@ -408,9 +422,20 @@ namespace eastl
 
 		template <typename TT1 = T1,
 		          typename TT2 = T2,
-		          class = eastl::enable_if_t<eastl::is_default_constructible_v<TT1> &&
-		                                     eastl::is_default_constructible_v<TT2>>>
+		          eastl::enable_if_t<eastl::is_default_constructible_v<TT1> && eastl::is_default_constructible_v<TT2> &&
+		                             (Internal::IsPairImplicitlyDefaultConstructible<TT1>::value &&
+		                              Internal::IsPairImplicitlyDefaultConstructible<TT2>::value), int> = 0>
 		EA_CONSTEXPR pair()
+		    : first(), second()
+		{
+		}
+
+		template <typename TT1 = T1,
+		          typename TT2 = T2,
+		          eastl::enable_if_t<eastl::is_default_constructible_v<TT1> && eastl::is_default_constructible_v<TT2> &&
+		                             !(Internal::IsPairImplicitlyDefaultConstructible<TT1>::value &&
+		                               Internal::IsPairImplicitlyDefaultConstructible<TT2>::value), int> = 0>
+		explicit EA_CONSTEXPR pair()
 		    : first(), second()
 		{
 		}

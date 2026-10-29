@@ -41,6 +41,48 @@ static_assert(eastl::is_trivially_copyable_v<eastl::pair<float, int>>, "EASTL ex
 static_assert(eastl::is_trivially_copyable_v<eastl::pair<int, float>>, "EASTL extension, pair is trivially copyable.");
 static_assert(eastl::is_trivially_copy_assignable_v<eastl::pair<int, int>>, "EASTL extension, pair's copy assignment is trivial.");
 
+namespace PairConstructorTest
+{
+	struct ImplicitDefault final
+	{
+		constexpr ImplicitDefault() : mValue(7) {}
+		int mValue;
+	};
+
+	struct ExplicitDefault
+	{
+		explicit constexpr ExplicitDefault() : mValue(9) {}
+		int mValue;
+	};
+
+	struct DeletedDefault
+	{
+		DeletedDefault() = delete;
+	};
+
+	class PrivateDefault
+	{
+		PrivateDefault() = default;
+	};
+
+	struct ImmobileDefault
+	{
+		constexpr ImmobileDefault() : mValue(11) {}
+		ImmobileDefault(const ImmobileDefault&) = delete;
+		ImmobileDefault(ImmobileDefault&&) = delete;
+		int mValue;
+	};
+
+	template <typename T>
+	void Accept(const T&);
+
+	template <typename T, typename = void>
+	struct IsImplicitlyDefaultConstructible : eastl::false_type {};
+
+	template <typename T>
+	struct IsImplicitlyDefaultConstructible<T, eastl::void_t<decltype(Accept<T>({}))>> : eastl::true_type {};
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // TestUtilityPair
 //
@@ -316,6 +358,52 @@ static int TestUtilityPair()
 		TestPair1 testPair1(&fOne, NULL);
 		EATEST_VERIFY(*testPair1.first == 1.f);
 #endif
+	}
+
+	// Default construction is explicit exactly when an element's default constructor is explicit.
+	{
+		using namespace PairConstructorTest;
+		static_assert(IsImplicitlyDefaultConstructible<pair<ImplicitDefault, int>>::value, "implicit element defaults");
+		static_assert(IsImplicitlyDefaultConstructible<pair<const int, ImplicitDefault>>::value, "const and final elements");
+		static_assert(!IsImplicitlyDefaultConstructible<pair<ExplicitDefault, int>>::value, "explicit first default");
+		static_assert(!IsImplicitlyDefaultConstructible<pair<int, ExplicitDefault>>::value, "explicit second default");
+		static_assert(!IsImplicitlyDefaultConstructible<pair<ExplicitDefault, ExplicitDefault>>::value, "both defaults explicit");
+		static_assert(!IsImplicitlyDefaultConstructible<pair<ExplicitDefault[2], int>>::value, "explicit first array element default");
+		static_assert(!IsImplicitlyDefaultConstructible<pair<int, ExplicitDefault[2]>>::value, "explicit second array element default");
+		static_assert(IsImplicitlyDefaultConstructible<pair<int[2], int>>::value, "implicit array element defaults");
+		static_assert(IsImplicitlyDefaultConstructible<pair<ImmobileDefault, int>>::value, "default construction needs no copy or move");
+		static_assert(!is_default_constructible_v<pair<DeletedDefault, int>>, "deleted first default");
+		static_assert(!is_default_constructible_v<pair<int, PrivateDefault>>, "inaccessible second default");
+		static_assert(!is_default_constructible_v<pair<int&, int>>, "reference cannot be default constructed");
+
+	#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+		static_assert(IsImplicitlyDefaultConstructible<pair<ImplicitDefault, int>>::value ==
+		              IsImplicitlyDefaultConstructible<std::pair<ImplicitDefault, int>>::value, "std implicit default parity");
+		static_assert(IsImplicitlyDefaultConstructible<pair<ExplicitDefault, int>>::value ==
+		              IsImplicitlyDefaultConstructible<std::pair<ExplicitDefault, int>>::value, "std explicit first parity");
+		static_assert(IsImplicitlyDefaultConstructible<pair<int, ExplicitDefault>>::value ==
+		              IsImplicitlyDefaultConstructible<std::pair<int, ExplicitDefault>>::value, "std explicit second parity");
+		static_assert(IsImplicitlyDefaultConstructible<pair<ExplicitDefault[2], int>>::value ==
+		              IsImplicitlyDefaultConstructible<std::pair<ExplicitDefault[2], int>>::value, "std array default parity");
+		static_assert(IsImplicitlyDefaultConstructible<pair<ImmobileDefault, int>>::value ==
+		              IsImplicitlyDefaultConstructible<std::pair<ImmobileDefault, int>>::value, "std immobile default parity");
+	#endif
+
+		constexpr pair<ImplicitDefault, int> implicitPair = {};
+		constexpr pair<ExplicitDefault, int> explicitFirst{};
+		constexpr pair<int, ExplicitDefault> explicitSecond{};
+		constexpr pair<ExplicitDefault[2], int> explicitArrayFirst{};
+		constexpr pair<int, ExplicitDefault[2]> explicitArraySecond{};
+		constexpr pair<int[2], int> implicitArray = {};
+		constexpr pair<ImmobileDefault, int> immobile = {};
+		static_assert(implicitPair.first.mValue == 7 && implicitPair.second == 0, "implicit value initialization");
+		static_assert(explicitFirst.first.mValue == 9 && explicitFirst.second == 0, "explicit first value initialization");
+		static_assert(explicitSecond.first == 0 && explicitSecond.second.mValue == 9, "explicit second value initialization");
+		static_assert(explicitArrayFirst.first[0].mValue == 9 && explicitArrayFirst.first[1].mValue == 9, "explicit first array initialization");
+		static_assert(explicitArraySecond.second[0].mValue == 9 && explicitArraySecond.second[1].mValue == 9, "explicit second array initialization");
+		static_assert(implicitArray.first[0] == 0 && implicitArray.first[1] == 0, "implicit array value initialization");
+		static_assert(immobile.first.mValue == 11 && immobile.second == 0, "immobile value initialization");
+		EATEST_VERIFY(implicitPair.first.mValue == 7 && explicitFirst.first.mValue == 9 && explicitSecond.second.mValue == 9);
 	}
 
 	// The converting constructors are explicit exactly when an element conversion isn't implicit, like std::pair.
