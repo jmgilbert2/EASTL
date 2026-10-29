@@ -200,7 +200,8 @@ namespace Internal
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
 		explicit TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
 
-		template <typename T, typename = typename enable_if<is_constructible<ValueType, T&&>::value>::type>
+		template <typename T, typename = enable_if_t<conjunction<negation<is_same<remove_cvref_t<T>, TupleLeaf>>,
+		                                                       is_constructible<ValueType, T&&>>::value>>
 		explicit TupleLeaf(T&& t)
 			: mValue(eastl::forward<T>(t))
 		{
@@ -262,7 +263,8 @@ namespace Internal
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
 		explicit TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
 
-		template <typename T, typename = typename enable_if<is_constructible<ValueType, T&&>::value>::type>
+		template <typename T, typename = enable_if_t<conjunction<negation<is_same<remove_cvref_t<T>, TupleLeaf>>,
+		                                                       is_constructible<ValueType, T&&>>::value>>
 		explicit TupleLeaf(T&& t)
 			: mValue(eastl::forward<T>(t))
 		{
@@ -352,7 +354,7 @@ namespace Internal
 		// copy or move: tuple<NonMovable> must not be move constructible or assignable.
 		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
 		TupleImpl(OtherTuple&& t)
-			: TupleLeaf<Indices, Ts>(eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...
+			: TupleLeaf<Indices, Ts>(get<Indices>(eastl::forward<OtherTuple>(t)))...
 		{
 		}
 
@@ -360,7 +362,7 @@ namespace Internal
 		TupleImpl& operator=(OtherTuple&& t)
 		{
 			swallow(TupleLeaf<Indices, Ts>::operator=(
-						eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...);
+						get<Indices>(eastl::forward<OtherTuple>(t)))...);
 			return *this;
 		}
 
@@ -440,10 +442,43 @@ namespace Internal
 	struct TupleLike<eastl::pair<First, Second>> : public true_type {};
 
 
-	// TupleConvertible
+	// TupleConstructible and TupleConvertible
 	//
 	//
 	//
+	template <bool IsSameSize, typename From, typename To>
+	struct TupleConstructibleImpl : public false_type {};
+
+	template <typename... FromTypes, typename... ToTypes>
+	struct TupleConstructibleImpl<true, TupleTypes<FromTypes...>, TupleTypes<ToTypes...>>
+		: public conjunction<is_constructible<ToTypes, FromTypes>...> {};
+
+	// For one element, construction from the whole source tuple takes precedence over unpacking it.
+	template <bool IsSameSize, typename From, typename To>
+	struct TupleConvertingConstructorAllowed : public true_type {};
+
+	template <typename From, typename T>
+	struct TupleConvertingConstructorAllowed<true, From, tuple<T>>
+		: public negation<disjunction<is_same<T, tuple_element_t<0, remove_cvref_t<From>>>,
+		                             is_constructible<T, From>, is_convertible<From, T>>> {};
+
+	template <typename From, typename To,
+	          bool = TupleLike<remove_reference_t<From>>::value && !is_volatile_v<remove_reference_t<From>>,
+	          bool = TupleLike<remove_reference_t<To>>::value>
+	struct TupleConstructible : public false_type {};
+
+	template <typename From, typename To>
+	struct TupleConstructible<From, To, true, true>
+		: public conjunction<
+			TupleConvertingConstructorAllowed<tuple_size<remove_reference_t<From>>::value == tuple_size<remove_reference_t<To>>::value,
+			                                  From, To>,
+			TupleConstructibleImpl<tuple_size<remove_reference_t<From>>::value == tuple_size<remove_reference_t<To>>::value,
+			                       MakeTupleTypes_t<From>, MakeTupleTypes_t<To>>> {};
+
+	template <typename Target, typename FirstSource>
+	struct TupleForwardConstructorAllowed
+		: public bool_constant<tuple_size<Target>::value != 1 || !is_same_v<remove_cvref_t<FirstSource>, Target>> {};
+
 	template <bool IsSameSize, typename From, typename To>
 	struct TupleConvertibleImpl : public false_type
 	{
@@ -456,7 +491,7 @@ namespace Internal
 	};
 
 	template <typename From, typename To,
-			  bool = TupleLike<typename remove_reference<From>::type>::value,
+			  bool = TupleLike<typename remove_reference<From>::type>::value && !is_volatile_v<remove_reference_t<From>>,
 			  bool = TupleLike<typename remove_reference<To>::type>::value>
 	struct TupleConvertible : public false_type
 	{
@@ -488,7 +523,7 @@ namespace Internal
 
 	template <typename Target, typename From,
 			  bool = TupleLike<typename remove_reference<Target>::type>::value,
-			  bool = TupleLike<typename remove_reference<From>::type>::value>
+			  bool = TupleLike<typename remove_reference<From>::type>::value && !is_volatile_v<remove_reference_t<From>>>
 	struct TupleAssignable : public false_type
 	{
 	};
@@ -498,7 +533,7 @@ namespace Internal
 		: public TupleAssignableImpl<
 			tuple_size<typename remove_reference<Target>::type>::value ==
 			tuple_size<typename remove_reference<From>::type>::value,
-			MakeTupleTypes_t<Target>, MakeTupleTypes_t<From>>
+			MakeTupleTypes_t<Target&>, MakeTupleTypes_t<From>>
 	{
 	};
 
@@ -682,6 +717,7 @@ public:
 	}
 
 	template <typename U, typename... Us,
+		enable_if_t<Internal::TupleForwardConstructorAllowed<tuple, U>::value, int> = 0,
 		Internal::TupleImplicitlyConvertible_t<tuple, U, Us...> = 0>
 		EA_CONSTEXPR tuple(U&& u, Us&&... us)
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
@@ -690,6 +726,7 @@ public:
 	}
 
 	template <typename U, typename... Us,
+		enable_if_t<Internal::TupleForwardConstructorAllowed<tuple, U>::value, int> = 0,
 		Internal::TupleExplicitlyConvertible_t<tuple, U, Us...> = 0>
 		explicit EA_CONSTEXPR tuple(U&& u, Us&&... us)
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
@@ -698,8 +735,17 @@ public:
 	}
 
 	template <typename OtherTuple,
-			  typename enable_if<Internal::TupleConvertible<OtherTuple, tuple>::value, bool>::type = false>
+		enable_if_t<conjunction<Internal::TupleConstructible<OtherTuple&&, tuple>,
+		                        Internal::TupleConvertible<OtherTuple&&, tuple>>::value, int> = 0>
 	tuple(OtherTuple&& t)
+		: mImpl(eastl::forward<OtherTuple>(t))
+	{
+	}
+
+	template <typename OtherTuple,
+		enable_if_t<conjunction<Internal::TupleConstructible<OtherTuple&&, tuple>,
+		                        negation<Internal::TupleConvertible<OtherTuple&&, tuple>>>::value, int> = 0>
+	explicit tuple(OtherTuple&& t)
 		: mImpl(eastl::forward<OtherTuple>(t))
 	{
 	}

@@ -98,6 +98,87 @@ struct EmptyCopyMoveCounter
 int EmptyCopyMoveCounter::sCopyCalls = 0;
 int EmptyCopyMoveCounter::sMoveCalls = 0;
 
+struct ExplicitTupleElement
+{
+	explicit ExplicitTupleElement(int value) : mValue(value) {}
+	int mValue;
+};
+struct TupleWholeSource
+{
+	TupleWholeSource(int) : mRoute(1) {}
+	TupleWholeSource(const eastl::tuple<int>&) : mRoute(2) {}
+	int mRoute;
+};
+struct TupleExplicitWholeSource
+{
+	TupleExplicitWholeSource(int) : mRoute(1) {}
+	explicit TupleExplicitWholeSource(const eastl::tuple<int>&) : mRoute(2) {}
+	int mRoute;
+};
+struct TupleCopyRoute
+{
+	TupleCopyRoute(int route) : mRoute(route) {}
+	TupleCopyRoute(const TupleCopyRoute&) = default;
+	template <typename Source, eastl::enable_if_t<eastl::is_same_v<eastl::remove_cvref_t<Source>, eastl::tuple<TupleCopyRoute>>, int> = 0>
+	TupleCopyRoute(Source&&) : mRoute(2) {}
+	int mRoute;
+};
+struct TupleSourceCategory
+{
+	TupleSourceCategory(int&) : mRoute(1) {}
+	TupleSourceCategory(const int&) : mRoute(2) {}
+	TupleSourceCategory(int&&) : mRoute(3) {}
+	TupleSourceCategory(const int&&) : mRoute(4) {}
+	int mRoute;
+};
+struct TupleCatchAllCopy
+{
+	TupleCatchAllCopy(int route) : mRoute(route) {}
+	TupleCatchAllCopy(const TupleCatchAllCopy&) = default;
+	template <typename Source>
+	TupleCatchAllCopy(Source&&) : mRoute(2) {}
+	int mRoute;
+};
+struct TupleDeletedCopyCatchAll
+{
+	TupleDeletedCopyCatchAll() = default;
+	TupleDeletedCopyCatchAll(const TupleDeletedCopyCatchAll&) = delete;
+	template <typename Source>
+	TupleDeletedCopyCatchAll(Source&&) {}
+};
+struct TupleDeletedMoveCatchAll
+{
+	TupleDeletedMoveCatchAll() = default;
+	TupleDeletedMoveCatchAll(const TupleDeletedMoveCatchAll&) = delete;
+	TupleDeletedMoveCatchAll(TupleDeletedMoveCatchAll&&) = delete;
+	template <typename Source>
+	TupleDeletedMoveCatchAll(Source&&) {}
+};
+struct TupleDeletedMoveMember : TupleDeletedMoveCatchAll
+{
+	TupleDeletedMoveMember() = default;
+	TupleDeletedMoveMember(const TupleDeletedMoveMember&) = delete;
+	TupleDeletedMoveMember(TupleDeletedMoveMember&&) = delete;
+	template <typename Source>
+	TupleDeletedMoveMember(Source&&) {}
+	int mValue = 0;
+};
+struct TupleAssignmentOnly
+{
+	TupleAssignmentOnly& operator=(short value) & { mValue = value; return *this; }
+	int mValue = 0;
+};
+struct TupleRvalueAssignmentOnly
+{
+	TupleRvalueAssignmentOnly& operator=(short) && { return *this; }
+};
+struct TupleReferenceCopyOnly
+{
+	TupleReferenceCopyOnly& operator=(const TupleReferenceCopyOnly&) = default;
+	TupleReferenceCopyOnly& operator=(TupleReferenceCopyOnly&&) = delete;
+	int mValue = 0;
+};
+
 template <typename T>
 void AcceptTupleDefault(const T&);
 
@@ -850,6 +931,107 @@ int TestTuple()
 		EA_UNUSED(constantEmpty);
 	}
 
+	// Converting tuples and pairs use element constructibility and conditional explicitness.
+	{
+		using Source = tuple<int, short>;
+		using Target = tuple<ExplicitTupleElement, int>;
+		static_assert(is_constructible_v<Target, Source&>, "explicit conversion from a mutable tuple");
+		static_assert(is_constructible_v<Target, const Source&>, "explicit conversion from a const tuple");
+		static_assert(is_constructible_v<Target, Source&&>, "explicit conversion from a moved tuple");
+		static_assert(is_constructible_v<Target, const Source&&>, "explicit conversion from a const moved tuple");
+		static_assert(!is_convertible_v<const Source&, Target>, "explicit element conversion stays explicit");
+		static_assert(is_convertible_v<const Source&, tuple<long, int>>, "implicit elements stay implicit");
+		static_assert(is_constructible_v<Target, const pair<int, short>&>, "explicit conversion from a pair");
+		static_assert(!is_convertible_v<const pair<int, short>&, Target>, "pair element explicitness is retained");
+		static_assert(!is_constructible_v<Target, tuple<int>&>, "different arities do not unpack");
+		static_assert(!is_constructible_v<Target, volatile Source&>, "volatile outer tuples cannot be accessed");
+
+		Source source(5, 7);
+		const Source& constSource = source;
+		Target fromMutable(source), fromConst(constSource), fromMoved(eastl::move(source)), fromConstMoved(eastl::move(constSource));
+		EATEST_VERIFY(get<0>(fromMutable).mValue == 5 && get<1>(fromMutable) == 7);
+		EATEST_VERIFY(get<0>(fromConst).mValue == 5 && get<1>(fromConst) == 7);
+		EATEST_VERIFY(get<0>(fromMoved).mValue == 5 && get<1>(fromMoved) == 7);
+		EATEST_VERIFY(get<0>(fromConstMoved).mValue == 5 && get<1>(fromConstMoved) == 7);
+		const pair<int, short> pairSource(11, 13);
+		Target fromPair(pairSource);
+		EATEST_VERIFY(get<0>(fromPair).mValue == 11 && get<1>(fromPair) == 13);
+
+		// Mutable-lvalue and const-rvalue sources were already supported as EASTL extensions in C++17.
+		tuple<int, int> categorySource(1, 2);
+		const auto& constCategorySource = categorySource;
+		tuple<TupleSourceCategory, int> mutableCategory(categorySource);
+		tuple<TupleSourceCategory, int> constCategory(constCategorySource);
+		tuple<TupleSourceCategory, int> movedCategory(eastl::move(categorySource));
+		tuple<TupleSourceCategory, int> constMovedCategory(eastl::move(constCategorySource));
+		EATEST_VERIFY(get<0>(mutableCategory).mRoute == 1);
+		EATEST_VERIFY(get<0>(constCategory).mRoute == 2);
+		EATEST_VERIFY(get<0>(movedCategory).mRoute == 3);
+		EATEST_VERIFY(get<0>(constMovedCategory).mRoute == 4);
+	}
+
+	// A single-element tuple can construct its element from the whole source instead of unpacking it.
+	{
+		tuple<int> source(7);
+		const tuple<int>& constSource = source;
+		tuple<TupleWholeSource> fromWhole(constSource);
+		EATEST_VERIFY(get<0>(fromWhole).mRoute == 2);
+		tuple<TupleExplicitWholeSource> fromExplicitWhole(constSource);
+		EATEST_VERIFY(get<0>(fromExplicitWhole).mRoute == 2);
+		static_assert(!is_convertible_v<const tuple<int>&, tuple<TupleExplicitWholeSource>>, "whole-source explicitness takes precedence over an implicit element conversion");
+		static_assert(!is_copy_constructible_v<tuple<TupleDeletedCopyCatchAll>>, "a catch-all element constructor cannot bypass deleted tuple copying");
+		static_assert(!is_constructible_v<tuple<TupleDeletedCopyCatchAll>, tuple<TupleDeletedCopyCatchAll>&>, "a mutable same-type source still uses the tuple copy constructor");
+		static_assert(!is_move_constructible_v<tuple<TupleDeletedMoveCatchAll>>, "an empty leaf cannot bypass deleted element moving");
+		static_assert(!is_move_constructible_v<tuple<TupleDeletedMoveCatchAll, OtherIdentityTag>>, "a stored empty leaf cannot bypass deleted element moving");
+		static_assert(!is_move_constructible_v<tuple<TupleDeletedMoveMember>>, "a general member leaf cannot bypass deleted element moving");
+		tuple<tuple<int>&> reference(source);
+		EATEST_VERIFY(&get<0>(reference) == &source);
+		get<0>(get<0>(reference)) = 11;
+		EATEST_VERIFY(get<0>(source) == 11);
+
+		tuple<TupleCopyRoute> original(TupleCopyRoute(1));
+		tuple<TupleCopyRoute> copied(original);
+		const auto& constOriginal = original;
+		tuple<TupleCopyRoute> constCopied(constOriginal);
+		tuple<TupleCopyRoute> constMoved(eastl::move(constOriginal));
+		EATEST_VERIFY(get<0>(copied).mRoute == 1);
+		EATEST_VERIFY(get<0>(constCopied).mRoute == 1);
+		EATEST_VERIFY(get<0>(constMoved).mRoute == 1);
+
+		const TupleCatchAllCopy element(1);
+		tuple<TupleCatchAllCopy> catchAllSource(element);
+		tuple<TupleCatchAllCopy> catchAllCopy(catchAllSource);
+		const auto& constCatchAllSource = catchAllSource;
+		tuple<TupleCatchAllCopy> constCatchAllCopy(constCatchAllSource);
+		tuple<TupleCatchAllCopy> constCatchAllMoved(eastl::move(constCatchAllSource));
+		EATEST_VERIFY(get<0>(catchAllCopy).mRoute == 1);
+		EATEST_VERIFY(get<0>(constCatchAllCopy).mRoute == 1);
+		EATEST_VERIFY(get<0>(constCatchAllMoved).mRoute == 1);
+	}
+
+	// Converting assignment checks the lvalue element actually assigned by the body.
+	{
+		using Target = tuple<TupleAssignmentOnly>;
+		using Source = tuple<short>;
+		static_assert(is_assignable_v<Target&, const Source&>, "assignment need not construct a target element");
+		static_assert(!is_assignable_v<tuple<TupleRvalueAssignmentOnly>&, const Source&>, "elements are assigned as lvalues");
+		static_assert(!is_assignable_v<Target&, volatile Source&>, "volatile outer tuples cannot be accessed");
+		Target target;
+		const Source source(short(17));
+		EATEST_VERIFY(&(target = source) == &target);
+		EATEST_VERIFY(get<0>(target).mValue == 17);
+		tuple<TupleAssignmentOnly, int> pairTarget;
+		const pair<short, short> pairSource(19, 21);
+		pairTarget = pairSource;
+		EATEST_VERIFY(get<0>(pairTarget).mValue == 19 && get<1>(pairTarget) == 21);
+
+		TupleReferenceCopyOnly left, right;
+		right.mValue = 23;
+		tuple<TupleReferenceCopyOnly&> referenceTarget(left), referenceSource(right);
+		referenceTarget = eastl::move(referenceSource);
+		EATEST_VERIFY(left.mValue == 23 && right.mValue == 23);
+	}
+
 	// Default construction must reflect the element's participation and explicitness.
 	{
 		static_assert(!is_default_constructible_v<tuple<int&>>, "a reference needs an initializer");
@@ -857,12 +1039,17 @@ int TestTuple()
 		static_assert(!is_default_constructible_v<tuple<NonDefaultMember>>, "a member cannot bypass its deleted constructor");
 		static_assert(!is_default_constructible_v<tuple<int, NonDefaultMember>>, "check every element");
 		static_assert(decltype(CanCopyListDefaultTuple<tuple<int, IdentityTag>>(0))::value, "implicit element defaults remain implicit");
+		static_assert(decltype(CanCopyListDefaultTuple<tuple<NoCopyMove>>(0))::value, "default explicitness does not require copying or moving");
+		static_assert(is_default_constructible_v<tuple<ExplicitDefaultMember[2]>>, "default construction supports arrays");
 		#if defined(EA_COMPILER_CPP20_ENABLED)
 			static_assert(!decltype(CanCopyListDefaultTuple<tuple<ExplicitDefaultMember>>(0))::value, "explicit element defaults make the tuple explicit");
 			static_assert(!decltype(CanCopyListDefaultTuple<tuple<int, ExplicitDefaultMember>>(0))::value, "check every element's default explicitness");
+			static_assert(!decltype(CanCopyListDefaultTuple<tuple<ExplicitDefaultMember[2]>>(0))::value, "array elements retain explicit defaults");
 		#endif
 		tuple<ExplicitDefaultMember> explicitDefault;
 		EATEST_VERIFY(get<0>(explicitDefault).mValue == 7);
+		tuple<ExplicitDefaultMember[2]> arrayDefault;
+		EATEST_VERIFY(get<0>(arrayDefault)[0].mValue == 7 && get<0>(arrayDefault)[1].mValue == 7);
 	}
 
 	// A const tuple does not make its stored references const, and moving references assigns lvalues.
