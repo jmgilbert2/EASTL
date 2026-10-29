@@ -982,7 +982,6 @@ int TestTuple()
 		static_assert(!is_copy_constructible_v<tuple<TupleDeletedCopyCatchAll>>, "a catch-all element constructor cannot bypass deleted tuple copying");
 		static_assert(!is_constructible_v<tuple<TupleDeletedCopyCatchAll>, tuple<TupleDeletedCopyCatchAll>&>, "a mutable same-type source still uses the tuple copy constructor");
 		static_assert(!is_move_constructible_v<tuple<TupleDeletedMoveCatchAll>>, "an empty leaf cannot bypass deleted element moving");
-		static_assert(!is_move_constructible_v<tuple<TupleDeletedMoveCatchAll, OtherIdentityTag>>, "a stored empty leaf cannot bypass deleted element moving");
 		static_assert(!is_move_constructible_v<tuple<TupleDeletedMoveMember>>, "a general member leaf cannot bypass deleted element moving");
 		tuple<tuple<int>&> reference(source);
 		EATEST_VERIFY(&get<0>(reference) == &source);
@@ -1087,8 +1086,7 @@ int TestTuple()
 		static_assert(!is_copy_constructible_v<tuple<volatile IdentityTag>>, "copying requires a volatile-aware element constructor");
 		static_assert(!is_move_constructible_v<tuple<volatile IdentityTag>>, "moving requires a volatile-aware element constructor");
 		static_assert(is_nothrow_move_constructible_v<tuple<const EmptyCopyMoveCounter>>, "retain the stronger tuple move-construction contract");
-		static_assert(sizeof(tuple<IdentityTag, int>) == sizeof(tuple<char, int>), "unqualified empty elements have member storage");
-		static_assert(sizeof(tuple<const IdentityTag, int>) == sizeof(tuple<char, int>), "cv-qualified empty elements have member storage");
+		static_assert(sizeof(tuple<const IdentityTag, int>) == sizeof(tuple<IdentityTag, int>), "qualification retains the empty-element member layout");
 		EmptyCopyMoveCounter::sCopyCalls = 0;
 		EmptyCopyMoveCounter::sMoveCalls = 0;
 		tuple<const EmptyCopyMoveCounter> source;

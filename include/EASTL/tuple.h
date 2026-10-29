@@ -194,15 +194,15 @@ namespace Internal
 	{
 	public:
 		template <typename T = ValueType, enable_if_t<is_default_constructible_v<T>, int> = 0>
-		TupleLeaf() : mValue() {}
+		EA_CONSTEXPR TupleLeaf() : mValue() {}
 
 		// We shouldn't need this explicit constructor as it should be handled by the template below but OSX clang
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
-		explicit TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
+		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
 
 		template <typename T, typename = enable_if_t<conjunction<negation<is_same<remove_cvref_t<T>, TupleLeaf>>,
 		                                                       is_constructible<ValueType, T&&>>::value>>
-		explicit TupleLeaf(T&& t)
+		explicit EA_CONSTEXPR TupleLeaf(T&& t)
 			: mValue(eastl::forward<T>(t))
 		{
 		}
@@ -242,8 +242,8 @@ namespace Internal
 			return 0;
 		}
 
-		ValueType& getInternal() { return mValue; }
-		const ValueType& getInternal() const { return mValue; }
+		EA_CONSTEXPR ValueType& getInternal() { return mValue; }
+		EA_CONSTEXPR const ValueType& getInternal() const { return mValue; }
 
 	private:
 		ValueType mValue;  
@@ -261,11 +261,11 @@ namespace Internal
 
 		// We shouldn't need this explicit constructor as it should be handled by the template below but OSX clang
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
-		explicit TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
+		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
 
 		template <typename T, typename = enable_if_t<conjunction<negation<is_same<remove_cvref_t<T>, TupleLeaf>>,
 		                                                       is_constructible<ValueType, T&&>>::value>>
-		explicit TupleLeaf(T&& t)
+		explicit EA_CONSTEXPR TupleLeaf(T&& t)
 			: mValue(eastl::forward<T>(t))
 		{
 		}
@@ -288,8 +288,8 @@ namespace Internal
 			return 0;
 		}
 
-		ValueType& getInternal() { return mValue; }
-		const ValueType& getInternal() const { return mValue; }
+		EA_CONSTEXPR ValueType& getInternal() { return mValue; }
+		EA_CONSTEXPR const ValueType& getInternal() const { return mValue; }
 
 	private:
 		ValueType mValue;
@@ -340,7 +340,7 @@ namespace Internal
 		// https://connect.microsoft.com/VisualStudio/feedback/details/1126958/error-in-template-parameter-pack-expansion-of-std-index-sequence
 		// 
 		template <typename... Us, typename... ValueTypes>
-		explicit TupleImpl(integer_sequence<size_t, Indices...>, TupleTypes<Us...>, ValueTypes&&... values)
+		explicit EA_CONSTEXPR TupleImpl(integer_sequence<size_t, Indices...>, TupleTypes<Us...>, ValueTypes&&... values)
 			: TupleLeaf<Indices, Ts>(eastl::forward<ValueTypes>(values))...
 		{
 		}
@@ -353,7 +353,7 @@ namespace Internal
 		// These (and TupleLeaf's operator=(T&&)) exclude their own class so that they can't stand in for a deleted
 		// copy or move: tuple<NonMovable> must not be move constructible or assignable.
 		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
-		TupleImpl(OtherTuple&& t)
+		EA_CONSTEXPR TupleImpl(OtherTuple&& t)
 			: TupleLeaf<Indices, Ts>(get<Indices>(eastl::forward<OtherTuple>(t)))...
 		{
 		}
@@ -370,56 +370,56 @@ namespace Internal
 	};
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(TupleImpl<Indices, Ts...>& t)
+	inline EA_CONSTEXPR tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<TupleLeaf<I, Type>&>(t).getInternal();
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline const_tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(const TupleImpl<Indices, Ts...>& t)
+	inline EA_CONSTEXPR const_tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(const TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<const TupleLeaf<I, Type>&>(t).getInternal();
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(TupleImpl<Indices, Ts...>&& t)
+	inline EA_CONSTEXPR tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(TupleImpl<Indices, Ts...>&& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<Type&&>(static_cast<TupleLeaf<I, Type>&>(t).getInternal());
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline const_tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(const TupleImpl<Indices, Ts...>&& t)
+	inline EA_CONSTEXPR const_tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(const TupleImpl<Indices, Ts...>&& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<const Type&&>(static_cast<const TupleLeaf<I, Type>&>(t).getInternal());
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline T& getImpl(TupleImpl<Indices, Ts...>& t)
+	inline EA_CONSTEXPR T& getImpl(TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<TupleLeaf<Index::index, T>&>(t).getInternal();
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline const T& getImpl(const TupleImpl<Indices, Ts...>& t)
+	inline EA_CONSTEXPR const T& getImpl(const TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<const TupleLeaf<Index::index, T>&>(t).getInternal();
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline T&& getImpl(TupleImpl<Indices, Ts...>&& t)
+	inline EA_CONSTEXPR T&& getImpl(TupleImpl<Indices, Ts...>&& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<T&&>(static_cast<TupleLeaf<Index::index, T>&>(t).getInternal());
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline const T&& getImpl(const TupleImpl<Indices, Ts...>&& t)
+	inline EA_CONSTEXPR const T&& getImpl(const TupleImpl<Indices, Ts...>&& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<const T&&>(static_cast<const TupleLeaf<Index::index, T>&>(t).getInternal());
@@ -737,7 +737,7 @@ public:
 	template <typename OtherTuple,
 		enable_if_t<conjunction<Internal::TupleConstructible<OtherTuple&&, tuple>,
 		                        Internal::TupleConvertible<OtherTuple&&, tuple>>::value, int> = 0>
-	tuple(OtherTuple&& t)
+	EA_CONSTEXPR tuple(OtherTuple&& t)
 		: mImpl(eastl::forward<OtherTuple>(t))
 	{
 	}
@@ -745,7 +745,7 @@ public:
 	template <typename OtherTuple,
 		enable_if_t<conjunction<Internal::TupleConstructible<OtherTuple&&, tuple>,
 		                        negation<Internal::TupleConvertible<OtherTuple&&, tuple>>>::value, int> = 0>
-	explicit tuple(OtherTuple&& t)
+	explicit EA_CONSTEXPR tuple(OtherTuple&& t)
 		: mImpl(eastl::forward<OtherTuple>(t))
 	{
 	}
@@ -765,28 +765,28 @@ private:
 	Impl mImpl;
 
 	template <size_t I, typename... Ts_>
-	friend tuple_element_t<I, tuple<Ts_...>>& get(tuple<Ts_...>& t);
+	friend EA_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>& get(tuple<Ts_...>& t);
 
 	template <size_t I, typename... Ts_>
-	friend const_tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t);
+	friend EA_CONSTEXPR const_tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t);
 
 	template <size_t I, typename... Ts_>
-	friend tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t);
+	friend EA_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t);
 
 	template <size_t I, typename... Ts_>
-	friend const_tuple_element_t<I, tuple<Ts_...>>&& get(const tuple<Ts_...>&& t);
+	friend EA_CONSTEXPR const_tuple_element_t<I, tuple<Ts_...>>&& get(const tuple<Ts_...>&& t);
 
 	template <typename T_, typename... ts_>
-	friend T_& get(tuple<ts_...>& t);
+	friend EA_CONSTEXPR T_& get(tuple<ts_...>& t);
 
 	template <typename T_, typename... ts_>
-	friend const T_& get(const tuple<ts_...>& t);
+	friend EA_CONSTEXPR const T_& get(const tuple<ts_...>& t);
 
 	template <typename T_, typename... ts_>
-	friend T_&& get(tuple<ts_...>&& t);
+	friend EA_CONSTEXPR T_&& get(tuple<ts_...>&& t);
 
 	template <typename T_, typename... ts_>
-	friend const T_&& get(const tuple<ts_...>&& t);
+	friend EA_CONSTEXPR const T_&& get(const tuple<ts_...>&& t);
 };
 
 // template specialization for an empty tuple
@@ -798,49 +798,49 @@ public:
 };
 
 template <size_t I, typename... Ts>
-inline tuple_element_t<I, tuple<Ts...>>& get(tuple<Ts...>& t)
+inline EA_CONSTEXPR tuple_element_t<I, tuple<Ts...>>& get(tuple<Ts...>& t)
 {
 	return Internal::getImpl<I>(t.mImpl);
 }
 
 template <size_t I, typename... Ts>
-inline const_tuple_element_t<I, tuple<Ts...>>& get(const tuple<Ts...>& t)
+inline EA_CONSTEXPR const_tuple_element_t<I, tuple<Ts...>>& get(const tuple<Ts...>& t)
 {
 	return Internal::getImpl<I>(t.mImpl);
 }
 
 template <size_t I, typename... Ts>
-inline tuple_element_t<I, tuple<Ts...>>&& get(tuple<Ts...>&& t)
+inline EA_CONSTEXPR tuple_element_t<I, tuple<Ts...>>&& get(tuple<Ts...>&& t)
 {
 	return Internal::getImpl<I>(eastl::move(t.mImpl));
 }
 
 template <size_t I, typename... Ts>
-inline const_tuple_element_t<I, tuple<Ts...>>&& get(const tuple<Ts...>&& t)
+inline EA_CONSTEXPR const_tuple_element_t<I, tuple<Ts...>>&& get(const tuple<Ts...>&& t)
 {
 	return Internal::getImpl<I>(eastl::move(t.mImpl));
 }
 
 template <typename T, typename... Ts>
-inline T& get(tuple<Ts...>& t)
+inline EA_CONSTEXPR T& get(tuple<Ts...>& t)
 {
 	return Internal::getImpl<T>(t.mImpl);
 }
 
 template <typename T, typename... Ts>
-inline const T& get(const tuple<Ts...>& t)
+inline EA_CONSTEXPR const T& get(const tuple<Ts...>& t)
 {
 	return Internal::getImpl<T>(t.mImpl);
 }
 
 template <typename T, typename... Ts>
-inline T&& get(tuple<Ts...>&& t)
+inline EA_CONSTEXPR T&& get(tuple<Ts...>&& t)
 {
 	return Internal::getImpl<T>(eastl::move(t.mImpl));
 }
 
 template <typename T, typename... Ts>
-inline const T&& get(const tuple<Ts...>&& t)
+inline EA_CONSTEXPR const T&& get(const tuple<Ts...>&& t)
 {
 	return Internal::getImpl<T>(eastl::move(t.mImpl));
 }

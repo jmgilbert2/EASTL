@@ -11,6 +11,51 @@
 
 #if EASTL_TUPLE_ENABLED
 
+namespace
+{
+
+struct ConstantTupleEmpty {};
+struct ConstantTupleExplicit
+{
+	explicit constexpr ConstantTupleExplicit(int value) : mValue(value) {}
+	int mValue;
+};
+
+constexpr eastl::tuple<int, short> constantDefaultTuple{};
+static_assert(eastl::get<0>(constantDefaultTuple) == 0 && eastl::get<1>(constantDefaultTuple) == 0, "default construction value-initializes elements");
+
+constexpr eastl::tuple<int> constantValueTuple(7);
+static_assert(eastl::get<0>(constantValueTuple) == 7 && eastl::get<int>(constantValueTuple) == 7, "constant indexed and typed access");
+static_assert(eastl::get<0>(eastl::move(constantValueTuple)) == 7 && eastl::get<int>(eastl::move(constantValueTuple)) == 7, "constant const-rvalue access");
+
+constexpr eastl::tuple<long> constantConvertedTuple(constantValueTuple);
+constexpr eastl::tuple<ConstantTupleExplicit> constantExplicitTuple(constantValueTuple);
+static_assert(eastl::get<0>(constantConvertedTuple) == 7 && eastl::get<0>(constantExplicitTuple).mValue == 7, "constant converting construction");
+
+constexpr auto constantMadeTuple = eastl::make_tuple(11, short(13));
+static_assert(eastl::get<0>(constantMadeTuple) == 11 && eastl::get<1>(constantMadeTuple) == 13, "make_tuple is usable in constant expressions");
+
+constexpr eastl::tuple<ConstantTupleEmpty> constantEmptyTuple(ConstantTupleEmpty{});
+static_assert(&eastl::get<0>(constantEmptyTuple) == &eastl::get<ConstantTupleEmpty>(constantEmptyTuple), "constant empty-base leaf access");
+constexpr eastl::tuple<ConstantTupleEmpty, ConstantTupleEmpty> constantStoredEmptyTuple{};
+static_assert(&eastl::get<0>(constantStoredEmptyTuple) != &eastl::get<1>(constantStoredEmptyTuple), "constant stored-empty leaf access");
+
+constexpr int constantTupleReferent = 17;
+constexpr eastl::tuple<const int&> constantReferenceTuple(constantTupleReferent);
+static_assert(&eastl::get<0>(constantReferenceTuple) == &constantTupleReferent, "constant reference construction preserves its referent");
+
+constexpr bool ModifyConstantTupleReference()
+{
+	int value = 1;
+	const eastl::tuple<int&> reference(value);
+	eastl::get<0>(reference) = 3;
+	eastl::get<int&>(reference) = 5;
+	return value == 5;
+}
+static_assert(ModifyConstantTupleReference(), "constant reference access can modify a local referent");
+
+} // namespace
+
 int TestTupleIncludedFirstComparisons()
 {
 	using namespace eastl;
