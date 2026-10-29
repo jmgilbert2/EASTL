@@ -441,7 +441,10 @@ namespace eastl
 		}
 
 	#if EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR
-		template <typename TT1 = T1, typename TT2 = T2, typename = eastl::enable_if_t<eastl::is_default_constructible_v<TT2>>>
+		template <typename TT1 = T1,
+		          typename TT2 = T2,
+		          typename = eastl::enable_if_t<eastl::is_constructible_v<T1, const TT1&> &&
+		                                        eastl::is_default_constructible_v<TT2>>>
 		EA_CPP14_CONSTEXPR pair(const TT1& x)
 		    : first(x), second()
 		{
@@ -453,30 +456,21 @@ namespace eastl
 		// error: 'eastl::pair<T1, T2>::pair(T1&&) [with T1 = const int&; T2 = const int&]' cannot be overloaded	
 		// error: with 'eastl::pair<T1, T2>::pair(const T1&) [with T1 = const int&; T2 = const int&]'
 		#if !defined(EA_COMPILER_GNUC)
-			template <typename TT2 = T2, typename = eastl::enable_if_t<eastl::is_default_constructible_v<TT2>>>
+			template <typename TT2 = T2,
+			          typename = eastl::enable_if_t<eastl::is_constructible_v<T1, T1&&> &&
+			                                        eastl::is_default_constructible_v<TT2>>>
 			EA_CPP14_CONSTEXPR pair(T1&& x)
-				: first(eastl::move(x)), second()
+				: first(eastl::forward<T1>(x)), second()
 			{
 			}
 		#endif
 	#endif
 
 	
-	// NOTE(rparolin): 
-	// This is a workaround to a compiler intrinic bug which fails to correctly identify a nested class using
-	// non-static data member initialization as default constructible.  
-	//
-	// See bug submitted to LLVM for more details.
-	// https://bugs.llvm.org/show_bug.cgi?id=38374
-	#if !defined(__clang__)
-		template<typename T>
-		using single_pair_ctor_sfinae = eastl::enable_if_t<eastl::is_default_constructible_v<T>>;
-	#else
-		template<typename>
-		using single_pair_ctor_sfinae = void;
-	#endif
-
-		template <typename TT1 = T1, typename TT2 = T2, typename = single_pair_ctor_sfinae<TT2>>
+		template <typename TT1 = T1,
+		          typename TT2 = T2,
+		          typename = eastl::enable_if_t<eastl::is_constructible_v<T1, const TT1&> &&
+		                                        eastl::is_default_constructible_v<TT2>>>
 		EA_CPP14_CONSTEXPR pair(pair_first_construct_t, const TT1& x)
 		    : first(x), second()
 		{
@@ -488,9 +482,11 @@ namespace eastl
 		// error: 'eastl::pair<T1, T2>::pair(T1&&) [with T1 = const int&; T2 = const int&]' cannot be overloaded	
 		// error: with 'eastl::pair<T1, T2>::pair(const T1&) [with T1 = const int&; T2 = const int&]'
 		#if !defined(EA_COMPILER_GNUC)
-			template <typename TT2 = T2, typename = single_pair_ctor_sfinae<TT2>>
+			template <typename TT2 = T2,
+			          typename = eastl::enable_if_t<eastl::is_constructible_v<T1, T1&&> &&
+			                                        eastl::is_default_constructible_v<TT2>>>
 			EA_CPP14_CONSTEXPR pair(pair_first_construct_t, T1&& x)
-				: first(eastl::move(x)), second()
+				: first(eastl::forward<T1>(x)), second()
 			{
 			}
 		#endif
@@ -571,7 +567,7 @@ namespace eastl
 		}
 
 		template <typename U,
-		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> &&
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, const T2&> &&
 		                             (eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<const T2&, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(U&& x, const T2& y)
 			: first(eastl::forward<U>(x)), second(y)
@@ -579,7 +575,7 @@ namespace eastl
 		}
 
 		template <typename U,
-		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> &&
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, const T2&> &&
 		                             !(eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<const T2&, T2>), int> = 0>
 		explicit EA_CPP14_CONSTEXPR pair(U&& x, const T2& y)
 			: first(eastl::forward<U>(x)), second(y)
@@ -587,7 +583,7 @@ namespace eastl
 		}
 
 		template <typename V,
-		          eastl::enable_if_t<eastl::is_constructible_v<T2, V> &&
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, const T1&> && eastl::is_constructible_v<T2, V> &&
 		                             (eastl::is_convertible_v<const T1&, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(const T1& x, V&& y)
 			: first(x), second(eastl::forward<V>(y))
@@ -595,7 +591,7 @@ namespace eastl
 		}
 
 		template <typename V,
-		          eastl::enable_if_t<eastl::is_constructible_v<T2, V> &&
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, const T1&> && eastl::is_constructible_v<T2, V> &&
 		                             !(eastl::is_convertible_v<const T1&, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
 		explicit EA_CPP14_CONSTEXPR pair(const T1& x, V&& y)
 			: first(x), second(eastl::forward<V>(y))

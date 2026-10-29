@@ -73,6 +73,32 @@ namespace PairConstructorTest
 		int mValue;
 	};
 
+	struct MoveOnly
+	{
+		explicit constexpr MoveOnly(int value = 11) : mValue(value) {}
+		MoveOnly(const MoveOnly&) = delete;
+		MoveOnly(MoveOnly&&) = default;
+		int mValue;
+	};
+
+	struct ExplicitCopy
+	{
+		explicit constexpr ExplicitCopy(int value) : mValue(value) {}
+		explicit constexpr ExplicitCopy(const ExplicitCopy& other) : mValue(other.mValue) {}
+		int mValue;
+	};
+
+	// Nested classes with member initializers used to require a Clang workaround in the tagged constructor.
+	struct NestedDefault
+	{
+		struct Element
+		{
+			int mValue = 29;
+		};
+
+		eastl::pair<int, Element> mPair{eastl::pair_first_construct, 31};
+	};
+
 	template <typename T>
 	void Accept(const T&);
 
@@ -404,6 +430,91 @@ static int TestUtilityPair()
 		static_assert(implicitArray.first[0] == 0 && implicitArray.first[1] == 0, "implicit array value initialization");
 		static_assert(immobile.first.mValue == 11 && immobile.second == 0, "immobile value initialization");
 		EATEST_VERIFY(implicitPair.first.mValue == 7 && explicitFirst.first.mValue == 9 && explicitSecond.second.mValue == 9);
+	}
+
+	// Both elements must be constructible, including the const-reference element of a mixed overload.
+	{
+		using namespace PairConstructorTest;
+		static_assert(!is_constructible_v<pair<MoveOnly, int>, const MoveOnly&, int>, "first cannot be copied");
+		static_assert(!is_constructible_v<pair<int, MoveOnly>, int, const MoveOnly&>, "second cannot be copied");
+		static_assert(!is_constructible_v<pair<MoveOnly, int>, MoveOnly&, int>, "mutable first still cannot be copied");
+		static_assert(!is_constructible_v<pair<int, MoveOnly>, int, MoveOnly&>, "mutable second still cannot be copied");
+		static_assert(is_constructible_v<pair<MoveOnly, int>, MoveOnly, int>, "movable first remains supported");
+		static_assert(is_constructible_v<pair<int, MoveOnly>, int, MoveOnly>, "movable second remains supported");
+
+	#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
+		static_assert(is_constructible_v<pair<MoveOnly, int>, const MoveOnly&, int> ==
+		              std::is_constructible_v<std::pair<MoveOnly, int>, const MoveOnly&, int>, "std first copy parity");
+		static_assert(is_constructible_v<pair<int, MoveOnly>, int, const MoveOnly&> ==
+		              std::is_constructible_v<std::pair<int, MoveOnly>, int, const MoveOnly&>, "std second copy parity");
+	#endif
+
+		const ExplicitCopy source(13);
+		const int value = 17;
+		pair<ExplicitCopy, int> explicitFirst(source, value);
+		pair<int, ExplicitCopy> explicitSecond(value, source);
+		pair<MoveOnly, int> movedFirst(MoveOnly(19), value);
+		pair<int, MoveOnly> movedSecond(value, MoveOnly(23));
+		EATEST_VERIFY(explicitFirst.first.mValue == 13 && explicitFirst.second == 17);
+		EATEST_VERIFY(explicitSecond.first == 17 && explicitSecond.second.mValue == 13);
+		EATEST_VERIFY(movedFirst.first.mValue == 19 && movedFirst.second == 17);
+		EATEST_VERIFY(movedSecond.first == 17 && movedSecond.second.mValue == 23);
+	}
+
+	// The first-element extension checks both the first construction and the defaulted second element.
+	{
+		using namespace PairConstructorTest;
+		static_assert(!is_constructible_v<pair<MoveOnly, int>, pair_first_construct_t, const MoveOnly&>, "tag cannot copy first");
+		static_assert(!is_constructible_v<pair<int, DeletedDefault>, pair_first_construct_t, int>, "tag cannot default second");
+		static_assert(!is_constructible_v<pair<int, PrivateDefault>, pair_first_construct_t, const int&>, "tag cannot access second default");
+		static_assert(!is_constructible_v<pair<int, int&>, pair_first_construct_t, int>, "tag cannot default a reference");
+	#if !defined(EA_COMPILER_GNUC)
+		// The fixed T1&& extension is disabled on GCC in utility.h.
+		static_assert(is_constructible_v<pair<MoveOnly, ExplicitDefault>, pair_first_construct_t, MoveOnly>, "tag accepts move and explicit default");
+		static_assert(is_constructible_v<pair<int&, int>, pair_first_construct_t, int&>, "tag preserves a first reference");
+	#endif
+
+		const ExplicitCopy source(37);
+		pair<ExplicitCopy, int> copied(pair_first_construct, source);
+	#if !defined(EA_COMPILER_GNUC)
+		pair<MoveOnly, ExplicitDefault> moved(pair_first_construct, MoveOnly(41));
+		int value = 43;
+		pair<int&, int> reference(pair_first_construct, value);
+		pair<const int&, int> constReference(pair_first_construct, value);
+		pair<int&&, int> rvalueReference(pair_first_construct, eastl::move(value));
+		volatile int volatileValue = 45;
+		pair<volatile int&, int> volatileReference(pair_first_construct, volatileValue);
+		reference.first = 47;
+		EATEST_VERIFY(moved.first.mValue == 41 && moved.second.mValue == 9);
+		EATEST_VERIFY(&reference.first == &value && value == 47 && reference.second == 0);
+		EATEST_VERIFY(&constReference.first == &value && constReference.first == 47);
+		EATEST_VERIFY(&rvalueReference.first == &value && rvalueReference.first == 47);
+		EATEST_VERIFY(&volatileReference.first == &volatileValue && volatileReference.first == 45);
+	#endif
+		NestedDefault nested;
+		EATEST_VERIFY(copied.first.mValue == 37 && copied.second == 0);
+		EATEST_VERIFY(nested.mPair.first == 31 && nested.mPair.second.mValue == 29);
+
+	#if EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR
+		// The optional untagged extension has the same construction requirements.
+		static_assert(!is_constructible_v<pair<MoveOnly, int>, const MoveOnly&>, "optional constructor cannot copy first");
+		static_assert(!is_constructible_v<pair<int, DeletedDefault>, int>, "optional constructor cannot default second");
+		pair<ExplicitCopy, int> optionalCopy(source);
+	#if !defined(EA_COMPILER_GNUC)
+		static_assert(is_constructible_v<pair<MoveOnly, ExplicitDefault>, MoveOnly>, "optional constructor accepts a move");
+		pair<MoveOnly, ExplicitDefault> optionalMove(MoveOnly(53));
+		pair<int&, int> optionalReference(value);
+		pair<const int&, int> optionalConstReference(value);
+		pair<int&&, int> optionalRvalueReference(eastl::move(value));
+		EATEST_VERIFY(optionalMove.first.mValue == 53 && optionalMove.second.mValue == 9);
+		EATEST_VERIFY(&optionalReference.first == &value && optionalReference.second == 0);
+		EATEST_VERIFY(&optionalConstReference.first == &value && optionalConstReference.first == 47);
+		EATEST_VERIFY(&optionalRvalueReference.first == &value && optionalRvalueReference.first == 47);
+	#endif
+		EATEST_VERIFY(optionalCopy.first.mValue == 37 && optionalCopy.second == 0);
+	#else
+		static_assert(!is_constructible_v<pair<int, int>, int>, "optional constructor remains disabled by default");
+	#endif
 	}
 
 	// The converting constructors are explicit exactly when an element conversion isn't implicit, like std::pair.
