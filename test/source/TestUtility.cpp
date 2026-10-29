@@ -534,6 +534,63 @@ static int TestUtilityPair()
 		EATEST_VERIFY((p4.first == 1) && (p4.second == 2.0));
 	}
 
+	// A reference-returning conversion remains valid; only conversions that create a temporary inside pair
+	// are rejected. Keep the referred-to objects alive while checking their addresses and values.
+	{
+		struct Value { int mValue; };
+		struct Derived : Value {};
+		struct ByValue
+		{
+			operator Value() const { return {42}; }
+		};
+		struct ByReference
+		{
+			Value& mValue;
+			operator Value&() const { return mValue; }
+		};
+		struct ByRvalueReference
+		{
+			Value& mValue;
+			operator Value&&() const { return eastl::move(mValue); }
+		};
+
+		Value value{7};
+		Derived derived{{9}};
+		ByReference reference{value};
+		ByRvalueReference rvalueReference{value};
+		pair<const Value&, int> p1(reference, 1);
+		pair<Value&&, int> p2(rvalueReference, 2);
+		pair<const Value&, int> p3(eastl::move(derived), 3);
+		const pair<ByReference, int> source(reference, 4);
+		pair<const Value&, int> p4(source);
+		pair<const Value&, int> p5(pair_first_construct, reference);
+		EATEST_VERIFY((&p1.first == &value) && (p1.first.mValue == 7));
+		EATEST_VERIFY((&p2.first == &value) && (p2.second == 2));
+		EATEST_VERIFY((&p3.first == &derived) && (p3.first.mValue == 9));
+		EATEST_VERIFY((&p4.first == &value) && (p4.second == 4));
+		EATEST_VERIFY((&p5.first == &value) && (p5.second == 0));
+
+	#if EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR
+		pair<const Value&, int> optionalReference(reference);
+		EATEST_VERIFY((&optionalReference.first == &value) && (optionalReference.second == 0));
+	#endif
+
+	#if (__cplusplus > 202002L) && (EA_COMPILER_HAS_BUILTIN(__reference_constructs_from_temporary) || \
+		(defined(_MSC_VER) && !defined(__clang__) && (_MSC_VER >= 1951)))
+		static_assert(!is_constructible_v<pair<const Value&, int>, ByValue, int>, "forwarding must not bind a temporary");
+		static_assert(!is_constructible_v<pair<const Value&, int>, ByValue&, int>, "an lvalue conversion can create a temporary");
+		static_assert(!is_constructible_v<pair<int, const Value&>, int, ByValue>, "check the second element too");
+		static_assert(!is_constructible_v<pair<const Value&, const Value&>, ByValue, ByValue>, "check both elements");
+		static_assert(!is_constructible_v<pair<const int&, int>, short&, int>, "numeric conversion can create a temporary");
+		static_assert(!is_constructible_v<pair<const Value&, int>, const pair<ByValue, int>&>, "converting copy must not bind a temporary");
+		static_assert(!is_constructible_v<pair<const Value&, int>, pair<ByValue, int>&&>, "converting move must not bind a temporary");
+		static_assert(!is_constructible_v<pair<const Value&, int>, pair_first_construct_t, ByValue&>, "the tagged extension must not bind a temporary");
+	#if EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR
+		static_assert(!is_constructible_v<pair<const Value&, int>, ByValue&>, "the optional extension must not bind a temporary");
+	#endif
+	#endif
+	}
+
 #if defined(__cpp_concepts) && __cpp_concepts >= 202002L
 	// pair<T&, U> is copy assignable and assigns through the reference, like std::pair.
 	{

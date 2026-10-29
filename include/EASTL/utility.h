@@ -402,6 +402,19 @@ namespace eastl
 		template <typename T>
 		struct IsPairImplicitlyDefaultConstructible<T, eastl::void_t<decltype(Internal::PairImplicitDefault<T>({}))>>
 			: eastl::true_type {};
+
+		// Constructor arguments are reference expressions. A conversion can nevertheless create a temporary
+		// inside the constructor; in C++23 the corresponding overload must be deleted, rather than removed
+		// from overload resolution, so that a const-reference overload cannot silently take its place.
+		template <typename T, typename Source, bool = is_reference_v<T>>
+		struct ReferenceConstructsFromTemporary : false_type {};
+
+	#if (__cplusplus > 202002L) && (EA_COMPILER_HAS_BUILTIN(__reference_constructs_from_temporary) || \
+		(defined(_MSC_VER) && !defined(__clang__) && (_MSC_VER >= 1951)))
+		template <typename T, typename Source>
+		struct ReferenceConstructsFromTemporary<T, Source, true>
+			: bool_constant<__reference_constructs_from_temporary(T, Source)> {};
+	#endif
 	}
 
 	
@@ -444,11 +457,18 @@ namespace eastl
 		template <typename TT1 = T1,
 		          typename TT2 = T2,
 		          typename = eastl::enable_if_t<eastl::is_constructible_v<T1, const TT1&> &&
-		                                        eastl::is_default_constructible_v<TT2>>>
+		                                        eastl::is_default_constructible_v<TT2> &&
+		                                        !Internal::ReferenceConstructsFromTemporary<T1, const TT1&>::value>>
 		EA_CPP14_CONSTEXPR pair(const TT1& x)
 		    : first(x), second()
 		{
 		}
+
+		template <typename TT1 = T1, typename TT2 = T2,
+		          eastl::enable_if_t<eastl::is_default_constructible_v<TT2> &&
+		                             eastl::is_constructible_v<T1, const TT1&> &&
+		                             Internal::ReferenceConstructsFromTemporary<T1, const TT1&>::value, int> = 0>
+		pair(const TT1&) = delete;
 
 		// GCC has a bug with overloading rvalue and lvalue function templates.	
 		// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=54425	
@@ -470,11 +490,18 @@ namespace eastl
 		template <typename TT1 = T1,
 		          typename TT2 = T2,
 		          typename = eastl::enable_if_t<eastl::is_constructible_v<T1, const TT1&> &&
-		                                        eastl::is_default_constructible_v<TT2>>>
+		                                        eastl::is_default_constructible_v<TT2> &&
+		                                        !Internal::ReferenceConstructsFromTemporary<T1, const TT1&>::value>>
 		EA_CPP14_CONSTEXPR pair(pair_first_construct_t, const TT1& x)
 		    : first(x), second()
 		{
 		}
+
+		template <typename TT1 = T1, typename TT2 = T2,
+		          eastl::enable_if_t<eastl::is_default_constructible_v<TT2> &&
+		                             eastl::is_constructible_v<T1, const TT1&> &&
+		                             Internal::ReferenceConstructsFromTemporary<T1, const TT1&>::value, int> = 0>
+		pair(pair_first_construct_t, const TT1&) = delete;
 
 		// GCC has a bug with overloading rvalue and lvalue function templates.	
 		// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=54425	
@@ -533,6 +560,8 @@ namespace eastl
 		template <typename U,
 		          typename V,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, const U&> && eastl::is_constructible_v<T2, const V&> &&
+		                             !Internal::ReferenceConstructsFromTemporary<T1, const U&>::value &&
+		                             !Internal::ReferenceConstructsFromTemporary<T2, const V&>::value &&
 		                             (eastl::is_convertible_v<const U&, T1> && eastl::is_convertible_v<const V&, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(const pair<U, V>& p)
 		    : first(p.first), second(p.second)
@@ -542,15 +571,25 @@ namespace eastl
 		template <typename U,
 		          typename V,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, const U&> && eastl::is_constructible_v<T2, const V&> &&
+		                             !Internal::ReferenceConstructsFromTemporary<T1, const U&>::value &&
+		                             !Internal::ReferenceConstructsFromTemporary<T2, const V&>::value &&
 		                             !(eastl::is_convertible_v<const U&, T1> && eastl::is_convertible_v<const V&, T2>), int> = 0>
 		explicit EA_CPP14_CONSTEXPR pair(const pair<U, V>& p)
 		    : first(p.first), second(p.second)
 		{
 		}
 
+		template <typename U, typename V,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, const U&> && eastl::is_constructible_v<T2, const V&> &&
+		                             (Internal::ReferenceConstructsFromTemporary<T1, const U&>::value ||
+		                              Internal::ReferenceConstructsFromTemporary<T2, const V&>::value), int> = 0>
+		pair(const pair<U, V>&) = delete;
+
 		template <typename U,
 		          typename V,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, V> &&
+		                             !Internal::ReferenceConstructsFromTemporary<T1, U&&>::value &&
+		                             !Internal::ReferenceConstructsFromTemporary<T2, V&&>::value &&
 		                             (eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(U&& u, V&& v)
 		    : first(eastl::forward<U>(u)), second(eastl::forward<V>(v))
@@ -560,14 +599,23 @@ namespace eastl
 		template <typename U,
 		          typename V,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, V> &&
+		                             !Internal::ReferenceConstructsFromTemporary<T1, U&&>::value &&
+		                             !Internal::ReferenceConstructsFromTemporary<T2, V&&>::value &&
 		                             !(eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
 		explicit EA_CPP14_CONSTEXPR pair(U&& u, V&& v)
 		    : first(eastl::forward<U>(u)), second(eastl::forward<V>(v))
 		{
 		}
 
+		template <typename U, typename V,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, V> &&
+		                             (Internal::ReferenceConstructsFromTemporary<T1, U&&>::value ||
+		                              Internal::ReferenceConstructsFromTemporary<T2, V&&>::value), int> = 0>
+		pair(U&&, V&&) = delete;
+
 		template <typename U,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, const T2&> &&
+		                             !Internal::ReferenceConstructsFromTemporary<T1, U&&>::value &&
 		                             (eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<const T2&, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(U&& x, const T2& y)
 			: first(eastl::forward<U>(x)), second(y)
@@ -576,14 +624,21 @@ namespace eastl
 
 		template <typename U,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, const T2&> &&
+		                             !Internal::ReferenceConstructsFromTemporary<T1, U&&>::value &&
 		                             !(eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<const T2&, T2>), int> = 0>
 		explicit EA_CPP14_CONSTEXPR pair(U&& x, const T2& y)
 			: first(eastl::forward<U>(x)), second(y)
 		{
 		}
 
+		template <typename U,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, const T2&> &&
+		                             Internal::ReferenceConstructsFromTemporary<T1, U&&>::value, int> = 0>
+		pair(U&&, const T2&) = delete;
+
 		template <typename V,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, const T1&> && eastl::is_constructible_v<T2, V> &&
+		                             !Internal::ReferenceConstructsFromTemporary<T2, V&&>::value &&
 		                             (eastl::is_convertible_v<const T1&, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(const T1& x, V&& y)
 			: first(x), second(eastl::forward<V>(y))
@@ -592,15 +647,23 @@ namespace eastl
 
 		template <typename V,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, const T1&> && eastl::is_constructible_v<T2, V> &&
+		                             !Internal::ReferenceConstructsFromTemporary<T2, V&&>::value &&
 		                             !(eastl::is_convertible_v<const T1&, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
 		explicit EA_CPP14_CONSTEXPR pair(const T1& x, V&& y)
 			: first(x), second(eastl::forward<V>(y))
 		{
 		}
 
+		template <typename V,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, const T1&> && eastl::is_constructible_v<T2, V> &&
+		                             Internal::ReferenceConstructsFromTemporary<T2, V&&>::value, int> = 0>
+		pair(const T1&, V&&) = delete;
+
 		template <typename U,
 		          typename V,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, V> &&
+		                             !Internal::ReferenceConstructsFromTemporary<T1, U&&>::value &&
+		                             !Internal::ReferenceConstructsFromTemporary<T2, V&&>::value &&
 		                             (eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
 		EA_CPP14_CONSTEXPR pair(pair<U, V>&& p)
 		    : first(eastl::forward<U>(p.first)), second(eastl::forward<V>(p.second))
@@ -610,11 +673,19 @@ namespace eastl
 		template <typename U,
 		          typename V,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, V> &&
+		                             !Internal::ReferenceConstructsFromTemporary<T1, U&&>::value &&
+		                             !Internal::ReferenceConstructsFromTemporary<T2, V&&>::value &&
 		                             !(eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
 		explicit EA_CPP14_CONSTEXPR pair(pair<U, V>&& p)
 		    : first(eastl::forward<U>(p.first)), second(eastl::forward<V>(p.second))
 		{
 		}
+
+		template <typename U, typename V,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_constructible_v<T2, V> &&
+		                             (Internal::ReferenceConstructsFromTemporary<T1, U&&>::value ||
+		                              Internal::ReferenceConstructsFromTemporary<T2, V&&>::value), int> = 0>
+		pair(pair<U, V>&&) = delete;
 
 		// Initializes first with arguments of types Args1... obtained by forwarding the elements of first_args and
 		// initializes second with arguments of types Args2... obtained by forwarding the elements of second_args.
