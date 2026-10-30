@@ -235,7 +235,7 @@ int TestTuple()
 		EATEST_VERIFY(get<bool>(anotherTupleWithRepeatedType) == true);
 
 		tuple<bool, double, double> yetAnotherTupleWithRepeatedType(true, 1.0f, 2.0f);
-		EATEST_VERIFY(get<bool>(anotherTupleWithRepeatedType) == true);
+		EATEST_VERIFY(get<bool>(yetAnotherTupleWithRepeatedType) == true);
 
 		struct floatOne { float val; };
 		struct floatTwo { float val; };
@@ -253,6 +253,7 @@ int TestTuple()
 
 	{
 		tuple<int, float> aTupleWithDefaultInit(1, {});
+		EATEST_VERIFY((get<0>(aTupleWithDefaultInit) == 1) && (get<1>(aTupleWithDefaultInit) == 0.0f));
 
 		// tuple construction from pair
 		pair<int, float> aPair(1, 2.0f);
