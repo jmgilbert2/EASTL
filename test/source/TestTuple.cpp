@@ -215,6 +215,23 @@ int TestTuple()
 		EATEST_VERIFY(constRval == true);
 	}
 
+	// Like std::get, get on a const tuple adds a top-level const to the element type, so a reference element stays a
+	// non-const reference, and a const rvalue tuple gives const rvalue references.
+	{
+		int i = 1;
+		const tuple<int&, int> constTuple(i, 2);
+		static_assert(is_same_v<decltype(get<0>(constTuple)), int&>, "get<0>(const tuple<int&, int>&) is int&");
+		static_assert(is_same_v<decltype(get<int&>(constTuple)), int&>, "get<int&>(const tuple<int&, int>&) is int&");
+		get<0>(constTuple) = 3;
+		EATEST_VERIFY(i == 3);
+
+		static_assert(is_same_v<decltype(get<0>(eastl::move(constTuple))), int&>, "get<0>(const tuple<int&, int>&&) is int&");
+		static_assert(is_same_v<decltype(get<1>(eastl::move(constTuple))), const int&&>, "get<1>(const tuple<int&, int>&&) is const int&&");
+		static_assert(is_same_v<decltype(get<int>(eastl::move(constTuple))), const int&&>, "get<int>(const tuple<int&, int>&&) is const int&&");
+		const int&& constRvalue = get<int>(eastl::move(constTuple));
+		EATEST_VERIFY(&constRvalue == &get<1>(constTuple));
+	}
+
 	{
 		tuple<int, float> aTupleWithDefaultInit(1, {});
 
