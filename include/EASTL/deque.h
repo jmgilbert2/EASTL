@@ -2436,6 +2436,9 @@ namespace eastl
 	typename deque<T, Allocator, kDequeSubarraySize>::iterator
 	deque<T, Allocator, kDequeSubarraySize>::DoInsertFromIterator(const_iterator position, const ForwardIterator& first, const ForwardIterator& last, eastl::forward_iterator_tag)
 	{
+		if(first == last)
+			return begin() + (position - cbegin());
+
 		const size_type n = (size_type)eastl::distance(first, last);
 
 		// This implementation is nearly identical to DoInsertValues below. 
@@ -2583,6 +2586,9 @@ namespace eastl
 			if(EASTL_UNLIKELY(!(validate_iterator(position) & isf_valid)))
 				EASTL_FAIL_MSG("deque::insert -- invalid iterator");
 		#endif
+
+		if(n == 0)
+			return begin() + (position - cbegin());
 
 		// This implementation is nearly identical to DoInsertFromIterator above. 
 		// If you make a bug fix to one, you will likely want to fix the other.

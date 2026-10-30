@@ -946,7 +946,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	/// iterators (list) and one for regular input iterators (e.g. with slist).
 	///
 	template <typename InputIterator, typename Distance>
-	inline void
+	EA_CPP14_CONSTEXPR inline void
 	advance_impl(InputIterator& i, Distance n, eastl::input_iterator_tag)
 	{
 		while(n--)
@@ -957,7 +957,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	struct advance_bi_impl
 	{
 		template <typename BidirectionalIterator, typename Distance>
-		static void advance_impl(BidirectionalIterator& i, Distance n) // Specialization for unsigned distance type.
+		static EA_CPP14_CONSTEXPR void advance_impl(BidirectionalIterator& i, Distance n) // Specialization for unsigned distance type.
 		{
 			while(n--)
 				++i;
@@ -968,7 +968,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	struct advance_bi_impl<true>
 	{
 		template <typename BidirectionalIterator, typename Distance>
-		static void advance_impl(BidirectionalIterator& i, Distance n) // Specialization for signed distance type.
+		static EA_CPP14_CONSTEXPR void advance_impl(BidirectionalIterator& i, Distance n) // Specialization for signed distance type.
 		{
 			if(n > 0)
 			{
@@ -984,14 +984,14 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	};
 
 	template <typename BidirectionalIterator, typename Distance>
-	inline void
+	EA_CPP14_CONSTEXPR inline void
 	advance_impl(BidirectionalIterator& i, Distance n, eastl::bidirectional_iterator_tag)
 	{
 		advance_bi_impl<eastl::is_signed<Distance>::value>::advance_impl(i, n);
 	}
 
 	template <typename RandomAccessIterator, typename Distance>
-	inline void
+	EA_CPP14_CONSTEXPR inline void
 	advance_impl(RandomAccessIterator& i, Distance n, eastl::random_access_iterator_tag)
 	{
 		i += n;
@@ -1010,7 +1010,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	//}
 
 	template <typename InputIterator, typename Distance>
-	inline void
+	EA_CPP14_CONSTEXPR inline void
 	advance(InputIterator& i, Distance n)
 	{
 		typedef typename eastl::iterator_traits<InputIterator>::iterator_category IC;

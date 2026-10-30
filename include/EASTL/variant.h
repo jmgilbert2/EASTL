@@ -507,19 +507,6 @@ namespace eastl
 			this->mIndex = I;
 		}
 
-		template <size_t I, typename U, typename... Args>
-		void construct_as(std::initializer_list<U> il, Args&&... args)
-		{
-			using alternative_type = variant_alternative_t<I, variant<Types...>>;
-
-			// NOTE(rparolin): If this assert fires there is an EASTL problem picking the size of the local buffer which
-			// variant_storage used to store types. The size selected should be large enough to hold the largest type in
-			// the user provided variant type-list.
-			static_assert(sizeof(aligned_storage_impl_t) >= sizeof(alternative_type), "alternative_type is larger than local buffer size");
-
-			new (&this->mBuffer) alternative_type(il, eastl::forward<Args>(args)...);
-			this->mIndex = I;
-		}
 		EA_RESTORE_VC_WARNING()
 
 		template<typename T>
@@ -686,6 +673,40 @@ namespace eastl
 	template<size_t Idx>
 	constexpr bool is_in_place_index_specialization_v<in_place_index_t<Idx>> = true;
 
+	// Model the imaginary overload set with array list-initialization so that narrowing
+	// conversions are excluded. Keep one overload per alternative: duplicate types must
+	// remain ambiguous rather than being collapsed into a single candidate.
+	template <typename T>
+	void variant_conversion_array(T (&&)[1]);
+
+	template <typename T, typename Source, size_t I, typename = void>
+	struct variant_conversion_overload
+	{
+		static void select();
+	};
+
+	template <typename T, typename Source, size_t I>
+	struct variant_conversion_overload<T, Source, I,
+		void_t<decltype(variant_conversion_array<T>({eastl::declval<Source>()}))>>
+	{
+		static integral_constant<size_t, I> select(remove_cv_t<T>);
+	};
+
+	template <typename Source, typename Indices, typename... Types>
+	struct variant_conversion_overloads;
+
+	template <typename Source, size_t... Indices, typename... Types>
+	struct variant_conversion_overloads<Source, index_sequence<Indices...>, Types...>
+		: variant_conversion_overload<Types, Source, Indices>...
+	{
+		using variant_conversion_overload<Types, Source, Indices>::select...;
+	};
+
+	template <typename Source, typename... Types>
+	using variant_conversion_index_t = decltype(
+		variant_conversion_overloads<Source, index_sequence_for<Types...>, Types...>::select(
+			eastl::declval<Source>()));
+
 	// this could be a generic lambda, except that MSVC and Clang disagree with whether constants need to be in the capture list and MSVC (circa 2024) doesn't
 	// recognize constants passed in the capture list as constant in the lambda body.
 	template<typename LhsAlternative, size_t LhsAlternativeIndex, typename... Types>
@@ -751,8 +772,9 @@ namespace eastl
 
 		// Conversion constructor
 		template <typename T,
-			typename T_j = meta::overload_resolution_t<T, meta::overload_set<Types...>>,
-			size_t I = meta::get_type_index_v<remove_cvref_t<T_j>, Types...>,
+			typename Index = internal::variant_conversion_index_t<T&&, Types...>,
+			size_t I = Index::value,
+			typename T_j = variant_alternative_t<I, variant>,
 			enable_if_t<(sizeof...(Types) > 0) &&
 				I < sizeof...(Types) &&
 				!is_same_v<remove_cvref_t<T>, variant> &&
@@ -779,15 +801,16 @@ namespace eastl
 			class T,
 			class U,
 			class... Args,
-			enable_if_t<conjunction_v<meta::duplicate_type_check<T, Types...>, is_constructible<T, Args...>>, bool> = true>
+			enable_if_t<conjunction_v<meta::duplicate_type_check<T, Types...>,
+				is_constructible<T, std::initializer_list<U>&, Args...>>, bool> = true>
 			EA_CPP14_CONSTEXPR explicit variant(in_place_type_t<T>, std::initializer_list<U> il, Args&&... args)
 			: variant(in_place_index<meta::get_type_index_v<T, Types...>>, il, eastl::forward<Args>(args)...)
 		{}
 
 		template <size_t I,
 			class... Args,
-			enable_if_t<conjunction_v<integral_constant<bool, (I < sizeof...(Types))>,
-			is_constructible<meta::get_type_at_t<I, Types...>, Args...>>, bool> = true>
+			enable_if_t<(I < sizeof...(Types)), bool> = true,
+			enable_if_t<is_constructible_v<meta::get_type_at_t<I, Types...>, Args...>, bool> = true>
 			EA_CPP14_CONSTEXPR explicit variant(in_place_index_t<I>, Args&&... args)
 		{
 			this->template construct_as<I>(eastl::forward<Args>(args)...);
@@ -796,8 +819,8 @@ namespace eastl
 		template <size_t I,
 			class U,
 			class... Args,
-			enable_if_t<conjunction_v<integral_constant<bool, (I < sizeof...(Types))>,
-			is_constructible<meta::get_type_at_t<I, Types...>, Args...>>, bool> = true>
+			enable_if_t<(I < sizeof...(Types)), bool> = true,
+			enable_if_t<is_constructible_v<meta::get_type_at_t<I, Types...>, std::initializer_list<U>&, Args...>, bool> = true>
 			EA_CPP14_CONSTEXPR explicit variant(in_place_index_t<I>, std::initializer_list<U> il, Args&&... args)
 		{
 			this->template construct_as<I>(il, eastl::forward<Args>(args)...);
@@ -838,7 +861,7 @@ namespace eastl
 		                                               meta::duplicate_type_check<T, Types...>>, bool> = true>
 		EA_CPP20_CONSTEXPR decltype(auto) emplace(std::initializer_list<U> il, Args&&... args)
 		{
-			return emplace<I>(il, eastl::forward<T>(args)...);
+			return emplace<I>(il, eastl::forward<Args>(args)...);
 		}
 
 		// First, destroys the currently contained value (if any). Then direct-initializes the contained value as if
@@ -906,8 +929,9 @@ namespace eastl
 		variant& operator=(variant&&) = default;
 
 		template <class T,
-		          typename T_j = meta::overload_resolution_t<T, meta::overload_set<Types...>>,
-		          size_t I = meta::get_type_index_v<decay_t<T_j>, Types...>,
+		          typename Index = internal::variant_conversion_index_t<T&&, Types...>,
+		          size_t I = Index::value,
+		          typename T_j = variant_alternative_t<I, variant>,
 		          enable_if_t<!eastl::is_same_v<eastl::remove_cvref_t<T>, variant> && eastl::is_assignable_v<T_j&, T> &&
 		              eastl::is_constructible_v<T_j, T>, bool> = true>
 		EA_CPP14_CONSTEXPR variant& operator=(T&& t)
