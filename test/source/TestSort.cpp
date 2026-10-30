@@ -167,6 +167,20 @@ namespace eastl
 		typedef RadixSortElement<uint16_t> RadixSortElement16;
 		typedef RadixSortElement<uint32_t> RadixSortElement32;
 
+		struct CountingRadixDataKey
+		{
+			typedef uint32_t radix_type;
+			static int sCallCount;
+
+			radix_type operator()(const RadixSortElement32& value) const
+			{
+				++sCallCount;
+				return value.mData;
+			}
+		};
+
+		int CountingRadixDataKey::sCallCount = 0;
+
 		template <typename integer_type>
 		struct identity_extract_radix_key
 		{
@@ -556,6 +570,22 @@ int TestSort()
 	{
 		// void radix_sort(RandomAccessIterator first, RandomAccessIterator last, RandomAccessIterator buffer);
 		const uint32_t kCount = 100;
+
+		{
+			// Keep valid sentinels behind an empty range so an unwanted key extraction is observable without an invalid read.
+			RadixSortElement32 input[] = { { 37, 3 } };
+			RadixSortElement32 buffer[] = { { 91, 8 } };
+			CountingRadixDataKey::sCallCount = 0;
+			radix_sort<RadixSortElement32*, CountingRadixDataKey>(input, input, buffer);
+			radix_sort<RadixSortElement32*, CountingRadixDataKey, 3>(input, input, buffer);
+			EATEST_VERIFY(CountingRadixDataKey::sCallCount == 0);
+			EATEST_VERIFY(input[0].mKey == 37 && input[0].mData == 3);
+			EATEST_VERIFY(buffer[0].mKey == 91 && buffer[0].mData == 8);
+
+			radix_sort<RadixSortElement32*, CountingRadixDataKey>(input, input + 1, buffer);
+			EATEST_VERIFY(CountingRadixDataKey::sCallCount > 0);
+			EATEST_VERIFY(input[0].mKey == 37 && input[0].mData == 3);
+		}
 
 		{
 			RadixSortElement32* pRadixSortElementArray32     = new RadixSortElement32[kCount];

@@ -1631,6 +1631,9 @@ namespace eastl
 			ExtractKey extractKey,
 			IntegerType)
 		{
+			if(first == last)
+				return;
+
 			RandomAccessIterator srcFirst = first;
 			EA_CONSTEXPR_OR_CONST size_t numBuckets = 1 << DigitBits;
 			EA_CONSTEXPR_OR_CONST IntegerType bucketMask = numBuckets - 1;
