@@ -610,6 +610,25 @@ int TestTuple()
 #endif
 	}
 
+	// The default constructor takes part only when every element is default constructible, and it's explicit when an
+	// element's default constructor is, like std::tuple.
+	{
+		struct ExplicitDefault { explicit ExplicitDefault() = default; };
+		struct NoDefault { int mX; NoDefault(int x) : mX(x) {} };
+
+		static_assert(!is_default_constructible_v<tuple<int&>>, "tuple<int&> is not default constructible");
+		static_assert(!is_default_constructible_v<tuple<NoDefault>>, "tuple<NoDefault> is not default constructible");
+		static_assert(!is_default_constructible_v<tuple<int, NoDefault>>, "tuple<int, NoDefault> is not default constructible");
+		static_assert(is_default_constructible_v<tuple<ExplicitDefault>>, "tuple<ExplicitDefault> is default constructible");
+
+		static_assert(Internal::is_implicitly_default_constructible<tuple<int, float>>::value, "tuple<int, float>() is implicit");
+		static_assert(!Internal::is_implicitly_default_constructible<tuple<ExplicitDefault>>::value, "tuple<ExplicitDefault>() is explicit");
+		static_assert(!Internal::is_implicitly_default_constructible<tuple<int, ExplicitDefault>>::value, "tuple<int, ExplicitDefault>() is explicit");
+
+		tuple<int, ExplicitDefault, float> t{};
+		EATEST_VERIFY((get<0>(t) == 0) && (get<2>(t) == 0.f));
+	}
+
 	// Compilation test to make sure that we can handle reference to forward-declared types
 	{
 		struct ForwardDeclared;
@@ -812,8 +831,8 @@ int TestTuple()
 		EATEST_VERIFY(distinct(&get<0>(adjacent[0]), &get<1>(adjacent[0])));
 		EATEST_VERIFY(distinct(&get<1>(adjacent[0]), &get<0>(adjacent[1])));
 
-		// Empty elements stay trivial.
-		static_assert(is_trivially_default_constructible_v<tuple<EmptyTag, FinalTag>>, "trivial default construction");
+		// Empty elements stay trivially copyable. The default constructor isn't trivial (it's a constrained template, as
+		// in std::tuple), but it stays constexpr.
 		static_assert(is_trivially_copy_constructible_v<tuple<EmptyTag, FinalTag>>, "trivial copy construction");
 		constexpr tuple<EmptyTag> constantEmpty{};
 		EA_UNUSED(constantEmpty);

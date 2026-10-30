@@ -390,7 +390,26 @@ namespace eastl
 	struct pair_first_construct_t {};
 	EA_CONSTEXPR pair_first_construct_t pair_first_construct = pair_first_construct_t();
 
-	
+
+	namespace Internal
+	{
+		// is_implicitly_default_constructible
+		//
+		// True when T can be copy-list-initialized from {}, i.e. its default constructor isn't explicit.
+		// pair's and tuple's default constructors are explicit exactly when this is false for an element.
+		//
+		template <typename T>
+		void implicitly_default_construct(const T&);
+
+		template <typename T, typename = void>
+		struct is_implicitly_default_constructible : public eastl::false_type {};
+
+		template <typename T>
+		struct is_implicitly_default_constructible<T, eastl::void_t<decltype(implicitly_default_construct<T>({}))>>
+			: public eastl::true_type {};
+	}
+
+
 	///////////////////////////////////////////////////////////////////////
 	/// pair
 	///
@@ -406,11 +425,23 @@ namespace eastl
 		T1 first;
 		T2 second;
 
+		// Explicit when an element's default constructor is explicit, like std::pair's explicit(bool).
 		template <typename TT1 = T1,
 		          typename TT2 = T2,
-		          class = eastl::enable_if_t<eastl::is_default_constructible_v<TT1> &&
-		                                     eastl::is_default_constructible_v<TT2>>>
+		          eastl::enable_if_t<eastl::is_default_constructible_v<TT1> && eastl::is_default_constructible_v<TT2> &&
+		                             (Internal::is_implicitly_default_constructible<TT1>::value &&
+		                              Internal::is_implicitly_default_constructible<TT2>::value), int> = 0>
 		EA_CONSTEXPR pair()
+		    : first(), second()
+		{
+		}
+
+		template <typename TT1 = T1,
+		          typename TT2 = T2,
+		          eastl::enable_if_t<eastl::is_default_constructible_v<TT1> && eastl::is_default_constructible_v<TT2> &&
+		                             !(Internal::is_implicitly_default_constructible<TT1>::value &&
+		                               Internal::is_implicitly_default_constructible<TT2>::value), int> = 0>
+		explicit EA_CONSTEXPR pair()
 		    : first(), second()
 		{
 		}
