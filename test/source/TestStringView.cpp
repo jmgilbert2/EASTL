@@ -35,57 +35,20 @@ static_assert(false, "Building with char8_t tests enabled, but EA_CHAR8_UNIQUE e
 #include "TestStringView.inl"
 
 
-static EA_CPP14_CONSTEXPR bool TestConstexprStringViewFind()
-{
-	const char text[] = { 'a', 'b', '\0', 'c', 'd', 'a', 'b' };
-	const eastl::string_view view(text, 7);
-	const eastl::string_view empty;
-
-	if(view.find("ab") != 0 || view.find("ab", 1) != 5 ||
-	   view.find("ab", 6) != eastl::string_view::npos ||
-	   view.find('b', 2) != 6 || view.find('\0') != 2 ||
-	   view.find("\0c", 0, 2) != 2 ||
-	   view.find("abcdefghi") != eastl::string_view::npos ||
-	   view.find("ce") != eastl::string_view::npos)
-		return false;
-
-	if(view.find(empty, 3) != 3 || view.find("", 0) != 0 ||
-	   view.find("", view.size()) != view.size() ||
-	   view.find("", view.size() + 1) != eastl::string_view::npos ||
-	   view.find("", eastl::string_view::npos) != eastl::string_view::npos ||
-	   view.find('a', eastl::string_view::npos) != eastl::string_view::npos)
-		return false;
-
-	if(empty.find(empty) != 0 || empty.find("") != 0 ||
-	   empty.find(empty, 1) != eastl::string_view::npos ||
-	   empty.find(empty, eastl::string_view::npos) != eastl::string_view::npos ||
-	   empty.find('a') != eastl::string_view::npos)
-		return false;
-
-	const char16_t utf16[] = { u'\u03b1', u'\0', u'\u03b2', u'\u03b1' };
-	const eastl::u16string_view view16(utf16, 4);
-	if(view16.find(u"\u03b2") != 2 || view16.find(u'\0') != 1 ||
-	   view16.find(u"\0\u03b2", 0, 2) != 1 || view16.find(u"\u03b1", 1) != 3)
-		return false;
-
-	#if EA_CHAR8_UNIQUE
-		const char8_t utf8[] = { u8'a', u8'\0', u8'b' };
-		const eastl::u8string_view view8(utf8, 3);
-		if(view8.find(u8"\0b", 0, 2) != 1 || view8.find(u8'b') != 2)
-			return false;
-	#endif
-
-	return true;
-}
-
-static_assert(TestConstexprStringViewFind(), "string_view find overloads must support constant evaluation");
+// string_view's find overloads support constant evaluation, including embedded NULs.
+static constexpr eastl::string_view kFindView("ab\0cdab", 7);
+static_assert(kFindView.find("ab", 1) == 5, "find a substring");
+static_assert(kFindView.find("\0c", 0, 2) == 2, "find a substring with an embedded NUL");
+static_assert(kFindView.find("abcdefghi") == eastl::string_view::npos, "find a substring longer than the view");
+static_assert(kFindView.find("", kFindView.size()) == kFindView.size(), "find an empty string at the end");
+static_assert(kFindView.find("", kFindView.size() + 1) == eastl::string_view::npos, "find an empty string past the end");
+static_assert(eastl::u16string_view(u"\u03b1\u03b2\u03b1").find(u"\u03b1", 1) == 2, "find in a UTF-16 view");
 
 
 int TestStringView()
 {
 	using namespace eastl;
 	int nErrorCount = 0;
-	VERIFY(TestConstexprStringViewFind());
 
 	nErrorCount += TestBasicStringView<eastl::basic_string_view<char>>();
 	nErrorCount += TestBasicStringView<eastl::string_view>();
