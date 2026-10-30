@@ -456,6 +456,50 @@ namespace Internal
 	};
 
 
+	// TupleConstructible
+	//
+	// Whether tuple's converting constructor from another tuple or a pair takes part, like std::tuple's: the sizes
+	// match and each element is constructible from the source's element. A one-element tuple<T> also leaves the source
+	// to the copy and move constructors when the element types are the same, and to the element constructor when T can
+	// be built from the whole source (so tuple<any>(tuple<int>) holds the tuple). The same-type test comes first so
+	// that copying a tuple<any> doesn't ask whether any is constructible from that tuple, which recurses.
+	//
+	template <bool IsSameSize, typename From, typename To, typename FromTuple>
+	struct TupleConstructibleImpl : public false_type
+	{
+	};
+
+	template <typename... FromTypes, typename... ToTypes, typename FromTuple>
+	struct TupleConstructibleImpl<true, TupleTypes<FromTypes...>, TupleTypes<ToTypes...>, FromTuple>
+		: public conjunction<is_constructible<ToTypes, FromTypes>...>
+	{
+	};
+
+	template <typename FromType, typename ToType, typename FromTuple>
+	struct TupleConstructibleImpl<true, TupleTypes<FromType>, TupleTypes<ToType>, FromTuple>
+		: public conjunction<negation<is_same<ToType, tuple_element_t<0, remove_cvref_t<FromTuple>>>>,
+		                     is_constructible<ToType, FromType>,
+		                     negation<is_convertible<FromTuple, ToType>>,
+		                     negation<is_constructible<ToType, FromTuple>>>
+	{
+	};
+
+	template <typename From, typename To,
+			  bool = TupleLike<typename remove_reference<From>::type>::value,
+			  bool = TupleLike<typename remove_reference<To>::type>::value>
+	struct TupleConstructible : public false_type
+	{
+	};
+
+	template <typename From, typename To>
+	struct TupleConstructible<From, To, true, true>
+		: public TupleConstructibleImpl<tuple_size<typename remove_reference<From>::type>::value ==
+				tuple_size<typename remove_reference<To>::type>::value,
+				MakeTupleTypes_t<From>, MakeTupleTypes_t<To>, From>
+	{
+	};
+
+
 	// TupleAssignable
 	//
 	//
@@ -646,7 +690,10 @@ public:
 	{
 	}
 
+	// A one-element tuple doesn't take a tuple of its own type here: that's the copy or move constructor's job. This is
+	// checked before the element's constructibility, which could recurse into the tuple's own (e.g. for tuple<any>).
 	template <typename U, typename... Us,
+		enable_if_t<sizeof...(Ts) != 0 || !is_same<remove_cvref_t<U>, tuple>::value, bool> = false,
 		Internal::TupleImplicitlyConvertible_t<tuple, U, Us...> = 0>
 		EA_CONSTEXPR tuple(U&& u, Us&&... us)
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
@@ -655,6 +702,7 @@ public:
 	}
 
 	template <typename U, typename... Us,
+		enable_if_t<sizeof...(Ts) != 0 || !is_same<remove_cvref_t<U>, tuple>::value, bool> = false,
 		Internal::TupleExplicitlyConvertible_t<tuple, U, Us...> = 0>
 		explicit EA_CONSTEXPR tuple(U&& u, Us&&... us)
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
@@ -662,9 +710,20 @@ public:
 	{
 	}
 
+	// Converting constructors from another tuple or a pair, of any value category. Like the element constructors,
+	// they're explicit exactly when an element conversion isn't implicit.
 	template <typename OtherTuple,
-			  typename enable_if<Internal::TupleConvertible<OtherTuple, tuple>::value, bool>::type = false>
+			  enable_if_t<Internal::TupleConstructible<OtherTuple, tuple>::value &&
+			              Internal::TupleConvertible<OtherTuple, tuple>::value, bool> = false>
 	tuple(OtherTuple&& t)
+		: mImpl(eastl::forward<OtherTuple>(t))
+	{
+	}
+
+	template <typename OtherTuple,
+			  enable_if_t<Internal::TupleConstructible<OtherTuple, tuple>::value &&
+			              !Internal::TupleConvertible<OtherTuple, tuple>::value, bool> = false>
+	explicit tuple(OtherTuple&& t)
 		: mImpl(eastl::forward<OtherTuple>(t))
 	{
 	}
