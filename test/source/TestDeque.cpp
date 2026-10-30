@@ -530,9 +530,74 @@ int TestDequeComplexMutation()
 }
 
 
+struct DequeMoveSensitiveValue
+{
+	explicit DequeMoveSensitiveValue(int value) : mVal(value) {}
+	DequeMoveSensitiveValue(const DequeMoveSensitiveValue&) = default;
+	DequeMoveSensitiveValue& operator=(const DequeMoveSensitiveValue&) = default;
+
+	DequeMoveSensitiveValue(DequeMoveSensitiveValue&& other) EA_NOEXCEPT : mVal(other.mVal)
+	{
+		other.mVal = 0;
+	}
+
+	DequeMoveSensitiveValue& operator=(DequeMoveSensitiveValue&& other) EA_NOEXCEPT
+	{
+		mVal = other.mVal;
+		other.mVal = 0;
+		return *this;
+	}
+
+	int mVal;
+};
+
+
+// Inserting an empty range or zero copies must leave the deque untouched: a self-move would zero an element.
+int TestDequeEmptyInsert()
+{
+	typedef eastl::deque<DequeMoveSensitiveValue, EASTLAllocatorType, 4> Deque;
+	int nErrorCount = 0;
+
+	for(int nSize : { 0, 6 })
+	{
+		// Front, front half, back half and end take different insertion paths.
+		for(int nPosition : { 0, 1, nSize - 1, nSize })
+		{
+			if(nPosition < 0 || nPosition > nSize)
+				continue;
+
+			Deque d;
+			for(int i = 0; i < nSize; ++i)
+				d.emplace_back(i + 1);
+			DequeMoveSensitiveValue source(999);
+
+			auto verifyUnchanged = [&](Deque::iterator result)
+			{
+				EATEST_VERIFY(result == d.begin() + nPosition);
+				EATEST_VERIFY(d.size() == (eastl_size_t)nSize);
+				for(int i = 0; i < nSize; ++i)
+					EATEST_VERIFY(d[(eastl_size_t)i].mVal == i + 1);
+			};
+
+			auto moveFirst = eastl::make_move_iterator(&source);
+			verifyUnchanged(d.insert(d.begin() + nPosition, moveFirst, moveFirst));
+			auto forwardFirst = eastl::make_move_iterator(to_forward_iterator(&source));
+			verifyUnchanged(d.insert(d.begin() + nPosition, forwardFirst, forwardFirst));
+			auto inputFirst = eastl::make_move_iterator(to_input_iterator(&source));
+			verifyUnchanged(d.insert(d.begin() + nPosition, inputFirst, inputFirst));
+			verifyUnchanged(d.insert(d.begin() + nPosition, &source, &source));
+			verifyUnchanged(d.insert(d.begin() + nPosition, Deque::size_type(0), source));
+		}
+	}
+
+	return nErrorCount;
+}
+
+
 int TestDeque()
 {
 	int nErrorCount = 0;
+	nErrorCount += TestDequeEmptyInsert();
 
 	{   // Test construction
 		nErrorCount += TestDequeConstruction<IntDeque>();
