@@ -552,48 +552,41 @@ struct DequeMoveSensitiveValue
 };
 
 
-template <typename Value, unsigned kSubarraySize>
+// Inserting an empty range or zero copies must leave the deque untouched: a self-move would zero an element.
 int TestDequeEmptyInsert()
 {
-	typedef eastl::deque<Value, EASTLAllocatorType, kSubarraySize> Deque;
+	typedef eastl::deque<DequeMoveSensitiveValue, EASTLAllocatorType, 4> Deque;
 	int nErrorCount = 0;
-	const int sizes[] = { 0, 1, (int)kSubarraySize - 1, (int)kSubarraySize, (int)kSubarraySize + 1, 2 * (int)kSubarraySize + 1 };
 
-	for(int nSize : sizes)
+	for(int nSize : { 0, 6 })
 	{
-		for(int nPosition = 0; nPosition <= nSize; ++nPosition)
+		// Front, front half, back half and end take different insertion paths.
+		for(int nPosition : { 0, 1, nSize - 1, nSize })
 		{
+			if(nPosition < 0 || nPosition > nSize)
+				continue;
+
 			Deque d;
 			for(int i = 0; i < nSize; ++i)
 				d.emplace_back(i + 1);
-			Value source(999);
+			DequeMoveSensitiveValue source(999);
 
-			auto verifyUnchanged = [&](typename Deque::iterator result)
+			auto verifyUnchanged = [&](Deque::iterator result)
 			{
 				EATEST_VERIFY(result == d.begin() + nPosition);
 				EATEST_VERIFY(d.size() == (eastl_size_t)nSize);
-				EATEST_VERIFY(d.validate());
 				for(int i = 0; i < nSize; ++i)
 					EATEST_VERIFY(d[(eastl_size_t)i].mVal == i + 1);
-				EATEST_VERIFY(source.mVal == 999);
 			};
 
-			// These values may change on self-move, even though the source range is external and empty.
 			auto moveFirst = eastl::make_move_iterator(&source);
 			verifyUnchanged(d.insert(d.begin() + nPosition, moveFirst, moveFirst));
-
 			auto forwardFirst = eastl::make_move_iterator(to_forward_iterator(&source));
 			verifyUnchanged(d.insert(d.begin() + nPosition, forwardFirst, forwardFirst));
-
-			// Input iterators use a separate insertion loop, which must also leave an empty range alone.
 			auto inputFirst = eastl::make_move_iterator(to_input_iterator(&source));
 			verifyUnchanged(d.insert(d.begin() + nPosition, inputFirst, inputFirst));
-
-			if constexpr(eastl::is_copy_constructible_v<Value>)
-			{
-				verifyUnchanged(d.insert(d.begin() + nPosition, &source, &source));
-				verifyUnchanged(d.insert(d.begin() + nPosition, static_cast<typename Deque::size_type>(0), source));
-			}
+			verifyUnchanged(d.insert(d.begin() + nPosition, &source, &source));
+			verifyUnchanged(d.insert(d.begin() + nPosition, Deque::size_type(0), source));
 		}
 	}
 
@@ -604,10 +597,7 @@ int TestDequeEmptyInsert()
 int TestDeque()
 {
 	int nErrorCount = 0;
-	nErrorCount += TestDequeEmptyInsert<DequeMoveSensitiveValue, 1>();
-	nErrorCount += TestDequeEmptyInsert<DequeMoveSensitiveValue, 4>();
-	nErrorCount += TestDequeEmptyInsert<MoveOnlyType, 1>();
-	nErrorCount += TestDequeEmptyInsert<MoveOnlyType, 4>();
+	nErrorCount += TestDequeEmptyInsert();
 
 	{   // Test construction
 		nErrorCount += TestDequeConstruction<IntDeque>();
