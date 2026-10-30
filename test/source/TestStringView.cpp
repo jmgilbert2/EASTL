@@ -35,6 +35,16 @@ static_assert(false, "Building with char8_t tests enabled, but EA_CHAR8_UNIQUE e
 #include "TestStringView.inl"
 
 
+// string_view's find overloads support constant evaluation, including embedded NULs.
+static constexpr eastl::string_view kFindView("ab\0cdab", 7);
+static_assert(kFindView.find("ab", 1) == 5, "find a substring");
+static_assert(kFindView.find("\0c", 0, 2) == 2, "find a substring with an embedded NUL");
+static_assert(kFindView.find("abcdefghi") == eastl::string_view::npos, "find a substring longer than the view");
+static_assert(kFindView.find("", kFindView.size()) == kFindView.size(), "find an empty string at the end");
+static_assert(kFindView.find("", kFindView.size() + 1) == eastl::string_view::npos, "find an empty string past the end");
+static_assert(eastl::u16string_view(u"\u03b1\u03b2\u03b1").find(u"\u03b1", 1) == 2, "find in a UTF-16 view");
+
+
 int TestStringView()
 {
 	using namespace eastl;

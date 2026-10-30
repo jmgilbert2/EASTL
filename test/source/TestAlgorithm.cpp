@@ -936,6 +936,78 @@ static int TestCommaHostileIterators()
 }
 
 
+namespace SearchTest
+{
+	// A forward iterator that stops at its end and records any attempt to advance past it.
+	class Iterator
+	{
+	public:
+		typedef eastl::forward_iterator_tag iterator_category;
+		typedef int        value_type;
+		typedef ptrdiff_t  difference_type;
+		typedef const int* pointer;
+		typedef const int& reference;
+
+		EA_CONSTEXPR Iterator() = default;
+		EA_CONSTEXPR Iterator(const int* p, const int* pEnd, bool* pAdvancedPastEnd = nullptr)
+			: mpCurrent(p), mpEnd(pEnd), mpAdvancedPastEnd(pAdvancedPastEnd) {}
+
+		EA_CONSTEXPR reference operator*() const { return *mpCurrent; }
+		EA_CONSTEXPR pointer operator->() const { return mpCurrent; }
+
+		EA_CPP14_CONSTEXPR Iterator& operator++()
+		{
+			if(mpCurrent == mpEnd)
+			{
+				if(mpAdvancedPastEnd)
+					*mpAdvancedPastEnd = true;
+			}
+			else
+				++mpCurrent;
+			return *this;
+		}
+
+		EA_CPP14_CONSTEXPR Iterator operator++(int)
+		{
+			Iterator previous(*this);
+			++*this;
+			return previous;
+		}
+
+		friend EA_CONSTEXPR bool operator==(const Iterator& a, const Iterator& b) { return a.mpCurrent == b.mpCurrent; }
+		friend EA_CONSTEXPR bool operator!=(const Iterator& a, const Iterator& b) { return !(a == b); }
+
+	private:
+		const int* mpCurrent = nullptr;
+		const int* mpEnd = nullptr;
+		bool* mpAdvancedPastEnd = nullptr;
+	};
+
+	struct SameLastDigit
+	{
+		EA_CONSTEXPR bool operator()(int haystackValue, int needleValue) const { return (haystackValue % 10) == needleValue; }
+	};
+
+	// find and search support constant evaluation.
+	constexpr int kValues[] = { 11, 22, 13, 24 };
+	constexpr int kNeedle[] = { 13, 24 };
+	constexpr int kAbsent[] = { 13, 25 };
+	constexpr int kDigits[] = { 3, 4 };
+
+	static_assert(eastl::find(kValues, kValues + 4, 22) == kValues + 1, "find");
+	static_assert(eastl::find(kValues, kValues + 4, 7) == kValues + 4, "find, absent");
+	static_assert(eastl::find(kValues, kValues + 4, 2, SameLastDigit()) == kValues + 1, "find with a predicate");
+	static_assert(eastl::search(kValues, kValues + 4, kNeedle, kNeedle + 2) == kValues + 2, "search");
+	static_assert(eastl::search(kValues, kValues + 4, kAbsent, kAbsent + 2) == kValues + 4, "search, absent");
+	static_assert(eastl::search(kValues, kValues + 1, kNeedle, kNeedle + 2) == kValues + 1, "search, needle longer than haystack");
+	static_assert(eastl::search(kValues, kValues + 4, kDigits, kDigits + 2, SameLastDigit()) == kValues + 2, "search with a predicate");
+	static_assert(eastl::search(kValues, kValues + 1, kDigits, kDigits + 2, SameLastDigit()) == kValues + 1,
+	              "search with a predicate, needle longer than haystack");
+	static_assert(eastl::search(Iterator(kValues, kValues + 4), Iterator(kValues + 4, kValues + 4), kDigits, kDigits + 2, SameLastDigit()) ==
+	              Iterator(kValues + 2, kValues + 4), "search with a predicate and forward iterators");
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // TestAlgorithm
 //
@@ -2569,6 +2641,23 @@ int TestAlgorithm()
 
 		iSlist = search(sListTest.begin(), sListTest.end(), pSubstring2, pSubstring2); // Search with empty search pattern.
 		EATEST_VERIFY(iSlist == sListTest.begin());
+	}
+
+	{
+		// Predicate search must reject a longer pattern before advancing through the haystack.
+		const int haystack[] = { 1 };
+		const int needle[] = { 1, 2, 3 };
+		bool advancedPastEnd = false;
+		typedef SearchTest::Iterator Iterator;
+		const Iterator first(haystack, haystack + 1, &advancedPastEnd);
+		const Iterator last(haystack + 1, haystack + 1, &advancedPastEnd);
+
+		EATEST_VERIFY(eastl::search(first, last, needle, needle + 3, eastl::equal_to<int>()) == last);
+		EATEST_VERIFY(!advancedPastEnd);
+		EATEST_VERIFY(eastl::search(last, last, needle, needle + 3, eastl::equal_to<int>()) == last);
+		EATEST_VERIFY(!advancedPastEnd);
+		EATEST_VERIFY(eastl::search(first, last, needle, needle, eastl::equal_to<int>()) == first);
+		EATEST_VERIFY(!advancedPastEnd);
 	}
 
 
