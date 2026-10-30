@@ -41,6 +41,22 @@ static_assert(eastl::is_trivially_copyable_v<eastl::pair<float, int>>, "EASTL ex
 static_assert(eastl::is_trivially_copyable_v<eastl::pair<int, float>>, "EASTL extension, pair is trivially copyable.");
 static_assert(eastl::is_trivially_copy_assignable_v<eastl::pair<int, int>>, "EASTL extension, pair's copy assignment is trivial.");
 
+// pair<int, Inner> is instantiated while PairFirstConstructOuter is incomplete. Clang would see Inner as not default
+// constructible there (its default member initializer isn't parsed yet), so the pair_first_construct constructor
+// must not test that until it's used (https://bugs.llvm.org/show_bug.cgi?id=38374).
+struct PairFirstConstructOuter
+{
+	struct Inner { int mX = 5; };
+	eastl::pair<int, Inner> mPair;
+	eastl::map<int, Inner> mMap;
+
+	int Get()
+	{
+		eastl::pair<int, Inner> p(eastl::pair_first_construct, 1);
+		return p.second.mX + mMap[1].mX;
+	}
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 // TestUtilityPair
 //
@@ -948,6 +964,35 @@ static int TestUtilityExchange()
 		using VectorOfPairWithReference = eastl::vector<eastl::pair<const FooType&, float>>;
 
 		VectorOfPairWithReference v;
+	}
+
+	// The pair_first_construct constructor forwards its argument to first and value-initializes second. It takes part
+	// only when both are possible, the same way on every compiler.
+	{
+		using eastl::pair_first_construct_t;
+		struct NoDefault { int mX; NoDefault(int x) : mX(x) {} };
+
+		static_assert(!eastl::is_constructible_v<eastl::pair<MoveOnlyType, int>, pair_first_construct_t, MoveOnlyType&>, "MoveOnlyType can't be copied");
+		static_assert(eastl::is_constructible_v<eastl::pair<MoveOnlyType, int>, pair_first_construct_t, MoveOnlyType&&>, "MoveOnlyType is moved");
+		static_assert(!eastl::is_constructible_v<eastl::pair<int, NoDefault>, pair_first_construct_t, int>, "NoDefault isn't default constructible");
+		static_assert(!eastl::is_constructible_v<eastl::pair<int&, int>, pair_first_construct_t, int&&>, "int& doesn't bind an rvalue");
+
+		int i = 1;
+		eastl::pair<int&, int> referencePair(eastl::pair_first_construct, i);
+		referencePair.first = 2;
+		EATEST_VERIFY((i == 2) && (referencePair.second == 0));
+
+		eastl::pair<MoveOnlyType, int> moveOnlyPair(eastl::pair_first_construct, MoveOnlyType(3));
+		EATEST_VERIFY((moveOnlyPair.first == MoveOnlyType(3)) && (moveOnlyPair.second == 0));
+
+		eastl::pair<eastl::vector<int>, int> listPair(eastl::pair_first_construct, {1, 2, 3});
+		EATEST_VERIFY((listPair.first.size() == 3) && (listPair.second == 0));
+
+		const eastl::pair<eastl::string, int> stringPair(eastl::pair_first_construct, "abc");
+		EATEST_VERIFY((stringPair.first == "abc") && (stringPair.second == 0));
+
+		PairFirstConstructOuter outer;
+		EATEST_VERIFY(outer.Get() == 10);
 	}
 
 	return nErrorCount;
