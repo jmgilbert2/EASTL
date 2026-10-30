@@ -190,6 +190,42 @@ int TestTuple()
 					  get<2>(aDefaultInitializedTuple) == false);
 	}
 
+	// tuple works in constant expressions, like std::tuple: construction, get, comparisons and tuple_cat since C++14,
+	// assignment since C++20.
+	{
+		constexpr tuple<int, long> values(1, 2);
+		static_assert((get<0>(values) == 1) && (get<long>(values) == 2), "constexpr construction and get");
+
+		constexpr tuple<int, float> defaulted{};
+		static_assert(get<0>(defaulted) == 0, "constexpr default construction");
+
+		constexpr tuple<long, long> converted(values);
+		constexpr tuple<int, long> fromPair(make_pair(3, 4));
+		static_assert((get<1>(converted) == 2) && (get<1>(fromPair) == 4), "constexpr converting construction");
+		static_assert((values == converted) && (values < fromPair) && !(fromPair <= values), "constexpr comparisons");
+
+		constexpr auto concatenated = tuple_cat(values, make_tuple(5), fromPair);
+		static_assert((get<2>(concatenated) == 5) && (get<4>(concatenated) == 4), "constexpr tuple_cat");
+		static_assert(get<0>(tuple<int, int>(6, 7)) == 6, "constexpr get on an rvalue");
+
+		static constexpr int seven = 7;
+		constexpr tuple<const int&> reference(seven);
+		static_assert(get<0>(reference) == 7, "constexpr reference element");
+
+	#if defined(EA_COMPILER_CPP20_ENABLED)
+		constexpr auto assign = []
+		{
+			tuple<int, int> a(1, 2);
+			a = tuple<int, int>(3, 4);
+			tuple<long, long> b;
+			b = a;
+			b = make_pair(5, 6);
+			return get<0>(a) + static_cast<int>(get<1>(b));
+		};
+		static_assert(assign() == 9, "constexpr assignment");
+	#endif
+	}
+
 	{
 		// Test some other cases with typed-getter
 		tuple<double, double, bool> aTupleWithRepeatedType(1.0f, 2.0f, true);
@@ -199,7 +235,7 @@ int TestTuple()
 		EATEST_VERIFY(get<bool>(anotherTupleWithRepeatedType) == true);
 
 		tuple<bool, double, double> yetAnotherTupleWithRepeatedType(true, 1.0f, 2.0f);
-		EATEST_VERIFY(get<bool>(anotherTupleWithRepeatedType) == true);
+		EATEST_VERIFY(get<bool>(yetAnotherTupleWithRepeatedType) == true);
 
 		struct floatOne { float val; };
 		struct floatTwo { float val; };
@@ -217,6 +253,7 @@ int TestTuple()
 
 	{
 		tuple<int, float> aTupleWithDefaultInit(1, {});
+		EATEST_VERIFY((get<0>(aTupleWithDefaultInit) == 1) && (get<1>(aTupleWithDefaultInit) == 0.0f));
 
 		// tuple construction from pair
 		pair<int, float> aPair(1, 2.0f);

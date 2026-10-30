@@ -174,7 +174,7 @@ namespace Internal
 	// Provides a vessel to expand variadic packs.
 	//
 	template <typename... Ts>
-	void swallow(Ts&&...) {}
+	EA_CPP14_CONSTEXPR void swallow(Ts&&...) {}
 
 
 	// TupleLeaf
@@ -193,14 +193,14 @@ namespace Internal
 	class TupleLeaf
 	{
 	public:
-		TupleLeaf() : mValue() {}
+		EA_CONSTEXPR TupleLeaf() : mValue() {}
 
 		// We shouldn't need this explicit constructor as it should be handled by the template below but OSX clang
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
-		explicit TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
+		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
 
 		template <typename T, typename = typename enable_if<is_constructible<ValueType, T&&>::value>::type>
-		explicit TupleLeaf(T&& t)
+		explicit EA_CONSTEXPR TupleLeaf(T&& t)
 			: mValue(eastl::forward<T>(t))
 		{
 		}
@@ -216,19 +216,19 @@ namespace Internal
 		// TupleImpl. So we explicitly implement the assignment so it isn't deleted in tuple<T&>.
 		// When ValueType isn't copy (move) assignable, the parameter is nonesuch instead, so this is no longer the
 		// copy (move) assignment: the copy assignment is then implicitly deleted, as the standard requires for tuple.
-		TupleLeaf& operator=(conditional_t<is_copy_assignable<ValueType>::value, const TupleLeaf&, const nonesuch&> t)
+		EA_CPP20_CONSTEXPR TupleLeaf& operator=(conditional_t<is_copy_assignable<ValueType>::value, const TupleLeaf&, const nonesuch&> t)
 		{
 			mValue = t.getInternal();
 			return *this;
 		}
-		TupleLeaf& operator=(conditional_t<is_move_assignable<ValueType>::value, TupleLeaf&&, nonesuch&&> t) noexcept
+		EA_CPP20_CONSTEXPR TupleLeaf& operator=(conditional_t<is_move_assignable<ValueType>::value, TupleLeaf&&, nonesuch&&> t) noexcept
 		{
 			mValue = eastl::move(t.getInternal());
 			return *this;
 		}
 
 		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value>>
-		TupleLeaf& operator=(T&& t)
+		EA_CPP20_CONSTEXPR TupleLeaf& operator=(T&& t)
 		{
 			mValue = eastl::forward<T>(t);
 			return *this;
@@ -240,8 +240,8 @@ namespace Internal
 			return 0;
 		}
 
-		ValueType& getInternal() { return mValue; }
-		const ValueType& getInternal() const { return mValue; }
+		EA_CPP14_CONSTEXPR ValueType& getInternal() { return mValue; }
+		EA_CONSTEXPR const ValueType& getInternal() const { return mValue; }
 
 	private:
 		ValueType mValue;  
@@ -259,10 +259,10 @@ namespace Internal
 
 		// We shouldn't need this explicit constructor as it should be handled by the template below but OSX clang
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
-		explicit TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
+		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
 
 		template <typename T, typename = typename enable_if<is_constructible<ValueType, T&&>::value>::type>
-		explicit TupleLeaf(T&& t)
+		explicit EA_CONSTEXPR TupleLeaf(T&& t)
 			: mValue(eastl::forward<T>(t))
 		{
 		}
@@ -273,7 +273,7 @@ namespace Internal
 		TupleLeaf& operator=(TupleLeaf&&) noexcept = default;
 
 		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value>>
-		TupleLeaf& operator=(T&& t)
+		EA_CPP20_CONSTEXPR TupleLeaf& operator=(T&& t)
 		{
 			mValue = eastl::forward<T>(t);
 			return *this;
@@ -285,8 +285,8 @@ namespace Internal
 			return 0;
 		}
 
-		ValueType& getInternal() { return mValue; }
-		const ValueType& getInternal() const { return mValue; }
+		EA_CPP14_CONSTEXPR ValueType& getInternal() { return mValue; }
+		EA_CONSTEXPR const ValueType& getInternal() const { return mValue; }
 
 	private:
 		ValueType mValue;
@@ -337,7 +337,7 @@ namespace Internal
 		// https://connect.microsoft.com/VisualStudio/feedback/details/1126958/error-in-template-parameter-pack-expansion-of-std-index-sequence
 		// 
 		template <typename... Us, typename... ValueTypes>
-		explicit TupleImpl(integer_sequence<size_t, Indices...>, TupleTypes<Us...>, ValueTypes&&... values)
+		explicit EA_CONSTEXPR TupleImpl(integer_sequence<size_t, Indices...>, TupleTypes<Us...>, ValueTypes&&... values)
 			: TupleLeaf<Indices, Ts>(eastl::forward<ValueTypes>(values))...
 		{
 		}
@@ -350,13 +350,13 @@ namespace Internal
 		// These (and TupleLeaf's operator=(T&&)) exclude their own class so that they can't stand in for a deleted
 		// copy or move: tuple<NonMovable> must not be move constructible or assignable.
 		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
-		TupleImpl(OtherTuple&& t)
+		EA_CONSTEXPR TupleImpl(OtherTuple&& t)
 			: TupleLeaf<Indices, Ts>(eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...
 		{
 		}
 
 		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
-		TupleImpl& operator=(OtherTuple&& t)
+		EA_CPP20_CONSTEXPR TupleImpl& operator=(OtherTuple&& t)
 		{
 			swallow(TupleLeaf<Indices, Ts>::operator=(
 						eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...);
@@ -367,42 +367,42 @@ namespace Internal
 	};
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<TupleLeaf<I, Type>&>(t).getInternal();
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline const_tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(const TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR const_tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(const TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<const TupleLeaf<I, Type>&>(t).getInternal();
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(TupleImpl<Indices, Ts...>&& t)
+	inline EA_CPP14_CONSTEXPR tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(TupleImpl<Indices, Ts...>&& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<Type&&>(static_cast<TupleLeaf<I, Type>&>(t).getInternal());
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline T& getImpl(TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR T& getImpl(TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<TupleLeaf<Index::index, T>&>(t).getInternal();
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline const T& getImpl(const TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR const T& getImpl(const TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<const TupleLeaf<Index::index, T>&>(t).getInternal();
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline T&& getImpl(TupleImpl<Indices, Ts...>&& t)
+	inline EA_CPP14_CONSTEXPR T&& getImpl(TupleImpl<Indices, Ts...>&& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<T&&>(static_cast<TupleLeaf<Index::index, T>&>(t).getInternal());
@@ -550,7 +550,7 @@ namespace Internal
 	struct TupleEqual
 	{
 		template <typename Tuple1, typename Tuple2>
-		bool operator()(const Tuple1& t1, const Tuple2& t2)
+		EA_CONSTEXPR bool operator()(const Tuple1& t1, const Tuple2& t2)
 		{
 			static_assert(tuple_size<Tuple1>::value == tuple_size<Tuple2>::value, "comparing tuples of different sizes.");
 			return TupleEqual<I - 1>()(t1, t2) && get<I - 1>(t1) == get<I - 1>(t2);
@@ -561,7 +561,7 @@ namespace Internal
 	struct TupleEqual<0>
 	{
 		template <typename Tuple1, typename Tuple2>
-		bool operator()(const Tuple1&, const Tuple2&)
+		EA_CONSTEXPR bool operator()(const Tuple1&, const Tuple2&)
 		{
 			return true;
 		}
@@ -575,7 +575,7 @@ namespace Internal
 	struct TupleLess
 	{
 		template <typename Tuple1, typename Tuple2>
-		bool operator()(const Tuple1& t1, const Tuple2& t2)
+		EA_CONSTEXPR bool operator()(const Tuple1& t1, const Tuple2& t2)
 		{
 			static_assert(tuple_size<Tuple1>::value == tuple_size<Tuple2>::value, "comparing tuples of different sizes.");
 			return TupleLess<I - 1>()(t1, t2) || (!TupleLess<I - 1>()(t2, t1) && get<I - 1>(t1) < get<I - 1>(t2));
@@ -586,7 +586,7 @@ namespace Internal
 	struct TupleLess<0>
 	{
 		template <typename Tuple1, typename Tuple2>
-		bool operator()(const Tuple1&, const Tuple2&)
+		EA_CONSTEXPR bool operator()(const Tuple1&, const Tuple2&)
 		{
 			return false;
 		}
@@ -664,14 +664,14 @@ public:
 
 	template <typename OtherTuple,
 			  typename enable_if<Internal::TupleConvertible<OtherTuple, tuple>::value, bool>::type = false>
-	tuple(OtherTuple&& t)
+	EA_CONSTEXPR tuple(OtherTuple&& t)
 		: mImpl(eastl::forward<OtherTuple>(t))
 	{
 	}
 
 	template <typename OtherTuple,
 			  typename enable_if<Internal::TupleAssignable<tuple, OtherTuple>::value, bool>::type = false>
-	tuple& operator=(OtherTuple&& t)
+	EA_CPP20_CONSTEXPR tuple& operator=(OtherTuple&& t)
 	{
 		mImpl.operator=(eastl::forward<OtherTuple>(t));
 		return *this;
@@ -684,22 +684,22 @@ private:
 	Impl mImpl;
 
 	template <size_t I, typename... Ts_>
-	friend tuple_element_t<I, tuple<Ts_...>>& get(tuple<Ts_...>& t);
+	friend EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>& get(tuple<Ts_...>& t);
 
 	template <size_t I, typename... Ts_>
-	friend const_tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t);
+	friend EA_CPP14_CONSTEXPR const_tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t);
 
 	template <size_t I, typename... Ts_>
-	friend tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t);
+	friend EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t);
 
 	template <typename T_, typename... ts_>
-	friend T_& get(tuple<ts_...>& t);
+	friend EA_CPP14_CONSTEXPR T_& get(tuple<ts_...>& t);
 
 	template <typename T_, typename... ts_>
-	friend const T_& get(const tuple<ts_...>& t);
+	friend EA_CPP14_CONSTEXPR const T_& get(const tuple<ts_...>& t);
 
 	template <typename T_, typename... ts_>
-	friend T_&& get(tuple<ts_...>&& t);
+	friend EA_CPP14_CONSTEXPR T_&& get(tuple<ts_...>&& t);
 };
 
 // template specialization for an empty tuple
@@ -711,37 +711,37 @@ public:
 };
 
 template <size_t I, typename... Ts>
-inline tuple_element_t<I, tuple<Ts...>>& get(tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts...>>& get(tuple<Ts...>& t)
 {
 	return Internal::getImpl<I>(t.mImpl);
 }
 
 template <size_t I, typename... Ts>
-inline const_tuple_element_t<I, tuple<Ts...>>& get(const tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR const_tuple_element_t<I, tuple<Ts...>>& get(const tuple<Ts...>& t)
 {
 	return Internal::getImpl<I>(t.mImpl);
 }
 
 template <size_t I, typename... Ts>
-inline tuple_element_t<I, tuple<Ts...>>&& get(tuple<Ts...>&& t)
+inline EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts...>>&& get(tuple<Ts...>&& t)
 {
 	return Internal::getImpl<I>(eastl::move(t.mImpl));
 }
 
 template <typename T, typename... Ts>
-inline T& get(tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR T& get(tuple<Ts...>& t)
 {
 	return Internal::getImpl<T>(t.mImpl);
 }
 
 template <typename T, typename... Ts>
-inline const T& get(const tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR const T& get(const tuple<Ts...>& t)
 {
 	return Internal::getImpl<T>(t.mImpl);
 }
 
 template <typename T, typename... Ts>
-inline T&& get(tuple<Ts...>&& t)
+inline EA_CPP14_CONSTEXPR T&& get(tuple<Ts...>&& t)
 {
 	return Internal::getImpl<T>(eastl::move(t.mImpl));
 }
@@ -757,7 +757,7 @@ inline void swap(tuple<Ts...>& a, tuple<Ts...>& b)
 //
 //
 template <typename... T1s, typename... T2s>
-inline bool operator==(const tuple<T1s...>& t1, const tuple<T2s...>& t2)
+inline EA_CONSTEXPR bool operator==(const tuple<T1s...>& t1, const tuple<T2s...>& t2)
 {
 	return Internal::TupleEqual<sizeof...(T1s)>()(t1, t2);
 }
@@ -770,15 +770,15 @@ inline constexpr std::common_comparison_category_t<synth_three_way_result<T1s, T
 }
 #else
 template <typename... T1s, typename... T2s>
-inline bool operator<(const tuple<T1s...>& t1, const tuple<T2s...>& t2)
+inline EA_CONSTEXPR bool operator<(const tuple<T1s...>& t1, const tuple<T2s...>& t2)
 {
 	return Internal::TupleLess<sizeof...(T1s)>()(t1, t2);
 }
 
-template <typename... T1s, typename... T2s> inline bool operator!=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t1 == t2); }
-template <typename... T1s, typename... T2s> inline bool operator> (const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return t2 < t1; }
-template <typename... T1s, typename... T2s> inline bool operator<=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t2 < t1); }
-template <typename... T1s, typename... T2s> inline bool operator>=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t1 < t2); }
+template <typename... T1s, typename... T2s> inline EA_CONSTEXPR bool operator!=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t1 == t2); }
+template <typename... T1s, typename... T2s> inline EA_CONSTEXPR bool operator> (const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return t2 < t1; }
+template <typename... T1s, typename... T2s> inline EA_CONSTEXPR bool operator<=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t2 < t1); }
+template <typename... T1s, typename... T2s> inline EA_CONSTEXPR bool operator>=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t1 < t2); }
 #endif
 
 namespace Internal
@@ -798,7 +798,7 @@ namespace Internal
 		using ResultType = tuple<T1s..., T2s...>;
 
 		template <typename Tuple1, typename Tuple2>
-		static inline ResultType DoCat2(Tuple1&& t1, Tuple2&& t2)
+		static inline EA_CONSTEXPR ResultType DoCat2(Tuple1&& t1, Tuple2&& t2)
 		{
 			return ResultType(get<I1s>(eastl::forward<Tuple1>(t1))..., get<I2s>(eastl::forward<Tuple2>(t2))...);
 		}
@@ -817,7 +817,7 @@ namespace Internal
 		using ResultType = typename TCI::ResultType;
 
 		template <typename Tuple1, typename Tuple2>
-		static inline ResultType DoCat2(Tuple1&& t1, Tuple2&& t2)
+		static inline EA_CONSTEXPR ResultType DoCat2(Tuple1&& t1, Tuple2&& t2)
 		{
 			return TCI::DoCat2(eastl::forward<Tuple1>(t1), eastl::forward<Tuple2>(t2));
 		}
@@ -835,7 +835,7 @@ namespace Internal
 		using ResultType      = typename TupleCat<FirstResultType, TuplesRest...>::ResultType;
 
 		template <typename TupleArg1, typename TupleArg2, typename... TupleArgsRest>
-		static inline ResultType DoCat(TupleArg1&& t1, TupleArg2&& t2, TupleArgsRest&&... ts)
+		static inline EA_CONSTEXPR ResultType DoCat(TupleArg1&& t1, TupleArg2&& t2, TupleArgsRest&&... ts)
 		{
 			return TupleCat<FirstResultType, TuplesRest...>::DoCat(
 				TC2::DoCat2(eastl::forward<TupleArg1>(t1), eastl::forward<TupleArg2>(t2)),
@@ -850,7 +850,7 @@ namespace Internal
 		using ResultType = typename TC2::ResultType;
 
 		template <typename TupleArg1, typename TupleArg2>
-		static inline ResultType DoCat(TupleArg1&& t1, TupleArg2&& t2)
+		static inline EA_CONSTEXPR ResultType DoCat(TupleArg1&& t1, TupleArg2&& t2)
 		{
 			return TC2::DoCat2(eastl::forward<TupleArg1>(t1), eastl::forward<TupleArg2>(t2));
 		}
@@ -862,7 +862,7 @@ namespace Internal
 		using ResultType = tuple<Ts...>;
 		
 		template <typename TupleArg>
-		static inline tuple<Ts...> DoCat(TupleArg&& t)
+		static inline EA_CONSTEXPR tuple<Ts...> DoCat(TupleArg&& t)
 		{
 			return eastl::forward<TupleArg>(t);
 		}
@@ -873,7 +873,7 @@ namespace Internal
 	{
 		using ResultType = tuple<>;
 		
-		static inline tuple<> DoCat()
+		static inline EA_CONSTEXPR tuple<> DoCat()
 		{
 			return {};
 		}
@@ -884,7 +884,7 @@ namespace Internal
 //
 //
 template <typename... Tuples>
-inline typename Internal::TupleCat<eastl::remove_cvref_t<Tuples>...>::ResultType tuple_cat(Tuples&&... ts)
+inline EA_CONSTEXPR typename Internal::TupleCat<eastl::remove_cvref_t<Tuples>...>::ResultType tuple_cat(Tuples&&... ts)
 {
 	return Internal::TupleCat<eastl::remove_cvref_t<Tuples>...>::DoCat(eastl::forward<Tuples>(ts)...);
 }
