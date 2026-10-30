@@ -374,7 +374,7 @@ namespace Internal
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline const_tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(const TupleImpl<Indices, Ts...>& t)
+	inline const tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(const TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<const TupleLeaf<I, Type>&>(t).getInternal();
@@ -385,6 +385,13 @@ namespace Internal
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<Type&&>(static_cast<TupleLeaf<I, Type>&>(t).getInternal());
+	}
+
+	template <size_t I, typename Indices, typename... Ts>
+	inline const tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(const TupleImpl<Indices, Ts...>&& t)
+	{
+		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
+		return static_cast<const Type&&>(static_cast<const TupleLeaf<I, Type>&>(t).getInternal());
 	}
 
 	template <typename T, typename Indices, typename... Ts>
@@ -406,6 +413,13 @@ namespace Internal
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<T&&>(static_cast<TupleLeaf<Index::index, T>&>(t).getInternal());
+	}
+
+	template <typename T, typename Indices, typename... Ts>
+	inline const T&& getImpl(const TupleImpl<Indices, Ts...>&& t)
+	{
+		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
+		return static_cast<const T&&>(static_cast<const TupleLeaf<Index::index, T>&>(t).getInternal());
 	}
 
 
@@ -687,10 +701,13 @@ private:
 	friend tuple_element_t<I, tuple<Ts_...>>& get(tuple<Ts_...>& t);
 
 	template <size_t I, typename... Ts_>
-	friend const_tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t);
+	friend const tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t);
 
 	template <size_t I, typename... Ts_>
 	friend tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t);
+
+	template <size_t I, typename... Ts_>
+	friend const tuple_element_t<I, tuple<Ts_...>>&& get(const tuple<Ts_...>&& t);
 
 	template <typename T_, typename... ts_>
 	friend T_& get(tuple<ts_...>& t);
@@ -700,6 +717,9 @@ private:
 
 	template <typename T_, typename... ts_>
 	friend T_&& get(tuple<ts_...>&& t);
+
+	template <typename T_, typename... ts_>
+	friend const T_&& get(const tuple<ts_...>&& t);
 };
 
 // template specialization for an empty tuple
@@ -717,13 +737,19 @@ inline tuple_element_t<I, tuple<Ts...>>& get(tuple<Ts...>& t)
 }
 
 template <size_t I, typename... Ts>
-inline const_tuple_element_t<I, tuple<Ts...>>& get(const tuple<Ts...>& t)
+inline const tuple_element_t<I, tuple<Ts...>>& get(const tuple<Ts...>& t)
 {
 	return Internal::getImpl<I>(t.mImpl);
 }
 
 template <size_t I, typename... Ts>
 inline tuple_element_t<I, tuple<Ts...>>&& get(tuple<Ts...>&& t)
+{
+	return Internal::getImpl<I>(eastl::move(t.mImpl));
+}
+
+template <size_t I, typename... Ts>
+inline const tuple_element_t<I, tuple<Ts...>>&& get(const tuple<Ts...>&& t)
 {
 	return Internal::getImpl<I>(eastl::move(t.mImpl));
 }
@@ -742,6 +768,12 @@ inline const T& get(const tuple<Ts...>& t)
 
 template <typename T, typename... Ts>
 inline T&& get(tuple<Ts...>&& t)
+{
+	return Internal::getImpl<T>(eastl::move(t.mImpl));
+}
+
+template <typename T, typename... Ts>
+inline const T&& get(const tuple<Ts...>&& t)
 {
 	return Internal::getImpl<T>(eastl::move(t.mImpl));
 }
