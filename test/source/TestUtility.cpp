@@ -336,6 +336,24 @@ static int TestUtilityPair()
 		EATEST_VERIFY((p4.first == 1) && (p4.second == 2.0));
 	}
 
+	// A reference element is never bound to a temporary: C++23's rule, applied in every language mode, wherever the
+	// compiler can tell (a compiler without the intrinsic accepts these as before).
+	{
+		constexpr bool detected = eastl::Internal::reference_constructs_from_temporary_v<const int&, long&&>;
+		static_assert(!detected || !eastl::is_constructible_v<pair<const int&, int>, long, int>, "pair(U&&, V&&) is deleted");
+		static_assert(!detected || !eastl::is_constructible_v<pair<int, const int&>, int, long&>, "pair(U&&, V&&) is deleted");
+		static_assert(!detected || !eastl::is_constructible_v<pair<const int&, int>, pair<long, int>>, "pair(pair<U, V>&&)");
+		static_assert(!detected || !eastl::is_constructible_v<pair<const int&, int>, const pair<long, int>&>, "pair(const pair<U, V>&)");
+		static_assert(eastl::is_constructible_v<pair<const int&, int>, const int&, int>, "binds to the argument");
+		static_assert(eastl::is_constructible_v<pair<const int&, int>, pair<int, int>&>, "binds to the source's element");
+
+		const int one = 1;
+		pair<const int&, int> p(one, 2);
+		pair<int, int> source(3, 4);
+		pair<const int&, int> q(source);
+		EATEST_VERIFY((&p.first == &one) && (&q.first == &source.first));
+	}
+
 #if defined(__cpp_concepts) && __cpp_concepts >= 202002L
 	// pair<T&, U> is copy assignable and assigns through the reference, like std::pair.
 	{

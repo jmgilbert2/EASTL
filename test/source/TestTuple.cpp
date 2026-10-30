@@ -76,6 +76,14 @@ int OperationCountingType::mCopyAssignmentCalls = 0;
 int OperationCountingType::mMoveAssignmentCalls = 0;
 int OperationCountingType::mDestructorCalls = 0;
 
+// Constructible from anything, so a tuple<const FromAnything&> could bind its element to a temporary built from
+// another tuple.
+struct FromAnything
+{
+	FromAnything() = default;
+	template <typename T> FromAnything(const T&) {}
+};
+
 }  // namespace TestTupleInternal
 
 #if EASTL_INLINE_VARIABLE_ENABLED
@@ -584,6 +592,38 @@ int TestTuple()
 			TestObject x = eastl::make_from_tuple<TestObject>(eastl::make_tuple(1, 2, 3));
 			EATEST_VERIFY(x.mX == 6);
 		}
+
+		{
+			int i = 7;
+			const int& x = eastl::make_from_tuple<const int&>(eastl::tuple<int&>(i));
+			EATEST_VERIFY(&x == &i);
+			// make_from_tuple<const int&>(tuple<long>(7)) doesn't compile: it would bind x to a temporary.
+		}
+	}
+
+	// A reference element is never bound to a temporary: C++23's rule, applied in every language mode, wherever the
+	// compiler can tell (a compiler without the intrinsic accepts these as before).
+	{
+		constexpr bool detected = Internal::reference_constructs_from_temporary_v<const int&, long&&>;
+		static_assert(!detected || !is_constructible_v<tuple<const int&>, long>, "tuple(U&&...) is deleted");
+		static_assert(!detected || !is_constructible_v<tuple<int, const int&>, int, long&>, "tuple(U&&...) is deleted");
+		static_assert(!detected || !is_constructible_v<tuple<const int&>, tuple<long>>, "tuple(tuple<U...>&&)");
+		static_assert(!detected || !is_constructible_v<tuple<const int&>, const tuple<long>&>, "tuple(const tuple<U...>&)");
+		static_assert(!detected || !is_constructible_v<tuple<const int&, int>, pair<long, int>>, "tuple(pair<U1, U2>&&)");
+		static_assert(is_constructible_v<tuple<const int&>, const int&>, "binds to the argument");
+		static_assert(is_constructible_v<tuple<const int&>, tuple<int>&>, "binds to the source's element");
+
+		const int one = 1;
+		tuple<const int&, int> t(one, 2);
+		tuple<int> source(3);
+		tuple<const int&> u(source);
+		EATEST_VERIFY((&get<0>(t) == &one) && (&get<0>(u) == &get<0>(source)));
+
+		// A FromAnything could be built from the tuple through a temporary, but copying the tuple copies the reference.
+		FromAnything value;
+		tuple<const FromAnything&> referenceTuple(value);
+		tuple<const FromAnything&> referenceTupleCopy(referenceTuple);
+		EATEST_VERIFY(&get<0>(referenceTupleCopy) == &value);
 	}
 
 	// Compilation test to make sure that the conditionally-explicit cast works

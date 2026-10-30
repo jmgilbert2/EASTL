@@ -542,6 +542,45 @@ namespace Internal
 	using TupleExplicitlyConvertible_t = enable_if_t<TupleExplicitlyConvertible<TargetTupleType, FromTypes...>::value, bool>;
 
 
+	// TupleBindsTemporary and TupleBindsTemporaryFromTuple
+	//
+	// Whether initializing a tuple's elements from forwarded arguments, or from the forwarded elements of another tuple
+	// or a pair, binds a reference element to a temporary (C++23's rule, applied in every language mode).
+	//
+	template <bool IsSameSize, typename From, typename To>
+	struct TupleBindsTemporaryImpl : public false_type
+	{
+	};
+
+	template <typename... FromTypes, typename... ToTypes>
+	struct TupleBindsTemporaryImpl<true, TupleTypes<FromTypes...>, TupleTypes<ToTypes...>>
+		: public disjunction<bool_constant<reference_constructs_from_temporary_v<ToTypes, FromTypes&&>>...>
+	{
+	};
+
+	template <typename TargetTupleType, typename... FromTypes>
+	struct TupleBindsTemporary
+		: public TupleBindsTemporaryImpl<tuple_size<TargetTupleType>::value == sizeof...(FromTypes),
+				TupleTypes<FromTypes...>, MakeTupleTypes_t<TargetTupleType>>
+	{
+	};
+
+	template <typename From, typename To,
+			  bool = TupleLike<typename remove_reference<From>::type>::value,
+			  bool = TupleLike<typename remove_reference<To>::type>::value>
+	struct TupleBindsTemporaryFromTuple : public false_type
+	{
+	};
+
+	template <typename From, typename To>
+	struct TupleBindsTemporaryFromTuple<From, To, true, true>
+		: public TupleBindsTemporaryImpl<tuple_size<typename remove_reference<From>::type>::value ==
+				tuple_size<typename remove_reference<To>::type>::value,
+				MakeTupleTypes_t<From>, MakeTupleTypes_t<To>>
+	{
+	};
+
+
 	// TupleEqual
 	//
 	//
@@ -647,7 +686,8 @@ public:
 	}
 
 	template <typename U, typename... Us,
-		Internal::TupleImplicitlyConvertible_t<tuple, U, Us...> = 0>
+		Internal::TupleImplicitlyConvertible_t<tuple, U, Us...> = 0,
+		enable_if_t<!Internal::TupleBindsTemporary<tuple, U, Us...>::value, bool> = false>
 		EA_CONSTEXPR tuple(U&& u, Us&&... us)
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
 					eastl::forward<Us>(us)...)
@@ -655,15 +695,28 @@ public:
 	}
 
 	template <typename U, typename... Us,
-		Internal::TupleExplicitlyConvertible_t<tuple, U, Us...> = 0>
+		Internal::TupleExplicitlyConvertible_t<tuple, U, Us...> = 0,
+		enable_if_t<!Internal::TupleBindsTemporary<tuple, U, Us...>::value, bool> = false>
 		explicit EA_CONSTEXPR tuple(U&& u, Us&&... us)
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
 					eastl::forward<Us>(us)...)
 	{
 	}
 
+	// Deleted rather than left out when a reference element would bind a temporary, like std::tuple's in C++23 (applied
+	// in every language mode), so that tuple(const T&, const Ts&...) can't bind the same temporary instead. Like
+	// std::tuple's, it leaves a one-element tuple's own type to the copy and move constructors (e.g. for a
+	// tuple<const any&>, whose element could be built from the tuple through a temporary).
+	template <typename U, typename... Us,
+		enable_if_t<sizeof...(Ts) != 0 || !is_same<remove_cvref_t<U>, tuple>::value, bool> = false,
+		enable_if_t<(Internal::TupleImplicitlyConvertible<tuple, U, Us...>::value ||
+		             Internal::TupleExplicitlyConvertible<tuple, U, Us...>::value) &&
+		            Internal::TupleBindsTemporary<tuple, U, Us...>::value, bool> = false>
+	tuple(U&& u, Us&&... us) = delete;
+
 	template <typename OtherTuple,
-			  typename enable_if<Internal::TupleConvertible<OtherTuple, tuple>::value, bool>::type = false>
+			  typename enable_if<Internal::TupleConvertible<OtherTuple, tuple>::value &&
+			                     !Internal::TupleBindsTemporaryFromTuple<OtherTuple, tuple>::value, bool>::type = false>
 	tuple(OtherTuple&& t)
 		: mImpl(eastl::forward<OtherTuple>(t))
 	{
@@ -980,6 +1033,10 @@ namespace detail
 template <typename T, typename Tuple, size_t... I>
 constexpr eastl::enable_if_t<eastl::is_constructible_v<T, decltype(eastl::get<I>(eastl::declval<Tuple>()))...>, T> make_from_tuple_impl(Tuple&& t, eastl::index_sequence<I...>)
 {
+	// C++23's Mandates, applied in every language mode.
+	static_assert(sizeof...(I) != 1 ||
+	              !eastl::disjunction<eastl::bool_constant<Internal::reference_constructs_from_temporary_v<T, decltype(eastl::get<I>(eastl::declval<Tuple>()))>>...>::value,
+	              "make_from_tuple: T would be a reference bound to a temporary");
 	return T(eastl::get<I>(eastl::forward<Tuple>(t))...);
 }
 }  // namespace detail
