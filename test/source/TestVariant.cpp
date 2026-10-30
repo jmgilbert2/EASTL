@@ -8,6 +8,10 @@
 #include <EASTL/algorithm.h>
 #include <EASTL/sort.h>
 #include <EASTL/bonus/overloaded.h>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <variant>
 
 // 4512/4626 - 'class' : assignment operator could not be generated.  // This disabling would best be put elsewhere.
 EA_DISABLE_VC_WARNING(4512 4626);
@@ -2121,11 +2125,255 @@ int TestSpecialMembersDisabled()
 	return nErrorCount;
 }
 
+namespace
+{
+	template <typename Source, typename... Types>
+	constexpr bool VariantConversionMatchesStd()
+	{
+		return std::is_constructible_v<eastl::variant<Types...>, Source> ==
+		           std::is_constructible_v<std::variant<Types...>, Source> &&
+		       std::is_assignable_v<eastl::variant<Types...>&, Source> ==
+		           std::is_assignable_v<std::variant<Types...>&, Source>;
+	}
+
+	struct VariantRefQualifiedConversion
+	{
+		operator long() & { return 17; }
+		operator int() && { return 23; }
+	};
+
+	struct VariantExplicitConversion
+	{
+		explicit VariantExplicitConversion(int) {}
+	};
+
+	struct VariantListOnly
+	{
+		VariantListOnly() = delete;
+
+		explicit VariantListOnly(std::initializer_list<int>& values) : mSum(0)
+		{
+			for(int value : values)
+				mSum += value;
+		}
+
+		int mSum;
+	};
+
+	struct VariantDeletedList
+	{
+		VariantDeletedList() = default;
+		VariantDeletedList(std::initializer_list<int>) = delete;
+	};
+
+	struct VariantListForwarding
+	{
+		VariantListForwarding(std::initializer_list<int>& values, int& offset, std::unique_ptr<int>&& payload)
+			: mSum(offset), mPayload(std::move(payload))
+		{
+			for(int value : values)
+				mSum += value;
+			++offset;
+		}
+
+		int mSum;
+		std::unique_ptr<int> mPayload;
+	};
+
+	struct VariantRvalueList
+	{
+		VariantRvalueList(std::initializer_list<int>&& values) EA_NOEXCEPT : mSum(0)
+		{
+			for(int value : values)
+				mSum += value;
+		}
+
+		int mSum;
+	};
+}
+
+int TestVariantListValueCategory()
+{
+	int nErrorCount = 0;
+	using List = std::initializer_list<int>;
+	using Actual = eastl::variant<int, VariantRvalueList>;
+	using Expected = std::variant<int, VariantRvalueList>;
+
+	static_assert(!std::is_constructible_v<VariantRvalueList, List&>, "Require an rvalue list");
+	static_assert(VariantConversionMatchesStd<List, int, VariantRvalueList>(), "Rvalue list conversion matches std");
+
+	Actual byType(eastl::in_place_type<VariantRvalueList>, List{ 1, 2 });
+	Expected expectedType(std::in_place_type<VariantRvalueList>, List{ 1, 2 });
+	EATEST_VERIFY(eastl::get<1>(byType).mSum == std::get<1>(expectedType).mSum);
+	Actual byIndex(eastl::in_place_index<1>, List{ 3, 4 });
+	Expected expectedIndex(std::in_place_index<1>, List{ 3, 4 });
+	EATEST_VERIFY(eastl::get<1>(byIndex).mSum == std::get<1>(expectedIndex).mSum);
+
+	byType.emplace<VariantRvalueList>(List{ 5, 6 });
+	expectedType.emplace<VariantRvalueList>(List{ 5, 6 });
+	EATEST_VERIFY(eastl::get<1>(byType).mSum == std::get<1>(expectedType).mSum);
+	byIndex.emplace<1>(List{ 7, 8 });
+	expectedIndex.emplace<1>(List{ 7, 8 });
+	EATEST_VERIFY(eastl::get<1>(byIndex).mSum == std::get<1>(expectedIndex).mSum);
+
+	Actual converted(List{ 9, 10 });
+	Expected expectedConverted(List{ 9, 10 });
+	EATEST_VERIFY(eastl::get<1>(converted).mSum == std::get<1>(expectedConverted).mSum);
+	converted = 42;
+	expectedConverted = 42;
+	converted = List{ 11, 12 };
+	expectedConverted = List{ 11, 12 };
+	EATEST_VERIFY(converted.index() == expectedConverted.index());
+	EATEST_VERIFY(eastl::get<1>(converted).mSum == std::get<1>(expectedConverted).mSum);
+
+	return nErrorCount;
+}
+
+int TestVariantListEmplaceForwarding()
+{
+	int nErrorCount = 0;
+	eastl::variant<int, VariantListForwarding> actual;
+	std::variant<int, VariantListForwarding> expected;
+	int actualOffset = 10;
+	int expectedOffset = 10;
+	auto actualPayload = std::make_unique<int>(42);
+	auto expectedPayload = std::make_unique<int>(42);
+
+	auto& actualValue = actual.emplace<VariantListForwarding>({ 1, 2 }, actualOffset, std::move(actualPayload));
+	auto& expectedValue = expected.emplace<VariantListForwarding>({ 1, 2 }, expectedOffset, std::move(expectedPayload));
+	EATEST_VERIFY(&actualValue == &eastl::get<1>(actual));
+	EATEST_VERIFY(actualValue.mSum == expectedValue.mSum);
+	EATEST_VERIFY(*actualValue.mPayload == *expectedValue.mPayload);
+	EATEST_VERIFY(actualOffset == expectedOffset);
+	EATEST_VERIFY(!actualPayload && !expectedPayload);
+
+	// The index overload must preserve the same lvalue and move-only arguments.
+	auto& indexedValue = actual.emplace<1>({ 3, 4 }, actualOffset, std::make_unique<int>(99));
+	auto& expectedIndexed = expected.emplace<1>({ 3, 4 }, expectedOffset, std::make_unique<int>(99));
+	EATEST_VERIFY(&indexedValue == &eastl::get<1>(actual));
+	EATEST_VERIFY(indexedValue.mSum == expectedIndexed.mSum);
+	EATEST_VERIFY(*indexedValue.mPayload == *expectedIndexed.mPayload);
+	EATEST_VERIFY(actualOffset == expectedOffset);
+
+	return nErrorCount;
+}
+
+int TestVariantInPlaceConstraints()
+{
+	int nErrorCount = 0;
+	using List = std::initializer_list<int>;
+	using Actual = eastl::variant<int, VariantListOnly, VariantDeletedList>;
+	using Expected = std::variant<int, VariantListOnly, VariantDeletedList>;
+
+	static_assert(!std::is_constructible_v<Actual, eastl::in_place_index_t<3>>, "Reject an out-of-range index");
+	static_assert(!std::is_constructible_v<Expected, std::in_place_index_t<3>>, "Std rejects an out-of-range index");
+	static_assert(!std::is_constructible_v<Actual, eastl::in_place_index_t<size_t(-1)>, List>, "Reject a large index with a list");
+	static_assert(!std::is_constructible_v<Expected, std::in_place_index_t<size_t(-1)>, List>, "Std rejects a large index with a list");
+	static_assert(std::is_constructible_v<Actual, eastl::in_place_index_t<1>, List>, "Include the list in the index constraint");
+	static_assert(std::is_constructible_v<Expected, std::in_place_index_t<1>, List>, "Std accepts a list-only alternative");
+	static_assert(std::is_constructible_v<Actual, eastl::in_place_type_t<VariantListOnly>, List>, "Include the list in the type constraint");
+	static_assert(std::is_constructible_v<Expected, std::in_place_type_t<VariantListOnly>, List>, "Std accepts a list-only type");
+	static_assert(!std::is_constructible_v<Actual, eastl::in_place_index_t<2>, List>, "Reject a deleted list constructor by index");
+	static_assert(!std::is_constructible_v<Expected, std::in_place_index_t<2>, List>, "Std rejects a deleted list constructor by index");
+	static_assert(!std::is_constructible_v<Actual, eastl::in_place_type_t<VariantDeletedList>, List>, "Reject a deleted list constructor by type");
+	static_assert(!std::is_constructible_v<Expected, std::in_place_type_t<VariantDeletedList>, List>, "Std rejects a deleted list constructor by type");
+	static_assert(!std::is_constructible_v<Actual, eastl::in_place_type_t<long>, int>, "Reject absent types");
+	static_assert(!std::is_constructible_v<eastl::variant<int, int>, eastl::in_place_type_t<int>, int>, "Reject duplicate types");
+	static_assert(std::is_constructible_v<eastl::variant<int, int>, eastl::in_place_index_t<1>, int>, "Index construction permits duplicate types");
+
+	Actual byIndex(eastl::in_place_index<1>, { 1, 2, 3 });
+	Expected expectedIndex(std::in_place_index<1>, { 1, 2, 3 });
+	EATEST_VERIFY(byIndex.index() == expectedIndex.index());
+	EATEST_VERIFY(eastl::get<1>(byIndex).mSum == std::get<1>(expectedIndex).mSum);
+	Actual byType(eastl::in_place_type<VariantListOnly>, { 4, 5 });
+	Expected expectedType(std::in_place_type<VariantListOnly>, { 4, 5 });
+	EATEST_VERIFY(byType.index() == expectedType.index());
+	EATEST_VERIFY(eastl::get<1>(byType).mSum == std::get<1>(expectedType).mSum);
+
+	return nErrorCount;
+}
+
+int TestVariantConvertingConstraints()
+{
+	int nErrorCount = 0;
+
+	static_assert(!std::is_constructible_v<eastl::variant<float>, int>, "Reject narrowing construction");
+	static_assert(!std::is_assignable_v<eastl::variant<float>&, int>, "Reject narrowing assignment");
+	static_assert(!std::is_constructible_v<eastl::variant<bool>, const char*>, "Reject pointer to bool");
+	static_assert(!std::is_constructible_v<eastl::variant<int, int>, int>, "Duplicate alternatives are ambiguous");
+	static_assert(!std::is_assignable_v<eastl::variant<int, int>&, int>, "Duplicate assignment is ambiguous");
+	static_assert(VariantConversionMatchesStd<int, float>(), "Narrowing participation matches std");
+	static_assert(VariantConversionMatchesStd<int, float, long>(), "Select a non-narrowing alternative");
+	static_assert(VariantConversionMatchesStd<const char*, bool>(), "Pointer conversion matches std");
+	static_assert(VariantConversionMatchesStd<void*, bool>(), "Void pointer conversion matches std");
+	static_assert(VariantConversionMatchesStd<void (*)(), bool>(), "Function pointer conversion matches std");
+	static_assert(VariantConversionMatchesStd<std::nullptr_t, bool>(), "Null pointer conversion matches std");
+	static_assert(VariantConversionMatchesStd<bool, bool>(), "Exact bool conversion matches std");
+	static_assert(VariantConversionMatchesStd<short, int, long>(), "Integral promotion matches std");
+	static_assert(VariantConversionMatchesStd<unsigned, int, unsigned>(), "Signedness selection matches std");
+	static_assert(VariantConversionMatchesStd<int, int, int>(), "Duplicate arithmetic alternatives match std");
+	static_assert(VariantConversionMatchesStd<const char*, std::string, std::string>(), "Duplicate class alternatives match std");
+	static_assert(VariantConversionMatchesStd<const char (&)[5], std::string, bool>(), "String literals select string");
+	static_assert(VariantConversionMatchesStd<int, const int>(), "Preserve cv-qualified alternatives");
+	static_assert(VariantConversionMatchesStd<int, int, const int>(), "Cv-qualified duplicates remain ambiguous");
+	static_assert(VariantConversionMatchesStd<VariantRefQualifiedConversion&, int, long>(), "Preserve lvalue conversions");
+	static_assert(VariantConversionMatchesStd<VariantRefQualifiedConversion, int, long>(), "Preserve rvalue conversions");
+	static_assert(VariantConversionMatchesStd<int, VariantExplicitConversion>(), "Explicit conversions are not candidates");
+	static_assert(VariantConversionMatchesStd<std::unique_ptr<int>&, std::unique_ptr<int>>(), "Reject copying move-only values");
+	static_assert(VariantConversionMatchesStd<std::unique_ptr<int>, std::unique_ptr<int>>(), "Accept moving move-only values");
+
+	{
+		eastl::variant<float, long> actual(0);
+		std::variant<float, long> expected(0);
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<long>(actual) == std::get<long>(expected));
+		actual = 16777217;
+		expected = 16777217;
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<long>(actual) == std::get<long>(expected));
+	}
+	{
+		eastl::variant<std::string, bool> actual("text");
+		std::variant<std::string, bool> expected("text");
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<std::string>(actual) == std::get<std::string>(expected));
+		actual = true;
+		expected = true;
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<bool>(actual) == std::get<bool>(expected));
+		actual = "next";
+		expected = "next";
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<std::string>(actual) == std::get<std::string>(expected));
+	}
+	{
+		VariantRefQualifiedConversion source;
+		eastl::variant<int, long> actual(source);
+		std::variant<int, long> expected(source);
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<long>(actual) == 17);
+		actual = eastl::move(source);
+		expected = std::move(source);
+		EATEST_VERIFY(actual.index() == expected.index());
+		EATEST_VERIFY(eastl::get<int>(actual) == 23);
+	}
+	{
+		eastl::variant<const int> value(42);
+		EATEST_VERIFY(eastl::get<0>(value) == 42);
+	}
+
+	return nErrorCount;
+}
+
 int TestVariant()
 {
 	int nErrorCount = 0;
 
 	nErrorCount += TestVariantBasic();
+	nErrorCount += TestVariantConvertingConstraints();
+	nErrorCount += TestVariantInPlaceConstraints();
+	nErrorCount += TestVariantListEmplaceForwarding();
+	nErrorCount += TestVariantListValueCategory();
 	nErrorCount += TestVariantSize();
 	nErrorCount += TestVariantAlternative();
 	nErrorCount += TestVariantValuelessByException();
