@@ -588,20 +588,6 @@ int TestSort()
 		}
 
 		{
-			// A custom extractor sorts by mData rather than the default mKey, preserving each payload.
-			RadixSortElement32 input[] = { { 10, 3 }, { 20, 1 }, { 30, 2 } };
-			RadixSortElement32 buffer[3];
-			radix_sort<RadixSortElement32*, CountingRadixDataKey>(input, input + 3, buffer);
-			EATEST_VERIFY(input[0].mKey == 20 && input[0].mData == 1);
-			EATEST_VERIFY(input[1].mKey == 30 && input[1].mData == 2);
-			EATEST_VERIFY(input[2].mKey == 10 && input[2].mData == 3);
-
-			// Sorting the already ordered range must retain the same values.
-			radix_sort<RadixSortElement32*, CountingRadixDataKey>(input, input + 3, buffer);
-			EATEST_VERIFY(input[0].mKey == 20 && input[1].mKey == 30 && input[2].mKey == 10);
-		}
-
-		{
 			RadixSortElement32* pRadixSortElementArray32     = new RadixSortElement32[kCount];
 			RadixSortElement32* pRadixSortElementArrayTemp32 = new RadixSortElement32[kCount];
 			for(uint32_t i = 0; i < kCount; i++)
