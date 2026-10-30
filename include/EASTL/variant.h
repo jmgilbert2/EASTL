@@ -689,7 +689,7 @@ namespace eastl
 	struct variant_conversion_overload<T, Source, I,
 		void_t<decltype(variant_conversion_array<T>({eastl::declval<Source>()}))>>
 	{
-		static integral_constant<size_t, I> select(T);
+		static integral_constant<size_t, I> select(remove_cv_t<T>);
 	};
 
 	template <typename Source, typename Indices, typename... Types>
