@@ -179,7 +179,7 @@ namespace Internal
 
 	// TupleLeaf
 	//
-	template <size_t I, typename ValueType, bool IsEmpty = is_empty_v<ValueType> && !is_final_v<ValueType>>
+	template <size_t I, typename ValueType, bool IsEmpty = is_empty_v<ValueType>>
 	class TupleLeaf;
 
 	template <size_t I, typename ValueType, bool IsEmpty>
@@ -247,20 +247,23 @@ namespace Internal
 		ValueType mValue;  
 	};
 
-	// TupleLeaf: partial specialization for when we can use the Empty Base Class Optimization
+	// TupleLeaf: partial specialization for empty class types, final or not. They are stored as members rather
+	// than as base classes: the Empty Base Class Optimization lets the Microsoft ABI give distinct same-type
+	// subobjects the same address (e.g. in tuple<Tag, tuple<Tag>>), and tuple's layout policy is the same on
+	// every platform. Unlike the general leaf, the special members are defaulted, which keeps empty elements trivial.
 	template <size_t I, typename ValueType>
-	class TupleLeaf<I, ValueType, true> : private ValueType
+	class TupleLeaf<I, ValueType, true>
 	{
 	public:
 		TupleLeaf() = default;
 
 		// We shouldn't need this explicit constructor as it should be handled by the template below but OSX clang
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
-		explicit TupleLeaf(ValueType&& v) : ValueType(eastl::forward<ValueType>(v)) {}
+		explicit TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
 
 		template <typename T, typename = typename enable_if<is_constructible<ValueType, T&&>::value>::type>
 		explicit TupleLeaf(T&& t)
-			: ValueType(eastl::forward<T>(t))
+			: mValue(eastl::forward<T>(t))
 		{
 		}
 
@@ -272,7 +275,7 @@ namespace Internal
 		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value>>
 		TupleLeaf& operator=(T&& t)
 		{
-			ValueType::operator=(eastl::forward<T>(t));
+			mValue = eastl::forward<T>(t);
 			return *this;
 		}
 
@@ -282,8 +285,11 @@ namespace Internal
 			return 0;
 		}
 
-		ValueType& getInternal() { return static_cast<ValueType&>(*this); }
-		const ValueType& getInternal() const { return static_cast<const ValueType&>(*this); }
+		ValueType& getInternal() { return mValue; }
+		const ValueType& getInternal() const { return mValue; }
+
+	private:
+		ValueType mValue;
 	};
 
 
