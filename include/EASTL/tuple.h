@@ -411,12 +411,11 @@ namespace Internal
 
 	// TupleLike
 	//
-	// type-trait that determines if a type is an eastl::tuple or an eastl::pair.
+	// type-trait that determines if a type is an eastl::tuple or an eastl::pair. A volatile one isn't: get can't read its
+	// elements, so it can't be the source of a conversion or an assignment.
 	//
 	template <typename T> struct TupleLike                   : public false_type {};
 	template <typename T> struct TupleLike<const T>          : public TupleLike<T> {};
-	template <typename T> struct TupleLike<volatile T>       : public TupleLike<T> {};
-	template <typename T> struct TupleLike<const volatile T> : public TupleLike<T> {};
 
 	template <typename... Ts>
 	struct TupleLike<tuple<Ts...>> : public true_type {};
