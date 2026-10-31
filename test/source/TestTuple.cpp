@@ -831,8 +831,6 @@ int TestTuple()
 		EATEST_VERIFY(distinct(&get<0>(adjacent[0]), &get<1>(adjacent[0])));
 		EATEST_VERIFY(distinct(&get<1>(adjacent[0]), &get<0>(adjacent[1])));
 
-		// Empty elements stay trivially copyable. The default constructor isn't trivial (it's a constrained template, as
-		// in std::tuple), but it stays constexpr.
 		static_assert(is_trivially_copy_constructible_v<tuple<EmptyTag, FinalTag>>, "trivial copy construction");
 		constexpr tuple<EmptyTag> constantEmpty{};
 		EA_UNUSED(constantEmpty);
