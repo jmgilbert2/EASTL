@@ -390,6 +390,15 @@ namespace eastl
 	struct pair_first_construct_t {};
 	EA_CONSTEXPR pair_first_construct_t pair_first_construct = pair_first_construct_t();
 
+	template <typename T1, typename T2>
+	struct pair;
+
+	namespace Internal
+	{
+		template <typename T> struct is_pair : public eastl::false_type {};
+		template <typename T1, typename T2> struct is_pair<pair<T1, T2>> : public eastl::true_type {};
+	}
+
 	
 	///////////////////////////////////////////////////////////////////////
 	/// pair
@@ -416,10 +425,11 @@ namespace eastl
 		}
 
 	#if EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR
-		// Initializes first from x and value-initializes second, like the pair_first_construct constructor below.
+		// Initializes first from x and value-initializes second, like the pair_first_construct constructor below. A pair
+		// argument is left to the copy, move and converting constructors, even when T1 could be built from it.
 		template <typename U = T1,
 		          typename TT2 = T2,
-		          eastl::enable_if_t<!eastl::is_same_v<eastl::remove_cvref_t<U>, pair> &&
+		          eastl::enable_if_t<!Internal::is_pair<eastl::remove_cvref_t<U>>::value &&
 		                             eastl::is_constructible_v<T1, U> && eastl::is_default_constructible_v<TT2>, int> = 0>
 		EA_CPP14_CONSTEXPR pair(U&& x)
 		    : first(eastl::forward<U>(x)), second()
