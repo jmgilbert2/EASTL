@@ -755,6 +755,29 @@ int TestTuple()
 		static_assert(is_trivially_destructible_v<tuple<int>>, "tuple<int> is trivially destructible");
 	}
 
+	// The converting assignment assigns to each element as an lvalue, like std::tuple, without constructing any.
+	{
+		// The declared default constructors keep these from being aggregates, which C++20 could build from a number.
+		struct LvalueAssign { int mX = 0; LvalueAssign() = default; LvalueAssign& operator=(short x) & { mX = x; return *this; } };
+		struct RvalueAssign { RvalueAssign& operator=(short) && { return *this; } };
+		struct AssignFromInt { int mX = 0; AssignFromInt() = default; AssignFromInt& operator=(int x) { mX = x; return *this; } };
+
+		static_assert(is_assignable_v<tuple<LvalueAssign>&, const tuple<short>&>, "LvalueAssign is assigned as an lvalue");
+		static_assert(!is_assignable_v<tuple<RvalueAssign>&, const tuple<short>&>, "RvalueAssign can't be assigned as an lvalue");
+		static_assert(is_assignable_v<tuple<long, AssignFromInt>&, tuple<int, int>>, "AssignFromInt is assigned, not constructed");
+		static_assert(is_assignable_v<tuple<long, AssignFromInt>&, pair<int, int>>, "AssignFromInt is assigned from a pair");
+
+		tuple<LvalueAssign> a;
+		a = tuple<short>(short(1));
+		EATEST_VERIFY(get<0>(a).mX == 1);
+
+		tuple<long, AssignFromInt> b;
+		b = make_tuple(2, 3);
+		EATEST_VERIFY((get<0>(b) == 2) && (get<1>(b).mX == 3));
+		b = make_pair(4, 5);
+		EATEST_VERIFY((get<0>(b) == 4) && (get<1>(b).mX == 5));
+	}
+
 	{
 		tuple<NoCopyMove> t;
 		[[maybe_unused]] auto& x = get<0>(t);
