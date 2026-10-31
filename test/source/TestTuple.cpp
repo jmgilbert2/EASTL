@@ -889,6 +889,19 @@ int TestTuple()
 		EATEST_VERIFY((get<0>(b) == 4) && (get<1>(b).mX == 5));
 	}
 
+	// A volatile tuple or pair can't be read with get, so it can't be converted or assigned from, like for std::tuple.
+	{
+		static_assert(!is_constructible_v<tuple<int, short>, volatile tuple<int, short>&>, "copy from a volatile tuple");
+		static_assert(!is_constructible_v<tuple<long, short>, volatile tuple<int, short>&>, "conversion from a volatile tuple");
+		static_assert(!is_constructible_v<tuple<long, short>, const volatile pair<int, short>&>, "conversion from a volatile pair");
+		static_assert(!is_assignable_v<tuple<int, short>&, volatile tuple<int, short>&>, "copy assignment from a volatile tuple");
+		static_assert(!is_assignable_v<tuple<long, short>&, volatile tuple<int, short>&>, "assignment from a volatile tuple");
+		static_assert(!is_assignable_v<tuple<long, short>&, volatile pair<int, short>&>, "assignment from a volatile pair");
+
+		static_assert(is_constructible_v<tuple<long, short>, const tuple<int, short>&>, "conversion from a const tuple");
+		static_assert(is_constructible_v<tuple<long>, const tuple<volatile int>&>, "conversion from a tuple with a volatile element");
+	}
+
 	{
 		tuple<NoCopyMove> t;
 		[[maybe_unused]] auto& x = get<0>(t);
