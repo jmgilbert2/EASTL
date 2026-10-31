@@ -390,6 +390,15 @@ namespace eastl
 	struct pair_first_construct_t {};
 	EA_CONSTEXPR pair_first_construct_t pair_first_construct = pair_first_construct_t();
 
+	template <typename T1, typename T2>
+	struct pair;
+
+	namespace Internal
+	{
+		template <typename T> struct is_pair : public eastl::false_type {};
+		template <typename T1, typename T2> struct is_pair<pair<T1, T2>> : public eastl::true_type {};
+	}
+
 	
 	///////////////////////////////////////////////////////////////////////
 	/// pair
@@ -416,59 +425,29 @@ namespace eastl
 		}
 
 	#if EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR
-		template <typename TT1 = T1, typename TT2 = T2, typename = eastl::enable_if_t<eastl::is_default_constructible_v<TT2>>>
-		EA_CPP14_CONSTEXPR pair(const TT1& x)
-		    : first(x), second()
+		// Initializes first from x and value-initializes second, like the pair_first_construct constructor below. A pair
+		// argument is left to the copy, move and converting constructors, even when T1 could be built from it.
+		template <typename U = T1,
+		          typename TT2 = T2,
+		          eastl::enable_if_t<!Internal::is_pair<eastl::remove_cvref_t<U>>::value &&
+		                             eastl::is_constructible_v<T1, U> && eastl::is_default_constructible_v<TT2>, int> = 0>
+		EA_CPP14_CONSTEXPR pair(U&& x)
+		    : first(eastl::forward<U>(x)), second()
 		{
 		}
-
-		// GCC has a bug with overloading rvalue and lvalue function templates.	
-		// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=54425	
-		//	
-		// error: 'eastl::pair<T1, T2>::pair(T1&&) [with T1 = const int&; T2 = const int&]' cannot be overloaded	
-		// error: with 'eastl::pair<T1, T2>::pair(const T1&) [with T1 = const int&; T2 = const int&]'
-		#if !defined(EA_COMPILER_GNUC)
-			template <typename TT2 = T2, typename = eastl::enable_if_t<eastl::is_default_constructible_v<TT2>>>
-			EA_CPP14_CONSTEXPR pair(T1&& x)
-				: first(eastl::move(x)), second()
-			{
-			}
-		#endif
 	#endif
 
-	
-	// NOTE(rparolin): 
-	// This is a workaround to a compiler intrinic bug which fails to correctly identify a nested class using
-	// non-static data member initialization as default constructible.  
-	//
-	// See bug submitted to LLVM for more details.
-	// https://bugs.llvm.org/show_bug.cgi?id=38374
-	#if !defined(__clang__)
-		template<typename T>
-		using single_pair_ctor_sfinae = eastl::enable_if_t<eastl::is_default_constructible_v<T>>;
-	#else
-		template<typename>
-		using single_pair_ctor_sfinae = void;
-	#endif
-
-		template <typename TT1 = T1, typename TT2 = T2, typename = single_pair_ctor_sfinae<TT2>>
-		EA_CPP14_CONSTEXPR pair(pair_first_construct_t, const TT1& x)
-		    : first(x), second()
+		// Initializes first from x and value-initializes second. U defaults to T1 so that x can be a braced list.
+		// TT2 keeps the T2 test dependent, so that it's only evaluated when the constructor is used: Clang evaluates a
+		// non-dependent one when the pair is instantiated, and a nested class with default member initializers isn't
+		// default constructible until its enclosing class is complete (https://bugs.llvm.org/show_bug.cgi?id=38374).
+		template <typename U = T1,
+		          typename TT2 = T2,
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_default_constructible_v<TT2>, int> = 0>
+		EA_CPP14_CONSTEXPR pair(pair_first_construct_t, U&& x)
+		    : first(eastl::forward<U>(x)), second()
 		{
 		}
-
-		// GCC has a bug with overloading rvalue and lvalue function templates.	
-		// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=54425	
-		//	
-		// error: 'eastl::pair<T1, T2>::pair(T1&&) [with T1 = const int&; T2 = const int&]' cannot be overloaded	
-		// error: with 'eastl::pair<T1, T2>::pair(const T1&) [with T1 = const int&; T2 = const int&]'
-		#if !defined(EA_COMPILER_GNUC)
-			template <typename TT2 = T2, typename = single_pair_ctor_sfinae<TT2>>
-			EA_CPP14_CONSTEXPR pair(pair_first_construct_t, T1&& x)
-				: first(eastl::move(x)), second()
-			{
-			}
-		#endif
 
 		// The converting constructors below are explicit exactly when an element conversion isn't implicit, like
 		// std::pair's explicit(bool): each one is an implicit and an explicit overload with complementary constraints.
