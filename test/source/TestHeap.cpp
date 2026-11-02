@@ -5,6 +5,7 @@
 
 #include "EASTLTest.h"
 #include <EASTL/heap.h>
+#include <EASTL/priority_queue.h>
 #include <EASTL/vector.h>
 #include <EASTL/algorithm.h>
 #include <EASTL/sort.h>
@@ -276,6 +277,68 @@ int TestHeap()
 		EATEST_VERIFY(is_heap(heap, heap + 5));
 
 		eastl::partial_sort(heap, heap + 3, heap + 5);
+	}
+
+	// The heap operations move elements instead of copying them, so they also work on move-only elements (a
+	// priority_queue of them, for example).
+	{
+		auto greater = [](const TestObject& a, const TestObject& b) { return b < a; };
+
+		TestObject::Reset();
+		{
+			const int count = 100;
+			vector<TestObject> heap, greaterHeap;
+			heap.reserve(count);
+			greaterHeap.reserve(count);
+			for(int i = 0; i < count; i++)
+			{
+				heap.push_back(TestObject((i * 37) % 101));
+				greaterHeap.push_back(TestObject((i * 37) % 101));
+			}
+			const int64_t copiesBefore = TestObject::sTOCopyCtorCount + TestObject::sTOCopyAssignCount;
+
+			for(int i = 1; i <= count; i++)
+			{
+				push_heap(heap.begin(), heap.begin() + i);
+				push_heap(greaterHeap.begin(), greaterHeap.begin() + i, greater);
+			}
+			EATEST_VERIFY(is_heap(heap.begin(), heap.end()) && is_heap(greaterHeap.begin(), greaterHeap.end(), greater));
+
+			int size = count;
+			for(int i = 0; i < 20; i++)
+			{
+				remove_heap(heap.begin(), size, (i * 7) % size);
+				--size;
+				remove_heap(heap.begin(), size, size - 1); // The last element: nothing moves.
+				--size;
+				heap[(i * 3) % size].mX = i * 11;
+				change_heap(heap.begin(), size, (i * 3) % size);
+				pop_heap(heap.begin(), heap.begin() + size);
+				--size;
+				EATEST_VERIFY(is_heap(heap.begin(), heap.begin() + size));
+
+				remove_heap(greaterHeap.begin(), count - i, (i * 5) % (count - i), greater);
+				EATEST_VERIFY(is_heap(greaterHeap.begin(), greaterHeap.begin() + (count - i - 1), greater));
+			}
+			pop_heap(heap.begin(), heap.begin() + 1); // A single element: nothing moves.
+			EATEST_VERIFY(TestObject::sTOCopyCtorCount + TestObject::sTOCopyAssignCount == copiesBefore);
+		}
+		EATEST_VERIFY(TestObject::IsClear());
+		TestObject::Reset();
+
+		struct LessVal { bool operator()(const MoveOnlyTypeDefaultCtor& a, const MoveOnlyTypeDefaultCtor& b) const { return a.mVal < b.mVal; } };
+		priority_queue<MoveOnlyTypeDefaultCtor, vector<MoveOnlyTypeDefaultCtor>, LessVal> queue;
+		for(int i = 0; i < 50; i++)
+			queue.push(MoveOnlyTypeDefaultCtor((i * 37) % 51));
+		queue.remove(10);
+		queue.change(5);
+		int previous = queue.top().mVal;
+		while(!queue.empty())
+		{
+			EATEST_VERIFY(queue.top().mVal <= previous);
+			previous = queue.top().mVal;
+			queue.pop();
+		}
 	}
 
 	return nErrorCount;

@@ -299,10 +299,10 @@ namespace eastl
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
 
-		const value_type tempBottom(iter_move(last - 1));
+		value_type tempBottom(iter_move(last - 1));
 
 		eastl::promote_heap<RandomAccessIterator, difference_type, value_type>
-						   (first, (difference_type)0, (difference_type)(last - first - 1), eastl::forward<const value_type>(tempBottom));
+						   (first, (difference_type)0, (difference_type)(last - first - 1), eastl::move(tempBottom));
 	}
 
 
@@ -322,10 +322,10 @@ namespace eastl
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
 
-		const value_type tempBottom(*(last - 1));
+		value_type tempBottom(iter_move(last - 1));
 
 		eastl::promote_heap<RandomAccessIterator, difference_type, value_type, Compare>
-						   (first, (difference_type)0, (difference_type)(last - first - 1), tempBottom, compare);
+						   (first, (difference_type)0, (difference_type)(last - first - 1), eastl::move(tempBottom), compare);
 	}
 
 
@@ -356,10 +356,13 @@ namespace eastl
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
 
-		value_type tempBottom(iter_move(last - 1));
-		*(last - 1) = iter_move(first);
-		eastl::adjust_heap<RandomAccessIterator, difference_type, value_type>
-						  (first, (difference_type)0, (difference_type)(last - first - 1), 0, eastl::forward<value_type>(tempBottom));
+		if((last - first) > 1) // A single element is already in place.
+		{
+			value_type tempBottom(iter_move(last - 1));
+			*(last - 1) = iter_move(first);
+			eastl::adjust_heap<RandomAccessIterator, difference_type, value_type>
+							  (first, (difference_type)0, (difference_type)(last - first - 1), 0, eastl::move(tempBottom));
+		}
 	}
 
 
@@ -380,10 +383,13 @@ namespace eastl
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
 
-		value_type tempBottom(iter_move(last - 1));
-		*(last - 1) = iter_move(first);
-		eastl::adjust_heap<RandomAccessIterator, difference_type, value_type, Compare>
-						  (first, (difference_type)0, (difference_type)(last - first - 1), 0, eastl::forward<value_type>(tempBottom), compare);
+		if((last - first) > 1) // A single element is already in place.
+		{
+			value_type tempBottom(iter_move(last - 1));
+			*(last - 1) = iter_move(first);
+			eastl::adjust_heap<RandomAccessIterator, difference_type, value_type, Compare>
+							  (first, (difference_type)0, (difference_type)(last - first - 1), 0, eastl::move(tempBottom), compare);
+		}
 	}
 
 
@@ -503,10 +509,13 @@ namespace eastl
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
 
-		const value_type tempBottom(*(first + heapSize - 1));
-		*(first + heapSize - 1) = *(first + position);
-		eastl::adjust_heap<RandomAccessIterator, difference_type, value_type>
-						  (first, (difference_type)0, (difference_type)(heapSize - 1), (difference_type)position, tempBottom);
+		if(position != heapSize - 1) // Else the element is already at the back and the rest is still a heap.
+		{
+			value_type tempBottom(iter_move(first + heapSize - 1));
+			*(first + heapSize - 1) = iter_move(first + position);
+			eastl::adjust_heap<RandomAccessIterator, difference_type, value_type>
+							  (first, (difference_type)0, (difference_type)(heapSize - 1), (difference_type)position, eastl::move(tempBottom));
+		}
 	}
 
 
@@ -526,10 +535,13 @@ namespace eastl
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
 
-		const value_type tempBottom(*(first + heapSize - 1));
-		*(first + heapSize - 1) = *(first + position);
-		eastl::adjust_heap<RandomAccessIterator, difference_type, value_type, Compare>
-						  (first, (difference_type)0, (difference_type)(heapSize - 1), (difference_type)position, tempBottom, compare);
+		if(position != heapSize - 1) // Else the element is already at the back and the rest is still a heap.
+		{
+			value_type tempBottom(iter_move(first + heapSize - 1));
+			*(first + heapSize - 1) = iter_move(first + position);
+			eastl::adjust_heap<RandomAccessIterator, difference_type, value_type, Compare>
+							  (first, (difference_type)0, (difference_type)(heapSize - 1), (difference_type)position, eastl::move(tempBottom), compare);
+		}
 	}
 
 
@@ -552,10 +564,10 @@ namespace eastl
 
 		eastl::remove_heap<RandomAccessIterator, Distance>(first, heapSize, position);
 
-		value_type tempBottom(*(first + heapSize - 1));
+		value_type tempBottom(iter_move(first + heapSize - 1));
 
 		eastl::promote_heap<RandomAccessIterator, difference_type, value_type>
-						   (first, (difference_type)0, (difference_type)(heapSize - 1), tempBottom);
+						   (first, (difference_type)0, (difference_type)(heapSize - 1), eastl::move(tempBottom));
 	}
 
 
@@ -572,10 +584,10 @@ namespace eastl
 
 		eastl::remove_heap<RandomAccessIterator, Distance, Compare>(first, heapSize, position, compare);
 
-		value_type tempBottom(*(first + heapSize - 1));
+		value_type tempBottom(iter_move(first + heapSize - 1));
 
 		eastl::promote_heap<RandomAccessIterator, difference_type, value_type, Compare>
-						   (first, (difference_type)0, (difference_type)(heapSize - 1), tempBottom, compare);
+						   (first, (difference_type)0, (difference_type)(heapSize - 1), eastl::move(tempBottom), compare);
 	}
 
 
