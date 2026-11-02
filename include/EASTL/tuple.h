@@ -516,7 +516,7 @@ namespace Internal
 
 	// TupleAssignable
 	//
-	//
+	// The assignment assigns to each element as an lvalue, so that's what is tested.
 	//
 	template <bool IsSameSize, typename Target, typename From>
 	struct TupleAssignableImpl : public false_type
@@ -525,7 +525,7 @@ namespace Internal
 
 	template <typename... TargetTypes, typename... FromTypes>
 	struct TupleAssignableImpl<true, TupleTypes<TargetTypes...>, TupleTypes<FromTypes...>>
-		: public bool_constant<conjunction<is_assignable<TargetTypes, FromTypes>...>::value>
+		: public bool_constant<conjunction<is_assignable<TargetTypes&, FromTypes>...>::value>
 	{
 	};
 
