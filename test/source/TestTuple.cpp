@@ -949,6 +949,38 @@ int TestTuple()
 		EATEST_VERIFY(x.mX == 3);
 	}
 
+	// C++23's const swap swaps the objects that a tuple of references refers to, including through temporaries like
+	// the tuple_vector iterator's reference. A tuple of values can't be swapped as const.
+	{
+		static_assert(is_swappable_v<const tuple<int&, long&>>, "const tuple<int&, long&> is swappable");
+		static_assert(is_swappable_with_v<tuple<int&>, tuple<int&>>, "rvalue tuple<int&> is swappable");
+		static_assert(!is_swappable_v<const tuple<int, long>>, "const tuple<int, long> isn't swappable");
+
+		int a = 1, b = 2;
+		long c = 3, d = 4;
+		const tuple<int&, long&> t1(a, c), t2(b, d);
+		swap(t1, t2);
+		EATEST_VERIFY((a == 2) && (b == 1) && (c == 4) && (d == 3));
+		t1.swap(t2);
+		swap(tie(a, c), tie(b, d));
+		EATEST_VERIFY((a == 2) && (b == 1) && (c == 4) && (d == 3));
+
+	#if defined(EA_COMPILER_CPP20_ENABLED)
+		constexpr auto constSwapped = []
+		{
+			int x = 1, y = 2;
+			const tuple<int&> r1(x), r2(y);
+			r1.swap(r2);
+			swap(r1, r2);
+			r1.swap(r2);
+			const tuple<> e1{}, e2{};
+			e1.swap(e2);
+			return (x == 2) && (y == 1);
+		};
+		static_assert(constSwapped(), "constexpr const swap");
+	#endif
+	}
+
 	// copy and move are deleted when an element can't be copied or moved, like std::tuple.
 	{
 		static_assert(!is_copy_assignable_v<tuple<const int>>, "tuple<const int> is not copy assignable");

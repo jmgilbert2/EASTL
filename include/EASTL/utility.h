@@ -141,10 +141,10 @@ namespace eastl
 
 	// iter_swap helper functions
 	//
-	template <bool bTypesAreEqual>
+	template <bool bSwappable>
 	struct iter_swap_impl
 	{
-		// Handles the false case, where *a and *b are different types.
+		// Handles the false case, where swap(*a, *b) isn't valid (e.g. *a and *b are different types).
 		template <typename ForwardIterator1, typename ForwardIterator2>
 		static EA_CPP20_CONSTEXPR void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
 		{
@@ -174,20 +174,20 @@ namespace eastl
 	/// Equivalent to swap(*a, *b), though the user can provide an override to
 	/// iter_swap that is independent of an override which may exist for swap.
 	///
-	/// We provide a version of iter_swap which uses swap when the swapped types 
-	/// are equal but a manual implementation otherwise. We do this because the 
-	/// C++ standard defect report says that iter_swap(a, b) must be implemented 
-	/// as swap(*a, *b) when possible.
+	/// We provide a version of iter_swap which uses swap(*a, *b) when that's valid,
+	/// like std::iter_swap, and a manual implementation otherwise. We do this because
+	/// the C++ standard defect report says that iter_swap(a, b) must be implemented
+	/// as swap(*a, *b) when possible. This includes proxy references: tuple_vector's
+	/// iterators return a tuple of references, which tuple's const swap swaps element
+	/// by element.
 	///
 	template <typename ForwardIterator1, typename ForwardIterator2>
 	inline EA_CPP20_CONSTEXPR void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
 	{
-		typedef typename eastl::iterator_traits<ForwardIterator1>::value_type value_type_a;
-		typedef typename eastl::iterator_traits<ForwardIterator2>::value_type value_type_b;
-		typedef typename eastl::iterator_traits<ForwardIterator1>::reference  reference_a;
-		typedef typename eastl::iterator_traits<ForwardIterator2>::reference  reference_b;
+		typedef typename eastl::iterator_traits<ForwardIterator1>::reference reference_a;
+		typedef typename eastl::iterator_traits<ForwardIterator2>::reference reference_b;
 
-		eastl::iter_swap_impl<eastl::conjunction<eastl::is_same<value_type_a, value_type_b>, eastl::is_same<value_type_a&, reference_a>, eastl::is_same<value_type_b&, reference_b>>::value >::iter_swap(a, b);
+		eastl::iter_swap_impl<eastl::is_swappable_with<reference_a, reference_b>::value>::iter_swap(a, b);
 	}
 
 
