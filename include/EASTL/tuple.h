@@ -630,8 +630,24 @@ template <typename T, typename... Ts>
 class tuple<T, Ts...>
 {
 public:
-	EA_CONSTEXPR tuple() = default;
-	
+	// Like std::tuple's, the default constructor takes part only when every element is default constructible, and
+	// it's explicit when an element's default constructor is. The leaves value-initialize the elements.
+	template <typename T2 = T,
+		enable_if_t<conjunction<is_default_constructible<T2>, is_default_constructible<Ts>...>::value &&
+		            conjunction<Internal::is_implicitly_default_constructible<T2>,
+		                        Internal::is_implicitly_default_constructible<Ts>...>::value, int> = 0>
+	EA_CONSTEXPR tuple()
+	{
+	}
+
+	template <typename T2 = T,
+		enable_if_t<conjunction<is_default_constructible<T2>, is_default_constructible<Ts>...>::value &&
+		            !conjunction<Internal::is_implicitly_default_constructible<T2>,
+		                         Internal::is_implicitly_default_constructible<Ts>...>::value, int> = 0>
+	explicit EA_CONSTEXPR tuple()
+	{
+	}
+
 	template <typename T2 = T, 
 		Internal::TupleImplicitlyConvertible_t<tuple, const T2&, const Ts&...> = 0>
 	EA_CONSTEXPR tuple(const T& t, const Ts&... ts)

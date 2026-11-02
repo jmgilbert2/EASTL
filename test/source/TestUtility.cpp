@@ -336,6 +336,20 @@ static int TestUtilityPair()
 		EATEST_VERIFY((p4.first == 1) && (p4.second == 2.0));
 	}
 
+	// The default constructor is explicit exactly when an element's default constructor is explicit, like std::pair.
+	{
+		struct ExplicitDefault { explicit ExplicitDefault() = default; };
+
+		static_assert(!Internal::is_implicitly_default_constructible<ExplicitDefault>::value, "ExplicitDefault() is explicit");
+		static_assert(Internal::is_implicitly_default_constructible<pair<int, float>>::value, "pair<int, float>() is implicit");
+		static_assert(!Internal::is_implicitly_default_constructible<pair<ExplicitDefault, int>>::value, "pair<ExplicitDefault, int>() is explicit");
+		static_assert(!Internal::is_implicitly_default_constructible<pair<int, ExplicitDefault>>::value, "pair<int, ExplicitDefault>() is explicit");
+		static_assert(eastl::is_default_constructible_v<pair<ExplicitDefault, int>>, "pair<ExplicitDefault, int> is default constructible");
+
+		pair<ExplicitDefault, int> p{};
+		EATEST_VERIFY(p.second == 0);
+	}
+
 #if defined(__cpp_concepts) && __cpp_concepts >= 202002L
 	// pair<T&, U> is copy assignable and assigns through the reference, like std::pair.
 	{
