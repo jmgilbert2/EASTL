@@ -388,6 +388,12 @@ public:
 	bool operator!=(const TupleVecIter& other) const { return mIndex != other.mIndex || mpData[0] != other.mpData[0]; }
 	reference operator*() const { return MakeReference(); }
 
+	// Moves the elements through a tuple of rvalue references, like move_iterator<TupleVecIter> below.
+	friend tuple<Ts&&...> iter_move(const this_type& it) EA_NOEXCEPT
+	{
+		return tuple<Ts&&...>(eastl::move(((Ts*)it.mpData[Indices])[it.mIndex])...);
+	}
+
 	this_type& operator++() { ++mIndex; return *this; }
 	this_type operator++(int)
 	{

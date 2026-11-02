@@ -139,6 +139,31 @@ namespace eastl
 	};
 
 
+	/// iter_move
+	///
+	/// Returns the element an iterator refers to as an rvalue, for moving it: eastl::move(*it) when *it is an lvalue,
+	/// else *it itself (an iterator that returns a proxy by value). Like swap, algorithms call it unqualified, so that
+	/// an iterator can provide its own iter_move, found by argument-dependent lookup, when moving through its proxy
+	/// takes something else: tuple_vector's iterator returns a tuple<Ts&&...>. This is the iter_move customization
+	/// point that C++20's std::ranges::iter_move uses, as a plain function like eastl::swap.
+	///
+	/// Example usage:
+	///     using eastl::iter_move; // Only needed outside namespace eastl.
+	///     value_type temp(iter_move(it));
+	///
+	namespace internal
+	{
+		template <typename Reference>
+		using iter_move_result_t = conditional_t<is_lvalue_reference<Reference>::value, remove_reference_t<Reference>&&, Reference>;
+	}
+
+	template <typename Iterator>
+	EA_CPP14_CONSTEXPR internal::iter_move_result_t<decltype(*eastl::declval<const Iterator&>())> iter_move(const Iterator& it) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(*it))
+	{
+		return static_cast<internal::iter_move_result_t<decltype(*it)>>(*it);
+	}
+
+
 
 
 	/// is_iterator_wrapper
@@ -288,6 +313,14 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 
 		EA_CPP14_CONSTEXPR pointer operator->() const
 			{ return &(operator*()); }
+
+		// Moves through the base iterator's iter_move, like std::reverse_iterator.
+		friend EA_CPP14_CONSTEXPR decltype(auto) iter_move(const reverse_iterator& ri)
+			EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible<Iterator>::value && EA_NOEXCEPT_EXPR(iter_move(--eastl::declval<Iterator&>())))
+		{
+			iterator_type i(ri.mIterator);
+			return iter_move(--i);
+		}
 
 		EA_CPP14_CONSTEXPR reverse_iterator& operator++()
 			{ --mIterator; return *this; }
@@ -451,9 +484,6 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	template<typename Iterator>
 	class move_iterator
 	{
-	private:
-		using WrappedIteratorReference = typename iterator_traits<Iterator>::reference;
-
 	public:
 		typedef Iterator                                iterator_type;
 		typedef iterator_traits<Iterator>               traits_type;
@@ -461,9 +491,8 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		typedef typename traits_type::value_type        value_type;
 		typedef typename traits_type::difference_type   difference_type;
 		typedef Iterator                                pointer;
-		using reference = conditional_t<is_reference<WrappedIteratorReference>::value,
-										remove_reference_t<WrappedIteratorReference>&&,
-										WrappedIteratorReference>;
+		// Dereferences through iter_move, like std::move_iterator since C++20.
+		using reference = decltype(iter_move(eastl::declval<const Iterator&>()));
 
 	protected:
 		iterator_type mIterator;
@@ -493,7 +522,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		iterator_type base() const
 			{ return mIterator; }
 
-		reference operator*() const { return static_cast<reference>(*mIterator); }
+		reference operator*() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(iter_move(eastl::declval<const Iterator&>()))) { return iter_move(mIterator); }
 
 		pointer operator->() const
 			{ return mIterator; }
@@ -542,8 +571,8 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 			return *this;
 		}
 
-		reference operator[](difference_type n) const
-			{ return eastl::move(mIterator[n]); }
+		reference operator[](difference_type n) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(iter_move(eastl::declval<const Iterator&>() + n)))
+			{ return iter_move(mIterator + n); }
 
 	EASTL_INTERNAL_DISABLE_DEPRECATED() // 'is_iterator_wrapper': was declared deprecated
 	private:

@@ -150,8 +150,8 @@ namespace eastl
 		{
 			typedef typename eastl::iterator_traits<ForwardIterator1>::value_type value_type_a;
 
-			value_type_a temp(EASTL_MOVE(*a)); // EASTL_MOVE uses EASTL::move when available, else is a no-op.
-			*a = EASTL_MOVE(*b);
+			value_type_a temp(iter_move(a)); // iter_move rather than eastl::move(*a), for proxy references (tuple_vector).
+			*a = iter_move(b);
 			*b = EASTL_MOVE(temp); 
 		}
 	};
