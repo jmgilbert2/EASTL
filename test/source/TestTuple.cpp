@@ -269,6 +269,18 @@ int TestTuple()
 			return get<0>(a) + static_cast<int>(get<1>(b));
 		};
 		static_assert(assign() == 9, "constexpr assignment");
+
+		constexpr auto swapped = []
+		{
+			tuple<int, long> a(1, 2), b(3, 4);
+			a.swap(b);
+			swap(a, b);
+			a.swap(b);
+			tuple<> e1, e2;
+			e1.swap(e2);
+			return (get<0>(a) == 3) && (get<1>(a) == 4) && (get<0>(b) == 1) && (get<1>(b) == 2);
+		};
+		static_assert(swapped(), "constexpr swap");
 	#endif
 	}
 

@@ -51,7 +51,7 @@ namespace eastl
 	///
 
 	template <typename T, typename U, typename eastl::enable_if<eastl::is_same<T, U>::value && eastl::is_move_constructible<T>::value && eastl::is_move_assignable<T>::value, int>::type>
-	inline void swap(T& a, U& b) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<T>::value && eastl::is_nothrow_move_assignable<T>::value)
+	inline EA_CPP20_CONSTEXPR void swap(T& a, U& b) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<T>::value && eastl::is_nothrow_move_assignable<T>::value)
 	{
 		T temp(EASTL_MOVE(a));  // EASTL_MOVE uses EASTL::move when available, else is a no-op.
 		a = EASTL_MOVE(b);
@@ -81,7 +81,7 @@ namespace eastl
 
 	// C++11 array swap, declared here so the traits below see it.
 	template <typename T, typename U, size_t N, typename eastl::enable_if<eastl::is_same<T, U>::value && eastl::is_swappable<T>::value, int>::type = 0>
-	inline void swap(T (&a)[N], U (&b)[N]) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<T>::value);
+	inline EA_CPP20_CONSTEXPR void swap(T (&a)[N], U (&b)[N]) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<T>::value);
 
 	namespace Internal
 	{
@@ -146,7 +146,7 @@ namespace eastl
 	{
 		// Handles the false case, where *a and *b are different types.
 		template <typename ForwardIterator1, typename ForwardIterator2>
-		static void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
+		static EA_CPP20_CONSTEXPR void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
 		{
 			typedef typename eastl::iterator_traits<ForwardIterator1>::value_type value_type_a;
 
@@ -160,7 +160,7 @@ namespace eastl
 	struct iter_swap_impl<true>
 	{
 		template <typename ForwardIterator1, typename ForwardIterator2>
-		static void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
+		static EA_CPP20_CONSTEXPR void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
 		{
 			swap(*a, *b);  // Don't prefix swap with eastl:: as we want to allow user-defined swaps via argument-dependent lookup.
 		}
@@ -180,7 +180,7 @@ namespace eastl
 	/// as swap(*a, *b) when possible.
 	///
 	template <typename ForwardIterator1, typename ForwardIterator2>
-	inline void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
+	inline EA_CPP20_CONSTEXPR void iter_swap(ForwardIterator1 a, ForwardIterator2 b)
 	{
 		typedef typename eastl::iterator_traits<ForwardIterator1>::value_type value_type_a;
 		typedef typename eastl::iterator_traits<ForwardIterator2>::value_type value_type_b;
@@ -208,7 +208,7 @@ namespace eastl
 	/// Complexity: Exactly 'last1 - first1' swaps.
 	///
 	template <typename ForwardIterator1, typename ForwardIterator2>
-	inline ForwardIterator2
+	inline EA_CPP20_CONSTEXPR ForwardIterator2
 	swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2)
 	{
 		for(; first1 != last1; ++first1, (void)++first2)
@@ -223,7 +223,7 @@ namespace eastl
 	/// http://en.cppreference.com/w/cpp/algorithm/swap
 	///
 	template <typename T, typename U, size_t N, typename eastl::enable_if<eastl::is_same<T, U>::value && eastl::is_swappable<T>::value, int>::type>
-	inline void
+	inline EA_CPP20_CONSTEXPR void
 	swap(T (&a)[N], U (&b)[N]) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<T>::value)
 	{
 		eastl::swap_ranges(a, a + N, b);
@@ -691,7 +691,7 @@ namespace eastl
 			return *this;
 		}
 
-		void swap(pair& p) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable_v<T1>&& eastl::is_nothrow_swappable_v<T2>)
+		EA_CPP20_CONSTEXPR void swap(pair& p) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable_v<T1>&& eastl::is_nothrow_swappable_v<T2>)
 		{
 			eastl::iter_swap(&first, &p.first);
 			eastl::iter_swap(&second, &p.second);
@@ -706,7 +706,7 @@ namespace eastl
 	/// Participates in overload resolution only if T1 and T2 are swappable.
 	///
 	template <typename T1, typename T2, typename eastl::enable_if<eastl::is_swappable<T1>::value && eastl::is_swappable<T2>::value, int>::type = 0>
-	inline void swap(pair<T1, T2>& a, pair<T1, T2>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT(a.swap(b)))
+	inline EA_CPP20_CONSTEXPR void swap(pair<T1, T2>& a, pair<T1, T2>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT(a.swap(b)))
 	{
 		a.swap(b);
 	}
