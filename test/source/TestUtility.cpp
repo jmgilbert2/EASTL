@@ -305,6 +305,18 @@ static int TestUtilityPair()
 		LCIDMapping2 lcidMapping2Array[1] = {LCIDMapping2(EA_CHAR8("af"), 0x0036)};
 		EATEST_VERIFY((lcidMapping2Array[0].second == 0x0036));
 
+		// These two take part only when the element they copy is copy constructible, like std::pair's constructors.
+		static_assert(!eastl::is_constructible_v<pair<MoveOnlyType, int>, const MoveOnlyType&, int>, "MoveOnlyType can't be copied");
+		static_assert(!eastl::is_constructible_v<pair<int, MoveOnlyType>, int, const MoveOnlyType&>, "MoveOnlyType can't be copied");
+		static_assert(!eastl::is_constructible_v<pair<MoveOnlyType, int>, MoveOnlyType&, int&&>, "MoveOnlyType can't be copied");
+		static_assert(!eastl::is_constructible_v<pair<int, MoveOnlyType>, int&&, MoveOnlyType&>, "MoveOnlyType can't be copied");
+		static_assert(eastl::is_constructible_v<pair<MoveOnlyType, int>, MoveOnlyType&&, const int&>, "MoveOnlyType is moved");
+		static_assert(eastl::is_constructible_v<pair<int, MoveOnlyType>, const int&, MoveOnlyType&&>, "MoveOnlyType is moved");
+
+		const int five = 5;
+		pair<int, MoveOnlyType> moveOnlyPair(five, MoveOnlyType(6));
+		EATEST_VERIFY((moveOnlyPair.first == 5) && (moveOnlyPair.second == MoveOnlyType(6)));
+
 // The following code was giving an EDG compiler:
 //       error 145: a value of type "int" cannot be used to initialize
 //       an entity of type "void *" second(eastl::forward<V>(v)) {}
