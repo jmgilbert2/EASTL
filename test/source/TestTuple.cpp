@@ -6,6 +6,7 @@
 
 EA_DISABLE_VC_WARNING(4623 4625 4413 4510)
 
+#include <EASTL/any.h>
 #include <EASTL/tuple.h>
 #include <EASTL/unique_ptr.h>
 
@@ -188,6 +189,43 @@ int TestTuple()
 		tuple<int, float, bool> aDefaultInitializedTuple;
 		EATEST_VERIFY(get<0>(aDefaultInitializedTuple) == 0 && get<1>(aDefaultInitializedTuple) == 0.0f &&
 					  get<2>(aDefaultInitializedTuple) == false);
+	}
+
+	// The converting constructors from another tuple or a pair are explicit exactly when an element conversion isn't
+	// implicit, like std::tuple's.
+	{
+		static_assert(is_convertible_v<tuple<int, int>, tuple<long, double>>, "tuple(tuple<U...>&&) is implicit");
+		static_assert(is_convertible_v<const pair<int, int>&, tuple<long, double>>, "tuple(const pair<U1, U2>&) is implicit");
+		static_assert(is_constructible_v<tuple<TestObject>, tuple<int>&>, "tuple(tuple<U...>&) is explicit");
+		static_assert(!is_convertible_v<tuple<int>&, tuple<TestObject>>, "tuple(tuple<U...>&) is explicit");
+		static_assert(is_constructible_v<tuple<TestObject, int>, pair<int, int>>, "tuple(pair<U1, U2>&&) is explicit");
+		static_assert(!is_convertible_v<pair<int, int>, tuple<TestObject, int>>, "tuple(pair<U1, U2>&&) is explicit");
+
+		tuple<int> intTuple(3);
+		tuple<TestObject> objectTuple(intTuple);
+		EATEST_VERIFY(get<0>(objectTuple).mX == 3);
+
+		tuple<TestObject, int> objectIntTuple(make_pair(4, 5));
+		EATEST_VERIFY((get<0>(objectIntTuple).mX == 4) && (get<1>(objectIntTuple) == 5));
+	}
+
+	// A one-element tuple<T> holds a whole source tuple when T can be built from it, like std::tuple, but copying or
+	// moving a tuple<T> still copies or moves the element.
+	{
+		tuple<int> intTuple(5);
+		tuple<any> holdsTuple(intTuple);
+		EATEST_VERIFY(any_cast<tuple<int>>(&get<0>(holdsTuple)) != nullptr);
+		tuple<any> holdsMovedTuple(eastl::move(intTuple));
+		EATEST_VERIFY(any_cast<tuple<int>>(&get<0>(holdsMovedTuple)) != nullptr);
+
+		tuple<any> holdsInt(5);
+		tuple<any> copied(holdsInt);
+		EATEST_VERIFY(any_cast<int>(&get<0>(copied)) != nullptr);
+		const tuple<any>& constHoldsInt = holdsInt;
+		tuple<any> copiedFromConst(constHoldsInt);
+		EATEST_VERIFY(any_cast<int>(&get<0>(copiedFromConst)) != nullptr);
+		tuple<any> moved(eastl::move(holdsInt));
+		EATEST_VERIFY(any_cast<int>(&get<0>(moved)) != nullptr);
 	}
 
 	{
