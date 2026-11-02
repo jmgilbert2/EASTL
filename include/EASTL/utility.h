@@ -471,7 +471,8 @@ namespace eastl
 		template <typename U = T1,
 		          typename TT2 = T2,
 		          eastl::enable_if_t<!Internal::is_pair<eastl::remove_cvref_t<U>>::value &&
-		                             eastl::is_constructible_v<T1, U> && eastl::is_default_constructible_v<TT2>, int> = 0>
+		                             eastl::is_constructible_v<T1, U> && eastl::is_default_constructible_v<TT2> &&
+		                             !Internal::reference_constructs_from_temporary_v<T1, U&&>, int> = 0>
 		EA_CPP14_CONSTEXPR pair(U&& x)
 		    : first(eastl::forward<U>(x)), second()
 		{
@@ -484,7 +485,8 @@ namespace eastl
 		// default constructible until its enclosing class is complete (https://bugs.llvm.org/show_bug.cgi?id=38374).
 		template <typename U = T1,
 		          typename TT2 = T2,
-		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_default_constructible_v<TT2>, int> = 0>
+		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_default_constructible_v<TT2> &&
+		                             !Internal::reference_constructs_from_temporary_v<T1, U&&>, int> = 0>
 		EA_CPP14_CONSTEXPR pair(pair_first_construct_t, U&& x)
 		    : first(eastl::forward<U>(x)), second()
 		{

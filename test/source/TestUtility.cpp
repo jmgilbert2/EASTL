@@ -1011,7 +1011,8 @@ static int TestUtilityExchange()
 	}
 
 	// The pair_first_construct constructor forwards its argument to first and value-initializes second. It takes part
-	// only when both are possible, the same way on every compiler.
+	// only when both are possible, the same way on every compiler, and, like the other constructors, not when first is
+	// a reference that would bind a temporary.
 	{
 		using eastl::pair_first_construct_t;
 		struct NoDefault { int mX; NoDefault(int x) : mX(x) {} };
@@ -1020,6 +1021,10 @@ static int TestUtilityExchange()
 		static_assert(eastl::is_constructible_v<eastl::pair<MoveOnlyType, int>, pair_first_construct_t, MoveOnlyType&&>, "MoveOnlyType is moved");
 		static_assert(!eastl::is_constructible_v<eastl::pair<int, NoDefault>, pair_first_construct_t, int>, "NoDefault isn't default constructible");
 		static_assert(!eastl::is_constructible_v<eastl::pair<int&, int>, pair_first_construct_t, int&&>, "int& doesn't bind an rvalue");
+
+		constexpr bool detected = eastl::Internal::reference_constructs_from_temporary_v<const int&, long&&>;
+		static_assert(!detected || !eastl::is_constructible_v<eastl::pair<const int&, int>, pair_first_construct_t, long>, "const int& would bind a temporary");
+		static_assert(eastl::is_constructible_v<eastl::pair<const int&, int>, pair_first_construct_t, const int&>, "const int& binds to the argument");
 
 		int i = 1;
 		eastl::pair<int&, int> referencePair(eastl::pair_first_construct, i);
