@@ -1243,6 +1243,102 @@ int TestSort()
 			EATEST_VERIFY((i < n / 2) ? (values[ids[i]] <= values[ids[n / 2]]) : (values[ids[i]] >= values[ids[n / 2]]));
 	}
 
+	// sort (quick_sort) and nth_element on many sizes and input orders: ints compared with less (partitioned without
+	// branches), ints with another comparator, and TestObjects (the pivot stays in place, nothing is copied). Sorted and
+	// reversed ranges and ranges with few distinct values take linear time.
+	{
+		auto keyOf = [](int order, int size, int i)
+		{
+			switch(order)
+			{
+				case 0:  return (i * 7919) % 97;                   // Scattered, with duplicates.
+				case 1:  return i;                                 // Sorted.
+				case 2:  return size - i;                          // Reversed.
+				case 3:  return i % 7;                             // Sawtooth.
+				case 4:  return (i < (size / 2)) ? i : (size - i); // Organ pipe.
+				case 5:  return 3;                                 // All equal.
+				default: return (i * 31) % 3;                      // Three values.
+			}
+		};
+		auto intLess = [](int a, int b) { return a < b; };
+
+		const int sizes[] = { 0, 1, 2, 3, 27, 28, 29, 30, 127, 128, 129, 130, 1000, 1025 };
+		for(int size : sizes)
+		{
+			for(int order = 0; order < 7; order++)
+			{
+				vector<int> keys;
+				for(int i = 0; i < size; i++)
+					keys.push_back(keyOf(order, size, i));
+				vector<int> sorted(keys);
+				insertion_sort(sorted.begin(), sorted.end());
+
+				vector<int> a(keys), b(keys);
+				sort(a.begin(), a.end());
+				sort(b.begin(), b.end(), intLess);
+				EATEST_VERIFY(a == sorted);
+				EATEST_VERIFY(b == sorted);
+
+				TestObject::Reset();
+				{
+					vector<TestObject> objects;
+					for(int i = 0; i < size; i++)
+						objects.push_back(TestObject(keyOf(order, size, i)));
+					const int64_t copiesBefore = TestObject::sTOCopyCtorCount + TestObject::sTOCopyAssignCount;
+
+					sort(objects.begin(), objects.end());
+
+					bool ok = true;
+					for(int i = 0; i < size; i++)
+						ok = ok && (objects[i].mX == sorted[i]);
+					EATEST_VERIFY(ok);
+					EATEST_VERIFY(TestObject::sTOCopyCtorCount + TestObject::sTOCopyAssignCount == copiesBefore);
+				}
+				EATEST_VERIFY(TestObject::IsClear());
+
+				if(size > 0)
+				{
+					const int positions[] = { 0, size / 3, size - 1 };
+					for(int nth : positions)
+					{
+						vector<int> c(keys), d(keys);
+						nth_element(c.begin(), c.begin() + nth, c.end());
+						nth_element(d.begin(), d.begin() + nth, d.end(), intLess);
+						EATEST_VERIFY((c[nth] == sorted[nth]) && (d[nth] == sorted[nth]));
+
+						bool ok = true;
+						for(int i = 0; i < size; i++)
+							ok = ok && ((i < nth) ? ((c[i] <= c[nth]) && (d[i] <= d[nth])) : ((c[i] >= c[nth]) && (d[i] >= d[nth])));
+						EATEST_VERIFY(ok);
+					}
+				}
+			}
+		}
+		TestObject::Reset();
+
+		int callCount = 0;
+		auto countingLess = [&callCount](int a, int b) { ++callCount; return a < b; };
+		const int n = 10000;
+		vector<int> v;
+		for(int i = 0; i < n; i++)
+			v.push_back(i);
+
+		sort(v.begin(), v.end(), countingLess);
+		EATEST_VERIFY(callCount < 3 * n);
+
+		reverse(v.begin(), v.end());
+		callCount = 0;
+		sort(v.begin(), v.end(), countingLess);
+		EATEST_VERIFY(callCount < 4 * n);
+
+		for(int i = 0; i < n; i++)
+			v[i] = (i * 7919) % 8;
+		callCount = 0;
+		sort(v.begin(), v.end(), countingLess);
+		EATEST_VERIFY(callCount < 6 * n);
+		EATEST_VERIFY(is_sorted(v.begin(), v.end()));
+	}
+
 	#if 0 // Disabled because it takes a long time and thus far seems to show no bug in quick_sort.
 	{
 		// Regression of Coverity report for Madden 2014 that quick_sort is reading beyond an array bounds within insertion_sort_simple.
