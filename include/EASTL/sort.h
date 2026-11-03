@@ -314,11 +314,12 @@ namespace eastl
 
 	namespace Internal
 	{
-		// Insertion-sorts the elements nSpace apart, all the sequences in one pass over the range: each element is inserted
-		// among the sorted elements before it in its sequence. Large gaps leave each insertion about one element to move.
+		// Insertion-sorts the elements nSpace apart: each element is inserted among the sorted elements before it in its
+		// sequence. Large gaps leave each insertion about one element to move.
 		//
-		// A trivially copyable element is taken out into a temporary and the elements before it move up by nSpace: one move
-		// per step instead of a swap's three, and the temporary stays in registers.
+		// Trivially copyable elements: all the sequences in one pass over the range, each element taken out into a
+		// temporary while the elements before it move up by nSpace: one move per step instead of a swap's three, and the
+		// temporary stays in registers.
 		template <typename RandomAccessIterator, typename StrictWeakOrdering>
 		void shell_sort_insert(RandomAccessIterator first, RandomAccessIterator last, typename eastl::iterator_traits<RandomAccessIterator>::difference_type nSpace, StrictWeakOrdering& compare, true_type)
 		{
@@ -343,22 +344,39 @@ namespace eastl
 			}
 		}
 
-		// Other elements are swapped down instead: building and destroying a temporary for each insertion costs more than
-		// the moves it saves. Through a temporary, 100,000 reversed tuple<int, string> took 4.5 times as long as with swaps,
-		// and strings 1.5 times (with MSVC: the moved-from string is reset byte by byte, then read back whole).
+		// Other elements are swapped down instead, one sequence at a time as EASTL did before: building and destroying a
+		// temporary for each insertion costs more than the moves it saves (through a temporary, 100,000 reversed
+		// tuple<int, string> took 4.5 times as long as with swaps, and strings 1.5 times; with MSVC, the moved-from string
+		// is reset byte by byte, then read back whole). Going through the range once per gap was up to 1.18 times as slow
+		// on strings, whose comparisons read memory elsewhere: inserting along one sequence finds the elements it
+		// compares with still in the cache.
 		template <typename RandomAccessIterator, typename StrictWeakOrdering>
 		void shell_sort_insert(RandomAccessIterator first, RandomAccessIterator last, typename eastl::iterator_traits<RandomAccessIterator>::difference_type nSpace, StrictWeakOrdering& compare, false_type)
 		{
-			for(RandomAccessIterator iInsert = first + nSpace; iInsert != last; ++iInsert)
-			{
-				for(RandomAccessIterator iRight = iInsert; compare(*iRight, *(iRight - nSpace)); )
-				{
-					EASTL_VALIDATE_COMPARE(!compare(*(iRight - nSpace), *iRight)); // Validate that the compare function is sane.
-					eastl::iter_swap(iRight, iRight - nSpace);
-					iRight -= nSpace;
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
 
-					if((iRight - first) < nSpace) // Don't form an iterator before first.
-						break;
+			for(difference_type i = 0; i < nSpace; i++)
+			{
+				const RandomAccessIterator iInsertFirst = first + i;
+				RandomAccessIterator iSorted = iInsertFirst;
+
+				while((last - iSorted) > nSpace) // Don't form an iterator past last.
+				{
+					RandomAccessIterator iLeft = iSorted;
+					iSorted += nSpace;
+					RandomAccessIterator iRight = iSorted;
+
+					while(compare(*iRight, *iLeft))
+					{
+						EASTL_VALIDATE_COMPARE(!compare(*iLeft, *iRight)); // Validate that the compare function is sane.
+						eastl::iter_swap(iRight, iLeft);
+
+						if(iLeft == iInsertFirst) // Don't form an iterator before first.
+							break;
+
+						iRight = iLeft;
+						iLeft -= nSpace;
+					}
 				}
 			}
 		}
