@@ -944,6 +944,30 @@ int TestSort()
 	// sort and nth_element pick the pivot by iterator and partition around it in place: they only move and swap
 	// elements, never copy them, so they also work on move-only elements, including tuple_vector's.
 	{
+		// A move-only type whose move operations are defaulted is trivially copyable, but can't be copied.
+		struct DefaultedMoveOnly
+		{
+			int mKey;
+			explicit DefaultedMoveOnly(int key) : mKey(key) {}
+			DefaultedMoveOnly(DefaultedMoveOnly&&) = default;
+			DefaultedMoveOnly& operator=(DefaultedMoveOnly&&) = default;
+		};
+		static_assert(eastl::is_trivially_copyable<DefaultedMoveOnly>::value && !eastl::is_copy_constructible<DefaultedMoveOnly>::value, "");
+		auto keyLess = [](const DefaultedMoveOnly& a, const DefaultedMoveOnly& b) { return a.mKey < b.mKey; };
+
+		vector<DefaultedMoveOnly> moveOnly;
+		for(int i = 0; i < 500; i++)
+			moveOnly.push_back(DefaultedMoveOnly((i * 7919) % 97));
+		sort(moveOnly.begin(), moveOnly.end(), keyLess);
+		EATEST_VERIFY(is_sorted(moveOnly.begin(), moveOnly.end(), keyLess));
+		nth_element(moveOnly.begin(), moveOnly.begin() + 100, moveOnly.end(), [](const DefaultedMoveOnly& a, const DefaultedMoveOnly& b) { return b.mKey < a.mKey; });
+		vector<int> descending;
+		for(int i = 0; i < 500; i++)
+			descending.push_back((i * 7919) % 97);
+		sort(descending.begin(), descending.end(), greater<int>());
+		EATEST_VERIFY(moveOnly[100].mKey == descending[100]);
+	}
+	{
 		vector<int> keys;
 		for(int i = 0; i < 500; i++)
 			keys.push_back((i * 7919) % 97); // Many duplicates.

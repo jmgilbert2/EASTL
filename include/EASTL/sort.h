@@ -942,9 +942,13 @@ namespace eastl
 		// are non-empty, and the scans need no bounds checks. (Tukey's ninther, the median of three medians of three, was
 		// measured about 10% slower on random data.)
 		//
-		// A trivially copyable pivot is copied, which nothing can observe: the whole range is partitioned around the copy
-		// (Hoare partition), as EASTL did before. That is the fastest for such elements; partitioning around the median in
-		// place was up to 24% slower on sorted, reversed and sawtooth ints.
+		// A pivot whose copy constructor and destructor are trivial is copied, which nothing can observe: the whole range is
+		// partitioned around the copy (Hoare partition), as EASTL did before. That is the fastest for such elements;
+		// partitioning around the median in place was up to 24% slower on sorted, reversed and sawtooth ints. (Trivially
+		// copyable isn't the test: a move-only type can be trivially copyable.)
+		template <typename T>
+		struct is_pivot_copy_trivial : integral_constant<bool, is_trivially_copy_constructible<T>::value && is_trivially_destructible<T>::value> {};
+
 		template <typename RandomAccessIterator, typename Compare>
 		inline RandomAccessIterator partition_around_median(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, true_type)
 		{
@@ -1012,7 +1016,7 @@ namespace eastl
 
 				--maxDepth;
 				const RandomAccessIterator cut = Internal::partition_around_median(first, last, compare,
-					eastl::is_trivially_copyable<typename eastl::iterator_traits<RandomAccessIterator>::value_type>());
+					Internal::is_pivot_copy_trivial<typename eastl::iterator_traits<RandomAccessIterator>::value_type>());
 
 				Internal::quick_sort_impl(cut, last, maxDepth, compare);
 				last = cut;
@@ -1035,7 +1039,7 @@ namespace eastl
 
 		while((last - first) > kQuickSortLimit)
 		{
-			const RandomAccessIterator cut = Internal::partition_around_median(first, last, compare, eastl::is_trivially_copyable<value_type>());
+			const RandomAccessIterator cut = Internal::partition_around_median(first, last, compare, Internal::is_pivot_copy_trivial<value_type>());
 
 			if(cut <= nth)
 				first = cut;
