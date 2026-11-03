@@ -312,6 +312,59 @@ namespace eastl
 	} // insertion_sort
 
 
+	namespace Internal
+	{
+		// Insertion-sorts the elements nSpace apart, all the sequences in one pass over the range: each element is inserted
+		// among the sorted elements before it in its sequence. Large gaps leave each insertion about one element to move.
+		//
+		// A trivially copyable element is taken out into a temporary and the elements before it move up by nSpace: one move
+		// per step instead of a swap's three, and the temporary stays in registers.
+		template <typename RandomAccessIterator, typename StrictWeakOrdering>
+		void shell_sort_insert(RandomAccessIterator first, RandomAccessIterator last, typename eastl::iterator_traits<RandomAccessIterator>::difference_type nSpace, StrictWeakOrdering& compare, true_type)
+		{
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
+
+			for(RandomAccessIterator iInsert = first + nSpace; iInsert != last; ++iInsert)
+			{
+				if(compare(*iInsert, *(iInsert - nSpace)))
+				{
+					EASTL_VALIDATE_COMPARE(!compare(*(iInsert - nSpace), *iInsert)); // Validate that the compare function is sane.
+					value_type value(iter_move(iInsert));
+					RandomAccessIterator iHole = iInsert;
+
+					do
+					{
+						*iHole = iter_move(iHole - nSpace);
+						iHole -= nSpace;
+					} while(((iHole - first) >= nSpace) && compare(value, *(iHole - nSpace))); // Don't form an iterator before first.
+
+					*iHole = eastl::move(value);
+				}
+			}
+		}
+
+		// Other elements are swapped down instead: building and destroying a temporary for each insertion costs more than
+		// the moves it saves. Through a temporary, 100,000 reversed tuple<int, string> took 4.5 times as long as with swaps,
+		// and strings 1.5 times (with MSVC: the moved-from string is reset byte by byte, then read back whole).
+		template <typename RandomAccessIterator, typename StrictWeakOrdering>
+		void shell_sort_insert(RandomAccessIterator first, RandomAccessIterator last, typename eastl::iterator_traits<RandomAccessIterator>::difference_type nSpace, StrictWeakOrdering& compare, false_type)
+		{
+			for(RandomAccessIterator iInsert = first + nSpace; iInsert != last; ++iInsert)
+			{
+				for(RandomAccessIterator iRight = iInsert; compare(*iRight, *(iRight - nSpace)); )
+				{
+					EASTL_VALIDATE_COMPARE(!compare(*(iRight - nSpace), *iRight)); // Validate that the compare function is sane.
+					eastl::iter_swap(iRight, iRight - nSpace);
+					iRight -= nSpace;
+
+					if((iRight - first) < nSpace) // Don't form an iterator before first.
+						break;
+				}
+			}
+		}
+	} // namespace Internal
+
+
 	/// shell_sort
 	///
 	/// Implements the ShellSort algorithm. This algorithm is a serious algorithm for larger 
@@ -344,27 +397,7 @@ namespace eastl
 
 			// nSpace will iterate from the largest Knuth 'h' element smaller than the size of the range down to 1 (inclusive).
 			for(nSpace = (nSpace - 1) / 3; nSpace >= 1; nSpace = (nSpace - 1) / 3)  // Integer division is less than ideal.
-			{
-				// Insertion-sort the elements nSpace apart, all the sequences in one pass over the range: each element is
-				// inserted among the sorted elements before it in its sequence, which move up by nSpace.
-				for(RandomAccessIterator iInsert = first + nSpace; iInsert != last; ++iInsert)
-				{
-					if(compare(*iInsert, *(iInsert - nSpace)))
-					{
-						EASTL_VALIDATE_COMPARE(!compare(*(iInsert - nSpace), *iInsert)); // Validate that the compare function is sane.
-						value_type value(iter_move(iInsert));
-						RandomAccessIterator iHole = iInsert;
-
-						do
-						{
-							*iHole = iter_move(iHole - nSpace);
-							iHole -= nSpace;
-						} while(((iHole - first) >= nSpace) && compare(value, *(iHole - nSpace))); // Don't form an iterator before first.
-
-						*iHole = eastl::move(value);
-					}
-				}
-			}
+				Internal::shell_sort_insert(first, last, nSpace, compare, eastl::is_trivially_copyable<value_type>());
 		}
 	} // shell_sort
 
