@@ -335,6 +335,35 @@ namespace eastl
 	// pop_heap
 	///////////////////////////////////////////////////////////////////////
 
+	namespace Internal
+	{
+		// pop_heap of a range of at least two elements. sort_heap calls it directly: its loop excludes a single element,
+		// so pop_heap's check would only add a branch to it.
+		template <typename RandomAccessIterator>
+		inline void pop_heap_unchecked(RandomAccessIterator first, RandomAccessIterator last)
+		{
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
+
+			value_type tempBottom(iter_move(last - 1));
+			*(last - 1) = iter_move(first);
+			eastl::adjust_heap<RandomAccessIterator, difference_type, value_type>
+							  (first, (difference_type)0, (difference_type)(last - first - 1), 0, eastl::move(tempBottom));
+		}
+
+		template <typename RandomAccessIterator, typename Compare>
+		inline void pop_heap_unchecked(RandomAccessIterator first, RandomAccessIterator last, Compare compare)
+		{
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
+
+			value_type tempBottom(iter_move(last - 1));
+			*(last - 1) = iter_move(first);
+			eastl::adjust_heap<RandomAccessIterator, difference_type, value_type, Compare>
+							  (first, (difference_type)0, (difference_type)(last - first - 1), 0, eastl::move(tempBottom), compare);
+		}
+	}
+
 	/// pop_heap
 	///
 	/// Removes the first item from the heap (which is an array), and adjusts
@@ -353,16 +382,8 @@ namespace eastl
 	template <typename RandomAccessIterator>
 	inline void pop_heap(RandomAccessIterator first, RandomAccessIterator last)
 	{
-		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
-		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
-
 		if((last - first) > 1) // A single element is already in place.
-		{
-			value_type tempBottom(iter_move(last - 1));
-			*(last - 1) = iter_move(first);
-			eastl::adjust_heap<RandomAccessIterator, difference_type, value_type>
-							  (first, (difference_type)0, (difference_type)(last - first - 1), 0, eastl::move(tempBottom));
-		}
+			Internal::pop_heap_unchecked<RandomAccessIterator>(first, last);
 	}
 
 
@@ -380,16 +401,8 @@ namespace eastl
 	template <typename RandomAccessIterator, typename Compare>
 	inline void pop_heap(RandomAccessIterator first, RandomAccessIterator last, Compare compare)
 	{
-		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
-		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
-
 		if((last - first) > 1) // A single element is already in place.
-		{
-			value_type tempBottom(iter_move(last - 1));
-			*(last - 1) = iter_move(first);
-			eastl::adjust_heap<RandomAccessIterator, difference_type, value_type, Compare>
-							  (first, (difference_type)0, (difference_type)(last - first - 1), 0, eastl::move(tempBottom), compare);
-		}
+			Internal::pop_heap_unchecked<RandomAccessIterator, Compare>(first, last, compare);
 	}
 
 
@@ -469,7 +482,7 @@ namespace eastl
 	inline void sort_heap(RandomAccessIterator first, RandomAccessIterator last)
 	{
 		for(; (last - first) > 1; --last) // We simply use the heap to sort itself.
-			eastl::pop_heap<RandomAccessIterator>(first, last);
+			Internal::pop_heap_unchecked<RandomAccessIterator>(first, last);
 	}
 
 
@@ -482,7 +495,7 @@ namespace eastl
 	inline void sort_heap(RandomAccessIterator first, RandomAccessIterator last, Compare compare)
 	{
 		for(; (last - first) > 1; --last) // We simply use the heap to sort itself.
-			eastl::pop_heap<RandomAccessIterator, Compare>(first, last, compare);
+			Internal::pop_heap_unchecked<RandomAccessIterator, Compare>(first, last, compare);
 	}
 
 
