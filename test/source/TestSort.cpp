@@ -1052,6 +1052,95 @@ int TestSort()
 		EATEST_VERIFY(get<0>(moveOnly[100]) == keys[100]);
 	}
 
+	// stable_sort (merge_sort) needs a buffer for only half the range, and none for a sorted range or one short enough to
+	// be insertion-sorted. The buffer elements are moved in from the range, so the elements needn't be
+	// default-constructible. The sizes go around the insertion sort lengths (32 elements when trivially copyable, else
+	// 24) and their multiples.
+	{
+		struct Item { int mKey; int mIndex; }; // Trivially copyable.
+		auto itemLess = [](const Item& a, const Item& b) { return a.mKey < b.mKey; };
+		auto objectLess = [](const TestObject& a, const TestObject& b) { return (a.mX / 10000) < (b.mX / 10000); };
+		auto keyOf = [](int order, int size, int i)
+		{
+			switch(order)
+			{
+				case 0:  return (i * 7919) % 97;                       // Scattered, with duplicates.
+				case 1:  return i;                                     // Sorted.
+				case 2:  return size - i;                              // Reversed.
+				case 3:  return i % 30;                                // Sawtooth.
+				case 4:  return ((i % 50) == 7) ? ((i * 7919) % 97) : i; // Nearly sorted.
+				default: return (i < (size / 2)) ? i : (size - i);     // Organ pipe.
+			}
+		};
+
+		const int sizes[] = { 0, 1, 2, 3, 23, 24, 25, 31, 32, 33, 47, 48, 49, 63, 64, 65, 96, 97, 191, 192, 193, 500, 1000, 1025 };
+		for(int size : sizes)
+		{
+			for(int order = 0; order < 6; order++)
+			{
+				vector<Item> items;
+				vector<TestObject> objects;
+				for(int i = 0; i < size; i++)
+				{
+					items.push_back(Item{keyOf(order, size, i), i});
+					objects.push_back(TestObject(keyOf(order, size, i) * 10000 + i));
+				}
+
+				stable_sort(items.begin(), items.end(), itemLess);
+				stable_sort(objects.begin(), objects.end(), objectLess);
+
+				// Each element is there once, with its key, and in order of key, then of original position.
+				bool itemsOk = true, objectsOk = true;
+				for(int i = 0; i < size; i++)
+				{
+					const int index = objects[i].mX % 10000;
+					itemsOk = itemsOk && (items[i].mIndex >= 0) && (items[i].mIndex < size) && (items[i].mKey == keyOf(order, size, items[i].mIndex));
+					objectsOk = objectsOk && (index < size) && ((objects[i].mX / 10000) == keyOf(order, size, index));
+					if(i > 0)
+					{
+						itemsOk = itemsOk && ((items[i - 1].mKey < items[i].mKey) || ((items[i - 1].mKey == items[i].mKey) && (items[i - 1].mIndex < items[i].mIndex)));
+						objectsOk = objectsOk && (objects[i - 1].mX < objects[i].mX);
+					}
+				}
+				EATEST_VERIFY(itemsOk);
+				EATEST_VERIFY(objectsOk);
+			}
+		}
+		EATEST_VERIFY(TestObject::IsClear());
+		TestObject::Reset();
+
+		CountingAllocator::resetCount();
+		{
+			CountingAllocator allocator;
+			vector<Item> items;
+			for(int i = 0; i < 1001; i++)
+				items.push_back(Item{(i * 7919) % 97, i});
+
+			stable_sort(items.begin(), items.end(), allocator, itemLess);
+			EATEST_VERIFY(CountingAllocator::getTotalAllocationCount() == 1);
+			EATEST_VERIFY(CountingAllocator::getTotalAllocationSize() == 501 * sizeof(Item));
+			EATEST_VERIFY(CountingAllocator::getActiveAllocationSize() == 0);
+
+			stable_sort(items.begin(), items.end(), allocator, itemLess); // Already sorted.
+			reverse(items.begin(), items.begin() + 32);
+			stable_sort(items.begin(), items.begin() + 32, allocator, itemLess); // Insertion-sorted.
+			EATEST_VERIFY(CountingAllocator::getTotalAllocationCount() == 1);
+		}
+		CountingAllocator::resetCount();
+
+		vector<MoveOnlyType> moveOnly; // No default constructor.
+		for(int i = 0; i < 300; i++)
+			moveOnly.push_back(MoveOnlyType(((i * 7919) % 97) * 1000 + i));
+		auto byVal = [](const MoveOnlyType& a, const MoveOnlyType& b) { return (a.mVal / 1000) < (b.mVal / 1000); };
+		stable_sort(moveOnly.begin(), moveOnly.end(), byVal);
+		for(int i = 1; i < 300; i++)
+			EATEST_VERIFY(moveOnly[i - 1].mVal < moveOnly[i].mVal);
+		reverse(moveOnly.begin(), moveOnly.end());
+		merge_sort(moveOnly.begin(), moveOnly.end(), *get_default_allocator((EASTLAllocatorType*)NULL), byVal);
+		for(int i = 1; i < 300; i++)
+			EATEST_VERIFY((moveOnly[i - 1].mVal / 1000) <= (moveOnly[i].mVal / 1000));
+	}
+
 	#if 0 // Disabled because it takes a long time and thus far seems to show no bug in quick_sort.
 	{
 		// Regression of Coverity report for Madden 2014 that quick_sort is reading beyond an array bounds within insertion_sort_simple.
