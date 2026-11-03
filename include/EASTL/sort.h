@@ -1062,7 +1062,8 @@ namespace eastl
 		// quick_sort (what sort uses) and nth_element are a pattern-defeating quicksort, after Orson Peters' pdqsort
 		// ("Pattern-defeating Quicksort", 2021). It is an introsort that:
 		// - takes as the pivot the median of three elements, or above 128 elements the median of three medians of three
-		//   (spread across the range for nth_element);
+		//   (spread across the range for nth_element, which takes a sample near nth instead when nth is in the first or
+		//   last quarter of the range);
 		// - partitions around the pivot left in its place, then swaps it into its final position (pdq_partition_right);
 		// - when the pivot equals the element before the range (a previous pivot, so not greater than any element of the
 		//   range), puts the elements equal to it first and leaves them there, since their order is final: ranges with
@@ -1225,11 +1226,58 @@ namespace eastl
 				Internal::sort_three(middle, first, last - 1, compare);
 		}
 
+		// pdq_select's pivot when nth is in the first or last quarter of a range of more than 128 elements. The median
+		// would leave nth near an end of the part kept, which then only halves at each partition; the sample just past
+		// nth's relative position makes that part shrink faster (Floyd and Rivest's selection does the same with two
+		// pivots). Of 9 samples, the k-th least is expected at the quantile (k + 1) / 10. They are taken at pseudo-random
+		// positions, one in each ninth of the range: at fixed positions, periodic inputs whose period divides their
+		// spacing gave samples all alike, and the ends of an organ pipe gave the least ones.
+		template <typename RandomAccessIterator, typename Compare>
+		void pdq_choose_pivot_rank(RandomAccessIterator first, RandomAccessIterator nth, RandomAccessIterator last, Compare& compare, uint32_t& nRandom)
+		{
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
+
+			const difference_type nSize    = last - first;
+			const difference_type nSegment = nSize / 9;
+			RandomAccessIterator  samples[9];
+
+			for(int i = 0; i < 9; i++)
+			{
+				// xorshift32 (Marsaglia, "Xorshift RNGs", 2003).
+				nRandom ^= nRandom << 13;
+				nRandom ^= nRandom >> 17;
+				nRandom ^= nRandom << 5;
+
+				const uint64_t nOffset = (uint64_t(nSegment) <= uint64_t(0xFFFFFFFFu)) ? ((uint64_t(nRandom) * uint64_t(nSegment)) >> 32)
+				                                                                        : (uint64_t(nRandom) % uint64_t(nSegment));
+				samples[i] = first + (difference_type(i) * nSegment + difference_type(nOffset));
+			}
+
+			for(int i = 1; i < 9; i++)
+			{
+				for(int j = i; (j > 0) && compare(*samples[j], *samples[j - 1]); j--)
+					eastl::iter_swap(samples[j], samples[j - 1]);
+			}
+
+			// The sample of rank 1 to 3 when nth is in the first quarter, 5 to 7 when it is in the last.
+			const difference_type nTenth = nSize / 10;
+			const difference_type nAt    = nth - first;
+			const difference_type nToEnd = (last - 1) - nth;
+			int k;
+
+			if(nAt < (nSize / 4))
+				k = 1 + int(nAt >= nTenth) + int(nAt >= (2 * nTenth));
+			else
+				k = 7 - int(nToEnd >= nTenth) - int(nToEnd >= (2 * nTenth));
+
+			eastl::iter_swap(first, samples[k]);
+		}
+
 		// Partitions [first, last) around the pivot *first, which stays there during the scans, so that it is never
 		// copied, and is then swapped into its final position, which is returned: the elements before it are less than
 		// the pivot, the others not less. bAlreadyPartitioned tells whether no element had to be swapped.
 		template <typename RandomAccessIterator, typename Compare>
-		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, int, false_type)
+		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, false_type)
 		{
 			RandomAccessIterator lower = first;
 			RandomAccessIterator upper = last;
@@ -1278,39 +1326,41 @@ namespace eastl
 		// branches, a block of up to 64 at each end at a time, recording the offsets of those on the wrong side, which are
 		// then swapped in pairs.
 		//
-		// That pays off when the other partition's branches would be mispredicted, about once per change between "less"
-		// and "not less" along its scans. So a range of 1024 elements or more first has 32 elements at each end compared
-		// with the pivot: random input changes about every other element, while sorted, reversed, sawtooth and similar
-		// inputs, whose branches are predicted, change far less often. Below nMinChanges changes (out of 62), the range
-		// is partitioned with branches.
+		// That pays off when the other partition's branches would be mispredicted, which is the case for random input,
+		// while those of sorted, reversed, sawtooth and similar inputs are predicted. So a range of 1024 elements or more
+		// first has the order of 33 adjacent elements at each end sampled: along random input, rising and falling pairs
+		// change about two times out of three, and along those inputs far less often. Below 22 changes (out of 62), the
+		// range is partitioned with branches. The sample leaves out the pivot: compared with a pivot far from the median,
+		// which isn't rare in the parts of a random range, random elements change between "less" and "not less" rarely
+		// too.
 		template <typename RandomAccessIterator, typename Compare>
-		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, int nMinChanges, true_type)
+		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, true_type)
 		{
 			typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
 
 			if((last - first) >= 1024)
 			{
 				int nChanges = 0;
-				bool bPrevious = compare(*(first + 1), *first);
+				bool bPrevious = compare(*(first + 2), *(first + 1));
 
 				for(int i = 2; i <= 32; i++)
 				{
-					const bool bLess = compare(*(first + i), *first);
-					nChanges += int(bLess != bPrevious);
-					bPrevious = bLess;
+					const bool bFalling = compare(*(first + (i + 1)), *(first + i));
+					nChanges += int(bFalling != bPrevious);
+					bPrevious = bFalling;
 				}
 
-				bPrevious = compare(*(last - 1), *first);
+				bPrevious = compare(*(last - 2), *(last - 1));
 
 				for(int i = 2; i <= 32; i++)
 				{
-					const bool bLess = compare(*(last - i), *first);
-					nChanges += int(bLess != bPrevious);
-					bPrevious = bLess;
+					const bool bFalling = compare(*(last - (i + 1)), *(last - i));
+					nChanges += int(bFalling != bPrevious);
+					bPrevious = bFalling;
 				}
 
-				if(nChanges < nMinChanges)
-					return Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, nMinChanges, false_type());
+				if(nChanges < 22)
+					return Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, false_type());
 			}
 
 			const value_type pivot(*first);
@@ -1566,7 +1616,7 @@ namespace eastl
 				}
 
 				bool bAlreadyPartitioned;
-				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, 16, branchless);
+				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, branchless);
 				const difference_type nSizeLeft  = pivotPosition - first;
 				const difference_type nSizeRight = last - (pivotPosition + 1);
 
@@ -1591,9 +1641,10 @@ namespace eastl
 		}
 
 		// nth_element's selection: the same partitions, continuing with the part that holds nth. It stops when nth is the
-		// pivot or one of the elements equal to the previous pivot. Very unbalanced partitions break the pattern as in
-		// pdq_sort, and after log2(n) of them it selects with a heap (introselect), so that it is O(n log n) in the worst
-		// case.
+		// pivot or one of the elements equal to the previous pivot. The pivot is the spread median of medians, or, when nth
+		// is in the first or last quarter, a sample near nth (pdq_choose_pivot_rank). A partition that keeps more than 7/8
+		// of the range breaks the pattern as in pdq_sort, and after log2(n) of them it selects with a heap (introselect),
+		// so that it is O(n log n) in the worst case.
 		template <typename RandomAccessIterator, typename Compare, typename Branchless>
 		void pdq_select(RandomAccessIterator first, RandomAccessIterator nth, RandomAccessIterator last, Compare& compare, Branchless branchless)
 		{
@@ -1601,10 +1652,17 @@ namespace eastl
 
 			bool bLeftmost = true;
 			int nBadAllowed = int(Internal::Log2(last - first));
+			uint32_t nRandom = uint32_t(last - first) | 1u; // Not 0, which xorshift32 would keep.
 
 			while((last - first) > difference_type(kQuickSortLimit))
 			{
-				Internal::pdq_choose_pivot_spread(first, last, compare);
+				const difference_type nSize = last - first;
+				const difference_type nAt   = nth - first;
+
+				if((nSize > 128) && ((nAt < (nSize / 4)) || (nAt >= (nSize - nSize / 4))))
+					Internal::pdq_choose_pivot_rank(first, nth, last, compare, nRandom);
+				else
+					Internal::pdq_choose_pivot_spread(first, last, compare);
 
 				if(!bLeftmost && !compare(*(first - 1), *first))
 				{
@@ -1618,16 +1676,16 @@ namespace eastl
 				}
 
 				bool bAlreadyPartitioned;
-				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, 22, branchless);
+				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, branchless);
 
 				if(nth == pivotPosition)
 					return;
 
-				const difference_type nSize      = last - first;
 				const difference_type nSizeLeft  = pivotPosition - first;
 				const difference_type nSizeRight = last - (pivotPosition + 1);
+				const difference_type nSizeKept  = (nth < pivotPosition) ? nSizeLeft : nSizeRight;
 
-				if((nSizeLeft < (nSize / 8)) || (nSizeRight < (nSize / 8)))
+				if(nSizeKept > (nSize - nSize / 8))
 				{
 					if(--nBadAllowed == 0)
 					{
@@ -1660,8 +1718,8 @@ namespace eastl
 	///
 	/// Rearranges [first, last) so that *nth is the element that would be there if the range were sorted, with no
 	/// element before it greater and none after it less. The range is partitioned the way quick_sort does it, only
-	/// continuing with the part that holds nth, and after 2 * log2(n) partitions it selects with a heap (introselect),
-	/// so that it is O(n log n) in the worst case.
+	/// continuing with the part that holds nth, and after log2(n) partitions that keep most of the range it selects with
+	/// a heap (introselect), so that it is O(n log n) in the worst case.
 	///
 	template<typename RandomAccessIterator, typename Compare>
 	inline void nth_element(RandomAccessIterator first, RandomAccessIterator nth, RandomAccessIterator last, Compare compare)

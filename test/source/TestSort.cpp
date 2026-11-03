@@ -1245,7 +1245,8 @@ int TestSort()
 
 	// sort (quick_sort) and nth_element on many sizes and input orders: ints compared with less (partitioned without
 	// branches), ints with another comparator, and TestObjects (the pivot stays in place, nothing is copied). Sorted and
-	// reversed ranges and ranges with few distinct values take linear time.
+	// reversed ranges and ranges with few distinct values take linear time, and nth_element near an end of a sorted or
+	// reversed range takes few comparisons.
 	{
 		auto keyOf = [](int order, int size, int i)
 		{
@@ -1298,7 +1299,7 @@ int TestSort()
 
 				if(size > 0)
 				{
-					const int positions[] = { 0, size / 3, size - 1 };
+					const int positions[] = { 0, size / 20, size / 3, size - 1 - size / 20, size - 1 };
 					for(int nth : positions)
 					{
 						vector<int> c(keys), d(keys);
@@ -1337,6 +1338,25 @@ int TestSort()
 		sort(v.begin(), v.end(), countingLess);
 		EATEST_VERIFY(callCount < 6 * n);
 		EATEST_VERIFY(is_sorted(v.begin(), v.end()));
+
+		// Pivots at the median would leave nth near an end of each part kept, which would then only halve. Where EASTL
+		// validates comparators, the validations make comparisons too, so the counts aren't checked there.
+		for(int i = 0; i < n; i++)
+			v[i] = i;
+		callCount = 0;
+		nth_element(v.begin(), v.begin() + n / 100, v.end(), countingLess);
+		EATEST_VERIFY(v[n / 100] == n / 100);
+		#if !EASTL_VALIDATE_COMPARE_ENABLED
+			EATEST_VERIFY(callCount < (3 * n / 2));
+		#endif
+
+		reverse(v.begin(), v.end());
+		callCount = 0;
+		nth_element(v.begin(), v.end() - 1 - n / 100, v.end(), countingLess);
+		EATEST_VERIFY(v[n - 1 - n / 100] == n - 1 - n / 100);
+		#if !EASTL_VALIDATE_COMPARE_ENABLED
+			EATEST_VERIFY(callCount < (3 * n / 2));
+		#endif
 	}
 
 	#if 0 // Disabled because it takes a long time and thus far seems to show no bug in quick_sort.
