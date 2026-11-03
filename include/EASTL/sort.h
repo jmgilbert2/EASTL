@@ -1074,7 +1074,8 @@ namespace eastl
 		// - insertion-sorts each part of up to kQuickSortLimit elements as it appears; the element before every part but
 		//   the first bounds its scans;
 		// - for arithmetic elements compared with less or greater, partitions in blocks of 64 elements without branching
-		//   on the comparisons (Edelkamp and Weiss, "BlockQuicksort", 2016).
+		//   on the comparisons (Edelkamp and Weiss, "BlockQuicksort", 2016), unless a sample suggests that the branches
+		//   would be predicted.
 
 		template <typename T, typename Compare>
 		struct is_branchless_partition : false_type {};
@@ -1228,7 +1229,7 @@ namespace eastl
 		// copied, and is then swapped into its final position, which is returned: the elements before it are less than
 		// the pivot, the others not less. bAlreadyPartitioned tells whether no element had to be swapped.
 		template <typename RandomAccessIterator, typename Compare>
-		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, false_type)
+		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, int, false_type)
 		{
 			RandomAccessIterator lower = first;
 			RandomAccessIterator upper = last;
@@ -1276,10 +1277,41 @@ namespace eastl
 		// costs nothing and nothing can observe it, and the comparisons are cheap enough to classify the elements without
 		// branches, a block of up to 64 at each end at a time, recording the offsets of those on the wrong side, which are
 		// then swapped in pairs.
+		//
+		// That pays off when the other partition's branches would be mispredicted, about once per change between "less"
+		// and "not less" along its scans. So a range of 1024 elements or more first has 32 elements at each end compared
+		// with the pivot: random input changes about every other element, while sorted, reversed, sawtooth and similar
+		// inputs, whose branches are predicted, change far less often. Below nMinChanges changes (out of 62), the range
+		// is partitioned with branches.
 		template <typename RandomAccessIterator, typename Compare>
-		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, true_type)
+		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, int nMinChanges, true_type)
 		{
 			typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
+
+			if((last - first) >= 1024)
+			{
+				int nChanges = 0;
+				bool bPrevious = compare(*(first + 1), *first);
+
+				for(int i = 2; i <= 32; i++)
+				{
+					const bool bLess = compare(*(first + i), *first);
+					nChanges += int(bLess != bPrevious);
+					bPrevious = bLess;
+				}
+
+				bPrevious = compare(*(last - 1), *first);
+
+				for(int i = 2; i <= 32; i++)
+				{
+					const bool bLess = compare(*(last - i), *first);
+					nChanges += int(bLess != bPrevious);
+					bPrevious = bLess;
+				}
+
+				if(nChanges < nMinChanges)
+					return Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, nMinChanges, false_type());
+			}
 
 			const value_type pivot(*first);
 			RandomAccessIterator lower = first;
@@ -1534,7 +1566,7 @@ namespace eastl
 				}
 
 				bool bAlreadyPartitioned;
-				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, branchless);
+				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, 16, branchless);
 				const difference_type nSizeLeft  = pivotPosition - first;
 				const difference_type nSizeRight = last - (pivotPosition + 1);
 
@@ -1586,7 +1618,7 @@ namespace eastl
 				}
 
 				bool bAlreadyPartitioned;
-				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, branchless);
+				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, 22, branchless);
 
 				if(nth == pivotPosition)
 					return;
