@@ -204,6 +204,114 @@ int TestSort()
 
 	EASTLTest_Rand rng(EA::UnitTest::GetRandSeed());
 
+	// shell_sort, heap_sort, comb_sort, partial_sort, radix_sort, bucket_sort, selection_sort, bubble_sort and
+	// shaker_sort on many sizes and input orders: the result holds each element once, in order of key, and the stable
+	// sorts (radix_sort, bucket_sort, bubble_sort, shaker_sort) keep equal keys in their original order.
+	{
+		struct Item { int mKey; int mIndex; };
+		struct ItemRadixKey { typedef uint32_t radix_type; uint32_t operator()(const Item& item) const { return (uint32_t)item.mKey; } };
+		struct ItemBucket { int operator()(const Item& item) const { return item.mKey; } };
+		auto keyLess = [](const Item& a, const Item& b) { return a.mKey < b.mKey; };
+		auto keyOf = [](int order, int size, int i)
+		{
+			switch(order)
+			{
+				case 0:  return (i * 7919) % 97;                       // Scattered, with duplicates.
+				case 1:  return i;                                     // Sorted.
+				case 2:  return size - i;                              // Reversed.
+				case 3:  return i % 7;                                 // Sawtooth.
+				case 4:  return (i < (size / 2)) ? i : (size - i);     // Organ pipe.
+				case 5:  return 3;                                     // All equal.
+				case 6:  return (i * 31) % 3;                          // Three values.
+				default: return ((i % 50) == 7) ? ((i * 7919) % 97) : i; // Nearly sorted.
+			}
+		};
+
+		// Whether items holds each element of the input once, in order of key in [0, nSorted), with no key after nSorted
+		// less than the last of those, and, if bStable, equal keys in their original order.
+		auto isSorted = [&](const vector<Item>& items, int order, int size, int nSorted, bool bStable)
+		{
+			if((int)items.size() != size)
+				return false;
+
+			vector<int> seen(size, 0);
+			for(int i = 0; i < size; i++)
+			{
+				const Item& item = items[i];
+				if((item.mIndex < 0) || (item.mIndex >= size) || (seen[item.mIndex]++ != 0) || (item.mKey != keyOf(order, size, item.mIndex)))
+					return false;
+
+				if((i > 0) && (i < nSorted))
+				{
+					if(item.mKey < items[i - 1].mKey)
+						return false;
+					if(bStable && (item.mKey == items[i - 1].mKey) && (item.mIndex < items[i - 1].mIndex))
+						return false;
+				}
+
+				if((i >= nSorted) && (nSorted > 0) && (item.mKey < items[nSorted - 1].mKey))
+					return false;
+			}
+			return true;
+		};
+
+		const int sizes[] = { 0, 1, 2, 3, 15, 16, 17, 31, 32, 33, 63, 64, 65, 100, 257, 1000 };
+		for(int size : sizes)
+		{
+			for(int order = 0; order < 8; order++)
+			{
+				vector<Item> items;
+				for(int i = 0; i < size; i++)
+					items.push_back(Item{keyOf(order, size, i), i});
+
+				vector<Item> a(items);
+				shell_sort(a.begin(), a.end(), keyLess);
+				EATEST_VERIFY(isSorted(a, order, size, size, false));
+
+				a = items;
+				heap_sort(a.begin(), a.end(), keyLess);
+				EATEST_VERIFY(isSorted(a, order, size, size, false));
+
+				a = items;
+				comb_sort(a.begin(), a.end(), keyLess);
+				EATEST_VERIFY(isSorted(a, order, size, size, false));
+
+				a = items;
+				partial_sort(a.begin(), a.end(), a.end(), keyLess);
+				EATEST_VERIFY(isSorted(a, order, size, size, false));
+
+				a = items;
+				partial_sort(a.begin(), a.begin() + size / 3, a.end(), keyLess);
+				EATEST_VERIFY(isSorted(a, order, size, size / 3, false));
+
+				a = items;
+				vector<Item> buffer(size);
+				radix_sort<Item*, ItemRadixKey>(a.begin(), a.end(), buffer.begin());
+				EATEST_VERIFY(isSorted(a, order, size, size, true));
+
+				a = items;
+				vector<vector<Item>> buckets(size + 98); // Keys are at most the larger of size and 96.
+				bucket_sort(a.begin(), a.end(), buckets, ItemBucket());
+				EATEST_VERIFY(isSorted(a, order, size, size, true));
+
+				if(size <= 257)
+				{
+					a = items;
+					selection_sort(a.begin(), a.end(), keyLess);
+					EATEST_VERIFY(isSorted(a, order, size, size, false));
+
+					a = items;
+					bubble_sort(a.begin(), a.end(), keyLess);
+					EATEST_VERIFY(isSorted(a, order, size, size, true));
+
+					a = items;
+					shaker_sort(a.begin(), a.end(), keyLess);
+					EATEST_VERIFY(isSorted(a, order, size, size, true));
+				}
+			}
+		}
+	}
+
 	{
 		// is_sorted
 		int array[] = { 0, 1, 2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 9, 8, 7, 6, 5, 4, 3, 2, 2, 2, 1, 0 };
