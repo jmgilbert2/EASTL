@@ -613,13 +613,13 @@ namespace eastl
 			for(; (i < 32) && ((firstBack - first) >= 1) && ((nextBack - next) >= 1); i++)
 			{
 				const bool bTakeNext = compare(*next, *first);
-				*result = bTakeNext ? *next : *first;
+				*result = eastl::move(bTakeNext ? *next : *first);
 				++result;
 				next  += difference_type(bTakeNext);
 				first += difference_type(!bTakeNext);
 
 				const bool bTakeFirstBack = compare(*nextBack, *firstBack);
-				*resultBack = bTakeFirstBack ? *firstBack : *nextBack;
+				*resultBack = eastl::move(bTakeFirstBack ? *firstBack : *nextBack);
 				--resultBack;
 				firstBack -= difference_type(bTakeFirstBack);
 				nextBack  -= difference_type(!bTakeFirstBack);
@@ -638,13 +638,13 @@ namespace eastl
 			while(((firstBack - first) >= 1) && ((nextBack - next) >= 1))
 			{
 				const bool bTakeNext = compare(*next, *first);
-				*result = bTakeNext ? *next : *first;
+				*result = eastl::move(bTakeNext ? *next : *first);
 				++result;
 				next  += difference_type(bTakeNext);
 				first += difference_type(!bTakeNext);
 
 				const bool bTakeFirstBack = compare(*nextBack, *firstBack);
-				*resultBack = bTakeFirstBack ? *firstBack : *nextBack;
+				*resultBack = eastl::move(bTakeFirstBack ? *firstBack : *nextBack);
 				--resultBack;
 				firstBack -= difference_type(bTakeFirstBack);
 				nextBack  -= difference_type(!bTakeFirstBack);
@@ -656,12 +656,12 @@ namespace eastl
 			{
 				if(compare(*next, *first))
 				{
-					*result = *next;
+					*result = iter_move(next);
 					++next;
 				}
 				else
 				{
-					*result = *first;
+					*result = iter_move(first);
 					++first;
 				}
 				++result;
@@ -669,9 +669,9 @@ namespace eastl
 
 			// Usually a few elements: loops, rather than eastl::move's calls to memmove.
 			for(; first <= firstBack; ++first, ++result)
-				*result = *first;
+				*result = iter_move(first);
 			for(; next <= nextBack; ++next, ++result)
-				*result = *next;
+				*result = iter_move(next);
 
 			return resultEnd;
 		}
