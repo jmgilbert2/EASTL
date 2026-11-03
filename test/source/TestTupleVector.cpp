@@ -973,6 +973,28 @@ int TestTupleVector()
 		}
 	}
 
+	{
+		// The iterator difference_type is signed, so the algorithms can compute negative distances; merge_sort used to
+		// skip sorting a half when its sorted prefix hint went negative.
+		static_assert(eastl::is_signed<eastl::iterator_traits<tuple_vector<int, int>::iterator>::difference_type>::value, "");
+		static_assert(eastl::is_signed<eastl::iterator_traits<tuple_vector<int, int>::const_iterator>::difference_type>::value, "");
+
+		tuple_vector<int, int> testVec;
+		for (int i = 0; i < 100; ++i)
+			testVec.push_back((i * 37) % 10, i);
+		EATEST_VERIFY(((testVec.begin() + 5) - (testVec.begin() + 8)) == -3);
+
+		eastl::stable_sort(testVec.begin(), testVec.end(),
+		                   [](auto&& l, auto&& r) { return get<0>(l) < get<0>(r); });
+
+		for (int i = 0; i < 100; ++i)
+		{
+			EATEST_VERIFY(get<0>(testVec[i]) == i / 10);
+			if (i > 0 && get<0>(testVec[i]) == get<0>(testVec[i - 1]))
+				EATEST_VERIFY(get<1>(testVec[i - 1]) < get<1>(testVec[i]));
+		}
+	}
+
 	// Test multitude of constructors
 	{
 		MallocAllocator ma;

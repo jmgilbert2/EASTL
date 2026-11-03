@@ -364,7 +364,7 @@ private:
 public:
 	typedef eastl::random_access_iterator_tag iterator_category;
 	typedef tuple<Ts...> value_type;
-	typedef eastl_size_t difference_type;
+	typedef eastl_ssize_t difference_type;
 	typedef tuple<Ts*...> pointer;
 	typedef tuple<Ts&... > reference;
 
@@ -428,7 +428,7 @@ public:
 		return temp -= n;
 	}
 
-	difference_type operator-(const this_type& rhs) const { return mIndex - rhs.mIndex; }
+	difference_type operator-(const this_type& rhs) const { return difference_type(mIndex - rhs.mIndex); }
 	bool operator<(const this_type& rhs) const { return mIndex < rhs.mIndex; }
 	bool operator>(const this_type& rhs) const { return mIndex > rhs.mIndex; }
 	bool operator>=(const this_type& rhs) const { return mIndex >= rhs.mIndex; }
