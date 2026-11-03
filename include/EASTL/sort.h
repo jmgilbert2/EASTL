@@ -413,6 +413,20 @@ namespace eastl
 		// insertion-sorted. Parts found already sorted stay where they are, and adjacent runs already in order, or
 		// entirely in reverse order, are moved without being merged.
 
+		// Whether elements of type T compared with Compare are cheap enough to compare and copy that the comparisons are
+		// better not branched on when branches would be mispredicted: arithmetic elements compared with less or greater.
+		// The merges of merge_move_runs and the partitions of quick_sort and nth_element then do without branches.
+		template <typename T, typename Compare>
+		struct is_branchless_partition : false_type {};
+		template <typename T>
+		struct is_branchless_partition<T, eastl::less<T>> : is_arithmetic<T> {};
+		template <typename T>
+		struct is_branchless_partition<T, eastl::greater<T>> : is_arithmetic<T> {};
+		template <typename T>
+		struct is_branchless_partition<T, eastl::less<void>> : is_arithmetic<T> {};
+		template <typename T>
+		struct is_branchless_partition<T, eastl::greater<void>> : is_arithmetic<T> {};
+
 		// The longest range that is insertion-sorted: 32 elements like the MSVC STL when moves are copies of trivially
 		// copyable elements, else 24, where the insertion sort's extra moves cost more than the merging they save.
 		template <typename T>
@@ -506,16 +520,11 @@ namespace eastl
 			}
 		}
 
-		// Moves the adjacent non-empty sorted runs [first, mid) and [mid, last), merged, to result.
+		// Moves the adjacent non-empty sorted runs [first, mid) and [mid, last), which are neither in order nor in reverse
+		// order, merged, to result.
 		template <typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
-		OutputIterator merge_move_runs(InputIterator first, InputIterator mid, InputIterator last, OutputIterator result, StrictWeakOrdering& compare)
+		OutputIterator merge_move_runs_impl(InputIterator first, InputIterator mid, InputIterator last, OutputIterator result, StrictWeakOrdering& compare, bool&, false_type)
 		{
-			if(!compare(*mid, *(mid - 1)))
-				return eastl::move(first, last, result);
-
-			if(compare(*(last - 1), *first))
-				return eastl::move(first, mid, eastl::move(mid, last, result));
-
 			for(InputIterator next = mid;;)
 			{
 				if(compare(*next, *first))
@@ -534,6 +543,174 @@ namespace eastl
 						return eastl::move(next, last, result);
 				}
 			}
+		}
+
+		// For elements that is_branchless_partition selects, merging without branches on the comparisons pays off where
+		// the branches would be mispredicted: where the two runs interleave unpredictably, as on random input. Merges of
+		// periodic or partly sorted inputs take elements from one run and the other in patterns that branch predictors
+		// follow: one by one, two by two, or in long streaks. So each merge counts the runs of elements it takes from the
+		// same side (nRuns) and those of a single element (nSingles), and the next merge goes without branches when both
+		// rates are those of random input, between 0.3 and 0.7 (about 0.5 each).
+
+		// With branches, counting the runs.
+		template <typename InputIterator, typename OutputIterator, typename StrictWeakOrdering, typename difference_type>
+		OutputIterator merge_move_runs_counting(InputIterator first, InputIterator mid, InputIterator last, OutputIterator result, StrictWeakOrdering& compare, difference_type& nRuns, difference_type& nSingles)
+		{
+			InputIterator next = mid;
+			bool bTakeNext = compare(*next, *first);
+
+			for(;;)
+			{
+				const OutputIterator runStart = result;
+
+				if(bTakeNext)
+				{
+					do
+					{
+						EASTL_VALIDATE_COMPARE(!compare(*first, *next)); // Validate that the compare function is sane.
+						*result = iter_move(next);
+						++result;
+						if(++next == last)
+							return eastl::move(first, mid, result);
+					} while(compare(*next, *first));
+				}
+				else
+				{
+					do
+					{
+						*result = iter_move(first);
+						++result;
+						if(++first == mid)
+							return eastl::move(next, last, result);
+					} while(!compare(*next, *first));
+				}
+
+				++nRuns;
+				nSingles += difference_type((result - runStart) == 1);
+				bTakeNext = !bTakeNext;
+			}
+		}
+
+		// Without branches, from both ends at once, which makes two independent chains of loads that depend on the
+		// comparisons before them: the front takes the least element left (the first run's on ties), the back the
+		// greatest (the second run's on ties), while each run has at least two elements left, so that both never take the
+		// same one. The front counts the runs during the first 32 steps, over the nCounted elements it takes there.
+		template <typename InputIterator, typename OutputIterator, typename StrictWeakOrdering, typename difference_type>
+		OutputIterator merge_move_runs_branchless(InputIterator first, InputIterator mid, InputIterator last, OutputIterator result, StrictWeakOrdering& compare, difference_type& nCounted, difference_type& nRuns, difference_type& nSingles)
+		{
+			InputIterator  firstBack  = mid - 1;
+			InputIterator  next       = mid;
+			InputIterator  nextBack   = last - 1;
+			OutputIterator resultBack = result + ((last - first) - 1);
+			const OutputIterator resultEnd = resultBack + 1;
+
+			// The counts use bitwise operators and locals: && and the counters behind references made compilers branch on
+			// the changes and store the counters at each step.
+			bool bTookNext = false, bChangedFront = false;
+			int nStepRuns = 0, nStepSingles = 0;
+			int i = 0;
+
+			for(; (i < 32) && ((firstBack - first) >= 1) && ((nextBack - next) >= 1); i++)
+			{
+				const bool bTakeNext = compare(*next, *first);
+				*result = bTakeNext ? *next : *first;
+				++result;
+				next  += difference_type(bTakeNext);
+				first += difference_type(!bTakeNext);
+
+				const bool bTakeFirstBack = compare(*nextBack, *firstBack);
+				*resultBack = bTakeFirstBack ? *firstBack : *nextBack;
+				--resultBack;
+				firstBack -= difference_type(bTakeFirstBack);
+				nextBack  -= difference_type(!bTakeFirstBack);
+
+				const bool bChangeFront = (bTakeNext != bTookNext);
+				nStepRuns    += int(bChangeFront);
+				nStepSingles += int(bChangeFront & bChangedFront);
+				bTookNext      = bTakeNext;
+				bChangedFront  = bChangeFront;
+			}
+
+			nCounted  = difference_type(i);
+			nRuns    += difference_type(nStepRuns);
+			nSingles += difference_type(nStepSingles);
+
+			while(((firstBack - first) >= 1) && ((nextBack - next) >= 1))
+			{
+				const bool bTakeNext = compare(*next, *first);
+				*result = bTakeNext ? *next : *first;
+				++result;
+				next  += difference_type(bTakeNext);
+				first += difference_type(!bTakeNext);
+
+				const bool bTakeFirstBack = compare(*nextBack, *firstBack);
+				*resultBack = bTakeFirstBack ? *firstBack : *nextBack;
+				--resultBack;
+				firstBack -= difference_type(bTakeFirstBack);
+				nextBack  -= difference_type(!bTakeFirstBack);
+			}
+
+			// The rest, [first, firstBack] and [next, nextBack], at most one element of one of them, fills
+			// [result, resultBack].
+			while((first <= firstBack) && (next <= nextBack))
+			{
+				if(compare(*next, *first))
+				{
+					*result = *next;
+					++next;
+				}
+				else
+				{
+					*result = *first;
+					++first;
+				}
+				++result;
+			}
+
+			// Usually a few elements: loops, rather than eastl::move's calls to memmove.
+			for(; first <= firstBack; ++first, ++result)
+				*result = *first;
+			for(; next <= nextBack; ++next, ++result)
+				*result = *next;
+
+			return resultEnd;
+		}
+
+		template <typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
+		OutputIterator merge_move_runs_impl(InputIterator first, InputIterator mid, InputIterator last, OutputIterator result, StrictWeakOrdering& compare, bool& bBranchless, true_type)
+		{
+			typedef typename eastl::iterator_traits<InputIterator>::difference_type difference_type;
+
+			difference_type nCounted = last - first;
+			difference_type nRuns    = 0;
+			difference_type nSingles = 0;
+
+			if(bBranchless)
+				result = Internal::merge_move_runs_branchless(first, mid, last, result, compare, nCounted, nRuns, nSingles);
+			else
+				result = Internal::merge_move_runs_counting(first, mid, last, result, compare, nRuns, nSingles);
+
+			const uint64_t nC = uint64_t(nCounted), nR = uint64_t(nRuns), nS = uint64_t(nSingles);
+
+			bBranchless = ((nR * 10) > (nC * 3)) && ((nR * 10) < (nC * 7)) && ((nS * 10) > (nR * 3)) && ((nS * 10) < (nR * 7));
+			return result;
+		}
+
+		// Moves the adjacent non-empty sorted runs [first, mid) and [mid, last), merged, to result. bBranchless carries
+		// the verdict of the merge before it on how to merge (see merge_move_runs_counting).
+		template <typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
+		OutputIterator merge_move_runs(InputIterator first, InputIterator mid, InputIterator last, OutputIterator result, StrictWeakOrdering& compare, bool& bBranchless)
+		{
+			typedef typename eastl::iterator_traits<InputIterator>::value_type value_type;
+
+			if(!compare(*mid, *(mid - 1)))
+				return eastl::move(first, last, result);
+
+			if(compare(*(last - 1), *first))
+				return eastl::move(first, mid, eastl::move(mid, last, result));
+
+			return Internal::merge_move_runs_impl(first, mid, last, result, compare, bBranchless,
+			                                      is_branchless_partition<value_type, typename eastl::remove_cvref<StrictWeakOrdering>::type>());
 		}
 
 		// Merges the adjacent non-empty sorted ranges [first, mid) and [mid, last) in place, using pBuffer, which holds
@@ -623,12 +800,12 @@ namespace eastl
 		}
 
 		template <typename RandomAccessIterator, typename T, typename difference_type, typename StrictWeakOrdering>
-		void merge_sort_move(RandomAccessIterator first, RandomAccessIterator last, T* pDest, difference_type nSorted, StrictWeakOrdering& compare);
+		void merge_sort_move(RandomAccessIterator first, RandomAccessIterator last, T* pDest, difference_type nSorted, StrictWeakOrdering& compare, bool& bBranchless);
 
 		// Sorts the non-empty range [first, last), whose first nSorted elements are known to be sorted when nSorted > 0,
-		// using pBuffer, which holds at least (last - first) elements.
+		// using pBuffer, which holds at least (last - first) elements. bBranchless is merge_move_runs'.
 		template <typename RandomAccessIterator, typename T, typename difference_type, typename StrictWeakOrdering>
-		void merge_sort_in_place(RandomAccessIterator first, RandomAccessIterator last, T* pBuffer, difference_type nSorted, StrictWeakOrdering& compare)
+		void merge_sort_in_place(RandomAccessIterator first, RandomAccessIterator last, T* pBuffer, difference_type nSorted, StrictWeakOrdering& compare, bool& bBranchless)
 		{
 			const difference_type nCount = last - first;
 
@@ -648,15 +825,15 @@ namespace eastl
 					if((nSorted >= nMid) || (nSortedSecond == (nCount - nMid)))
 					{
 						// A half is sorted: sort the other one in place, then merge them through the buffer.
-						merge_sort_in_place(first, mid, pBuffer, nSorted, compare);
-						merge_sort_in_place(mid, last, pBuffer, nSortedSecond, compare);
+						merge_sort_in_place(first, mid, pBuffer, nSorted, compare, bBranchless);
+						merge_sort_in_place(mid, last, pBuffer, nSortedSecond, compare, bBranchless);
 						merge_halves_with_buffer(first, mid, last, pBuffer, compare);
 					}
 					else
 					{
-						merge_sort_move(first, mid, pBuffer, nSorted, compare);
-						merge_sort_move(mid, last, pBuffer + nMid, nSortedSecond, compare);
-						merge_move_runs(pBuffer, pBuffer + nMid, pBuffer + nCount, first, compare);
+						merge_sort_move(first, mid, pBuffer, nSorted, compare, bBranchless);
+						merge_sort_move(mid, last, pBuffer + nMid, nSortedSecond, compare, bBranchless);
+						merge_move_runs(pBuffer, pBuffer + nMid, pBuffer + nCount, first, compare, bBranchless);
 					}
 				}
 			}
@@ -665,7 +842,7 @@ namespace eastl
 		// Moves the non-empty range [first, last), whose first nSorted elements are known to be sorted when nSorted > 0,
 		// sorted, to pDest, which holds at least (last - first) elements.
 		template <typename RandomAccessIterator, typename T, typename difference_type, typename StrictWeakOrdering>
-		void merge_sort_move(RandomAccessIterator first, RandomAccessIterator last, T* pDest, difference_type nSorted, StrictWeakOrdering& compare)
+		void merge_sort_move(RandomAccessIterator first, RandomAccessIterator last, T* pDest, difference_type nSorted, StrictWeakOrdering& compare, bool& bBranchless)
 		{
 			const difference_type nCount = last - first;
 
@@ -680,9 +857,9 @@ namespace eastl
 			{
 				const difference_type nMid = nCount / 2;
 
-				merge_sort_in_place(first, first + nMid, pDest, nSorted, compare);
-				merge_sort_in_place(first + nMid, last, pDest + nMid, difference_type(0), compare);
-				merge_move_runs(first, first + nMid, last, pDest, compare);
+				merge_sort_in_place(first, first + nMid, pDest, nSorted, compare, bBranchless);
+				merge_sort_in_place(first + nMid, last, pDest + nMid, difference_type(0), compare, bBranchless);
+				merge_move_runs(first, first + nMid, last, pDest, compare, bBranchless);
 			}
 		}
 	}
@@ -705,7 +882,10 @@ namespace eastl
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
 
 		if((last - first) > 1)
-			Internal::merge_sort_in_place(first, last, pBuffer, difference_type(0), compare);
+		{
+			bool bBranchless = false;
+			Internal::merge_sort_in_place(first, last, pBuffer, difference_type(0), compare, bBranchless);
+		}
 	}
 
 	template <typename RandomAccessIterator, typename T>
@@ -752,8 +932,9 @@ namespace eastl
 
 					Internal::merge_sort_construct_buffer(first, pBuffer, nHalf, eastl::is_trivially_default_constructible<value_type>());
 
-					Internal::merge_sort_in_place(first, mid, pBuffer, nSorted, compare);
-					Internal::merge_sort_in_place(mid, last, pBuffer, nSorted - nHalf, compare);
+					bool bBranchless = false;
+					Internal::merge_sort_in_place(first, mid, pBuffer, nSorted, compare, bBranchless);
+					Internal::merge_sort_in_place(mid, last, pBuffer, nSorted - nHalf, compare, bBranchless);
 					Internal::merge_halves_with_buffer(first, mid, last, pBuffer, compare);
 
 					eastl::destruct(pBuffer, pBuffer + nHalf);
@@ -1077,17 +1258,6 @@ namespace eastl
 		// - for arithmetic elements compared with less or greater, partitions in blocks of 64 elements without branching
 		//   on the comparisons (Edelkamp and Weiss, "BlockQuicksort", 2016), unless a sample suggests that the branches
 		//   would be predicted.
-
-		template <typename T, typename Compare>
-		struct is_branchless_partition : false_type {};
-		template <typename T>
-		struct is_branchless_partition<T, eastl::less<T>> : is_arithmetic<T> {};
-		template <typename T>
-		struct is_branchless_partition<T, eastl::greater<T>> : is_arithmetic<T> {};
-		template <typename T>
-		struct is_branchless_partition<T, eastl::less<void>> : is_arithmetic<T> {};
-		template <typename T>
-		struct is_branchless_partition<T, eastl::greater<void>> : is_arithmetic<T> {};
 
 		template <typename RandomAccessIterator, typename Compare>
 		void pdq_insertion_sort(RandomAccessIterator first, RandomAccessIterator last, Compare& compare)

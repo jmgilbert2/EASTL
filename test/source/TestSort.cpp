@@ -1141,6 +1141,64 @@ int TestSort()
 			EATEST_VERIFY((moveOnly[i - 1].mVal / 1000) <= (moveOnly[i].mVal / 1000));
 	}
 
+	// stable_sort and merge_sort_buffer merge arithmetic elements compared with less or greater without branches where
+	// the runs interleave unpredictably, as random ones do. Doubles show whether that stays stable: -0.0 and 0.0 are
+	// equivalent, so the signs of the zeros must stay in their original order. Zero is a middle key, so that ties between
+	// zeros reach both ends of the merges, and random keys of 17 or 65 values make runs that interleave unpredictably
+	// and still tie often.
+	{
+		auto keyOf = [&rng](int order, int size, int i)
+		{
+			const eastl_ssize_t half = size / 2;
+
+			switch(order)
+			{
+				case 0:  return double(((i * 7919) % 97) - 48);        // Scattered, with duplicates.
+				case 1:  return double(rng.RandRange(-8, 9));           // Random, 17 values.
+				case 2:  return double(rng.RandRange(-32, 33));         // Random, 65 values.
+				case 3:  return double(rng.RandRange(-half, half + 1)); // Random.
+				case 4:  return double((i % 30) - 15);                  // Sawtooth.
+				default: return double(half - i);                       // Reversed.
+			}
+		};
+		auto zeroSigns = [](const vector<double>& values)
+		{
+			vector<int> signs;
+			for(double value : values)
+			{
+				if(value == 0.0)
+					signs.push_back(std::signbit(value) ? 1 : 0);
+			}
+			return signs;
+		};
+
+		const int sizes[] = { 33, 64, 65, 100, 257, 1000, 4097 };
+		for(int size : sizes)
+		{
+			for(int order = 0; order < 6; order++)
+			{
+				vector<double> values;
+				for(int i = 0; i < size; i++)
+				{
+					const double key = keyOf(order, size, i);
+					values.push_back(((key == 0.0) && ((i % 3) == 1)) ? -0.0 : key);
+				}
+
+				vector<double> a(values), b(values), c(values), buffer(values.size());
+				stable_sort(a.begin(), a.end());
+				stable_sort(b.begin(), b.end(), greater<double>());
+				merge_sort_buffer(c.begin(), c.end(), buffer.data(), less<double>());
+
+				EATEST_VERIFY(is_sorted(a.begin(), a.end()) && (zeroSigns(a) == zeroSigns(values)));
+				EATEST_VERIFY(is_sorted(b.begin(), b.end(), greater<double>()) && (zeroSigns(b) == zeroSigns(values)));
+				EATEST_VERIFY(is_sorted(c.begin(), c.end()) && (zeroSigns(c) == zeroSigns(values)));
+
+				sort(values.begin(), values.end());
+				EATEST_VERIFY((a == values) && (c == values)); // Equal as doubles: -0.0 == 0.0.
+			}
+		}
+	}
+
 	// merge_sort_buffer, tim_sort_buffer and insertion_sort: each element is there once, in order of key, then of original
 	// position, for sizes around the insertion sort lengths and tim_sort's minimum run, and several input orders.
 	{
