@@ -937,41 +937,47 @@ namespace eastl
 			}
 		}
 
-		// Swaps the median of the first, middle and last elements into *first. The three are sorted in place, so nothing is
-		// copied, and the last one is then not less than the pivot, which bounds the upward scan of partition_around_first.
-		// (Tukey's ninther, the median of three medians of three, was measured about 10% slower on random data.)
+		// Partitions [first, last), of at least 3 elements, around the median of its first, middle and last elements, and
+		// returns the cut: no element of [first, cut) is greater than the pivot and none of [cut, last) is less. Both parts
+		// are non-empty, and the scans need no bounds checks. (Tukey's ninther, the median of three medians of three, was
+		// measured about 10% slower on random data.)
+		//
+		// A trivially copyable pivot is copied, which nothing can observe: the whole range is partitioned around the copy
+		// (Hoare partition), as EASTL did before. That is the fastest for such elements; partitioning around the median in
+		// place was up to 24% slower on sorted, reversed and sawtooth ints.
 		template <typename RandomAccessIterator, typename Compare>
-		inline void move_median_to_first(RandomAccessIterator first, RandomAccessIterator last, Compare& compare)
+		inline RandomAccessIterator partition_around_median(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, true_type)
 		{
-			const RandomAccessIterator middle = first + (last - first) / 2;
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
 
-			Internal::sort_three(first, middle, last - 1, compare);
-			eastl::iter_swap(first, middle);
+			return eastl::get_partition<RandomAccessIterator, value_type, Compare&>(first, last,
+				eastl::median<value_type, Compare&>(*first, *(first + (last - first) / 2), *(last - 1), compare), compare);
 		}
 
-		// Partitions [first + 1, last) around the pivot *first (Hoare partition) and returns the cut: no element of
-		// [first, cut) is greater than the pivot and none of [cut, last) is less. Both parts are non-empty. The pivot stays
-		// in place while the others are compared with it, so it is never copied, and elements are only swapped. The scans
-		// need no bounds checks: the pivot stops the downward one, and move_median_to_first left an element that isn't
-		// less than the pivot after it, which stops the upward one.
+		// Other pivots aren't copied: the three elements are sorted in place with swaps, which leaves the median in the
+		// middle, and the others are partitioned around it where it is, following it when a swap moves it. So elements are
+		// only swapped, and the sorted first and last elements bound the scans.
 		template <typename RandomAccessIterator, typename Compare>
-		RandomAccessIterator partition_around_first(RandomAccessIterator first, RandomAccessIterator last, Compare& compare)
+		RandomAccessIterator partition_around_median(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, false_type)
 		{
+			RandomAccessIterator pivot = first + (last - first) / 2;
+			Internal::sort_three(first, pivot, last - 1, compare);
+
 			RandomAccessIterator lower = first + 1;
-			RandomAccessIterator upper = last;
+			RandomAccessIterator upper = last - 1;
 
 			for(;;)
 			{
-				while(compare(*lower, *first))
+				while(compare(*lower, *pivot))
 				{
-					EASTL_VALIDATE_COMPARE(!compare(*first, *lower)); // Validate that the compare function is sane.
+					EASTL_VALIDATE_COMPARE(!compare(*pivot, *lower)); // Validate that the compare function is sane.
 					++lower;
 				}
 
 				--upper;
-				while(compare(*first, *upper))
+				while(compare(*pivot, *upper))
 				{
-					EASTL_VALIDATE_COMPARE(!compare(*upper, *first)); // Validate that the compare function is sane.
+					EASTL_VALIDATE_COMPARE(!compare(*upper, *pivot)); // Validate that the compare function is sane.
 					--upper;
 				}
 
@@ -979,6 +985,12 @@ namespace eastl
 					return lower;
 
 				eastl::iter_swap(lower, upper);
+
+				if(pivot == lower)
+					pivot = upper;
+				else if(pivot == upper)
+					pivot = lower;
+
 				++lower;
 			}
 		}
@@ -999,8 +1011,8 @@ namespace eastl
 				}
 
 				--maxDepth;
-				Internal::move_median_to_first(first, last, compare);
-				const RandomAccessIterator cut = Internal::partition_around_first(first, last, compare);
+				const RandomAccessIterator cut = Internal::partition_around_median(first, last, compare,
+					eastl::is_trivially_copyable<typename eastl::iterator_traits<RandomAccessIterator>::value_type>());
 
 				Internal::quick_sort_impl(cut, last, maxDepth, compare);
 				last = cut;
@@ -1019,15 +1031,16 @@ namespace eastl
 	template<typename RandomAccessIterator, typename Compare>
 	inline void nth_element(RandomAccessIterator first, RandomAccessIterator nth, RandomAccessIterator last, Compare compare)
 	{
+		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
+
 		while((last - first) > kQuickSortLimit)
 		{
-			Internal::move_median_to_first(first, last, compare);
-			const RandomAccessIterator cut = Internal::partition_around_first(first, last, compare);
+			const RandomAccessIterator cut = Internal::partition_around_median(first, last, compare, eastl::is_trivially_copyable<value_type>());
 
-			if(nth < cut)
-				last = cut;
-			else
+			if(cut <= nth)
 				first = cut;
+			else
+				last = cut;
 		}
 
 		eastl::insertion_sort<RandomAccessIterator, Compare>(first, last, compare);
