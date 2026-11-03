@@ -1141,6 +1141,76 @@ int TestSort()
 			EATEST_VERIFY((moveOnly[i - 1].mVal / 1000) <= (moveOnly[i].mVal / 1000));
 	}
 
+	// merge_sort_buffer, tim_sort_buffer and insertion_sort: each element is there once, in order of key, then of original
+	// position, for sizes around the insertion sort lengths and tim_sort's minimum run, and several input orders.
+	{
+		struct Item { int mKey; int mIndex; };
+		auto itemLess = [](const Item& a, const Item& b) { return a.mKey < b.mKey; };
+		auto keyOf = [](int order, int size, int i)
+		{
+			switch(order)
+			{
+				case 0:  return (i * 7919) % 97;                       // Scattered, with duplicates.
+				case 1:  return i;                                     // Sorted.
+				case 2:  return size - i;                              // Reversed.
+				case 3:  return i % 30;                                // Sawtooth.
+				case 4:  return ((i % 50) == 7) ? ((i * 7919) % 97) : i; // Nearly sorted.
+				default: return (i < (size / 2)) ? i : (size - i);     // Organ pipe.
+			}
+		};
+		auto isStablySorted = [&](const vector<Item>& items, int order, int size)
+		{
+			bool ok = ((int)items.size() == size);
+			for(int i = 0; ok && (i < size); i++)
+			{
+				ok = (items[i].mIndex >= 0) && (items[i].mIndex < size) && (items[i].mKey == keyOf(order, size, items[i].mIndex));
+				if(ok && (i > 0))
+					ok = (items[i - 1].mKey < items[i].mKey) || ((items[i - 1].mKey == items[i].mKey) && (items[i - 1].mIndex < items[i].mIndex));
+			}
+			return ok;
+		};
+
+		const int sizes[] = { 0, 1, 2, 3, 23, 24, 25, 31, 32, 33, 63, 64, 65, 127, 128, 129, 200, 1000, 1025 };
+		for(int size : sizes)
+		{
+			for(int order = 0; order < 6; order++)
+			{
+				vector<Item> items, buffer(size);
+				for(int i = 0; i < size; i++)
+					items.push_back(Item{keyOf(order, size, i), i});
+
+				vector<Item> a(items);
+				merge_sort_buffer(a.begin(), a.end(), buffer.data(), itemLess);
+				EATEST_VERIFY(isStablySorted(a, order, size));
+
+				vector<Item> b(items);
+				tim_sort_buffer(b.begin(), b.end(), buffer.data(), itemLess);
+				EATEST_VERIFY(isStablySorted(b, order, size));
+
+				if(size <= 200)
+				{
+					vector<Item> c(items);
+					insertion_sort(c.begin(), c.end(), itemLess);
+					EATEST_VERIFY(isStablySorted(c, order, size));
+				}
+			}
+		}
+
+		// insertion_sort moves no element that is already in place.
+		TestObject::Reset();
+		{
+			vector<TestObject> objects;
+			for(int i = 0; i < 100; i++)
+				objects.push_back(TestObject(i));
+			const int64_t movesBefore = TestObject::sTOMoveCtorCount + TestObject::sTOMoveAssignCount;
+			insertion_sort(objects.begin(), objects.end());
+			EATEST_VERIFY(TestObject::sTOMoveCtorCount + TestObject::sTOMoveAssignCount == movesBefore);
+			EATEST_VERIFY(is_sorted(objects.begin(), objects.end()));
+		}
+		EATEST_VERIFY(TestObject::IsClear());
+		TestObject::Reset();
+	}
+
 	#if 0 // Disabled because it takes a long time and thus far seems to show no bug in quick_sort.
 	{
 		// Regression of Coverity report for Madden 2014 that quick_sort is reading beyond an array bounds within insertion_sort_simple.
