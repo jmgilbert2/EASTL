@@ -1210,15 +1210,27 @@ namespace eastl
 	///
 	/// Rearranges [first, last) so that *nth is the element that would be there if the range were sorted, with no
 	/// element before it greater and none after it less. The range is partitioned the way quick_sort does it, only
-	/// continuing with the part that holds nth.
+	/// continuing with the part that holds nth. Like quick_sort, it stops partitioning after 2 * log2(n) partitions,
+	/// which only inputs made to defeat the median of three reach, and then selects with a heap (introselect), so that it
+	/// is O(n log n) in the worst case instead of O(n^2).
 	///
 	template<typename RandomAccessIterator, typename Compare>
 	inline void nth_element(RandomAccessIterator first, RandomAccessIterator nth, RandomAccessIterator last, Compare compare)
 	{
-		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
+		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
+		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
 
-		while((last - first) > kQuickSortLimit)
+		if(nth == last)
+			return;
+
+		for(difference_type maxDepth = 2 * Internal::Log2(last - first); (last - first) > kQuickSortLimit; --maxDepth)
 		{
+			if(maxDepth <= 0)
+			{
+				eastl::partial_sort<RandomAccessIterator, Compare&>(first, nth + 1, last, compare);
+				return;
+			}
+
 			const RandomAccessIterator cut = Internal::partition_around_median(first, last, compare, Internal::is_pivot_copy_trivial<value_type>());
 
 			if(cut <= nth)
