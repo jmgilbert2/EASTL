@@ -1765,7 +1765,8 @@ namespace eastl
 
 			iCurrent = iNext = first;
 			eastl::advance(iNext, nSpace);
-			
+			ForwardIterator iLastSwapped = last;
+
 			for(bSwapped = false; iNext != last; iCurrent++, (void)iNext++)
 			{
 				if(compare(*iNext, *iCurrent))
@@ -1773,8 +1774,15 @@ namespace eastl
 					EASTL_VALIDATE_COMPARE(!compare(*iCurrent, *iNext)); // Validate that the compare function is sane.
 					eastl::iter_swap(iCurrent, iNext);
 					bSwapped = true;
+					iLastSwapped = iNext;
 				}
 			}
+
+			// With a gap of 1 this is a bubble sort pass: the elements from the last one swapped on are in their final
+			// place, so the next pass ends there. It also makes each pass shorter than the previous one, whatever the
+			// comparator answers, which a comparator that always reports a pair out of order would otherwise never end.
+			if(nSpace == 1)
+				last = iLastSwapped;
 		}
 	} // comb_sort
 

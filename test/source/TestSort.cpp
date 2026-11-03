@@ -923,6 +923,23 @@ int TestSort()
 		test_stable_sort(list<uint16_t>(),   0);	// Test stable_partition on bidirectional iterator (not random access)
 	}
 
+	// comb_sort ends with a comparator that reports every pair of distinct elements out of order (it then makes at
+	// most one pass per element with a gap of 1). The comparator stops reporting that after a million calls, so that a
+	// version that doesn't end still returns here. Where EASTL validates comparators, the first such answer asserts.
+	#if !EASTL_VALIDATE_COMPARE_ENABLED
+	{
+		static int sCallCount;
+		sCallCount = 0;
+		auto notEqual = [](int a, int b) { return (++sCallCount <= 1000000) && (a != b); };
+		vector<int> intArray;
+		for(int i = 0; i < 100; i++)
+			intArray.push_back((i * 37) % 100);
+		comb_sort(intArray.begin(), intArray.end(), notEqual);
+		EATEST_VERIFY(sCallCount < 20000);
+		EATEST_VERIFY(intArray.size() == 100);
+	}
+	#endif
+
 	#if 0 // Disabled because it takes a long time and thus far seems to show no bug in quick_sort.
 	{
 		// Regression of Coverity report for Madden 2014 that quick_sort is reading beyond an array bounds within insertion_sort_simple.
