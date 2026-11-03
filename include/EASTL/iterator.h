@@ -145,7 +145,9 @@ namespace eastl
 	/// else *it itself (an iterator that returns a proxy by value). Like swap, algorithms call it unqualified, so that
 	/// an iterator can provide its own iter_move, found by argument-dependent lookup, when moving through its proxy
 	/// takes something else: tuple_vector's iterator returns a tuple<Ts&&...>. This is the iter_move customization
-	/// point that C++20's std::ranges::iter_move uses, as a plain function like eastl::swap.
+	/// point that C++20's std::ranges::iter_move uses, as a plain function like eastl::swap. It takes the iterator by
+	/// value, as the algorithms pass iterators: algorithms call it with expressions like last - 1, and when it bound them
+	/// to a const reference, MSVC no longer inlined adjust_heap into sort_heap (heap_sort of ints was 2-4% slower).
 	///
 	/// Example usage:
 	///     using eastl::iter_move; // Only needed outside namespace eastl.
@@ -158,7 +160,7 @@ namespace eastl
 	}
 
 	template <typename Iterator>
-	EA_CPP14_CONSTEXPR internal::iter_move_result_t<decltype(*eastl::declval<const Iterator&>())> iter_move(const Iterator& it) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(*it))
+	EA_CPP14_CONSTEXPR internal::iter_move_result_t<decltype(*eastl::declval<const Iterator&>())> iter_move(Iterator it) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(*it))
 	{
 		return static_cast<internal::iter_move_result_t<decltype(*it)>>(*it);
 	}
