@@ -1277,7 +1277,7 @@ namespace eastl
 		// copied, and is then swapped into its final position, which is returned: the elements before it are less than
 		// the pivot, the others not less. bAlreadyPartitioned tells whether no element had to be swapped.
 		template <typename RandomAccessIterator, typename Compare>
-		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, false_type)
+		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, bool /*bWhole*/, false_type)
 		{
 			RandomAccessIterator lower = first;
 			RandomAccessIterator upper = last;
@@ -1328,22 +1328,26 @@ namespace eastl
 		//
 		// That pays off when the other partition's branches would be mispredicted, which is the case for random input,
 		// while those of sorted, reversed, sawtooth and similar inputs are predicted. So a range of 1024 elements or more
-		// first has the order of 33 adjacent elements at each end sampled: along random input, rising and falling pairs
-		// change about two times out of three, and along those inputs far less often. Below 22 changes (out of 62), the
-		// range is partitioned with branches. The sample leaves out the pivot: compared with a pivot far from the median,
-		// which isn't rare in the parts of a random range, random elements change between "less" and "not less" rarely
-		// too.
+		// first has the order of 33 adjacent elements at each end sampled, and so does the whole range of a sort or
+		// nth_element (bWhole) from 256 elements on, with n / 32 + 1 of them below 1024: along random input, rising and
+		// falling pairs change about two times out of three, and along those inputs far less often. Below 22 changes out of
+		// 62 (in proportion for the smaller samples), the range is partitioned with branches. (Without the sample below 1024
+		// elements, nth_element on 1000 reversed ints took up to 1.5 times as long as EASTL's previous introselect; sampling
+		// the parts of 256 to 1023 elements of larger ranges too made sawtooth input of 10,000 to 1M elements up to 1.12
+		// times slower.) The sample leaves out the pivot: compared with a pivot far from the median, which isn't rare in the
+		// parts of a random range, random elements change between "less" and "not less" rarely too.
 		template <typename RandomAccessIterator, typename Compare>
-		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, true_type)
+		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, bool bWhole, true_type)
 		{
 			typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
 
-			if((last - first) >= 1024)
+			if((last - first) >= (bWhole ? 256 : 1024))
 			{
+				const int nPairs = ((last - first) >= 1024) ? 32 : int((last - first) / 32);
 				int nChanges = 0;
 				bool bPrevious = compare(*(first + 2), *(first + 1));
 
-				for(int i = 2; i <= 32; i++)
+				for(int i = 2; i <= nPairs; i++)
 				{
 					const bool bFalling = compare(*(first + (i + 1)), *(first + i));
 					nChanges += int(bFalling != bPrevious);
@@ -1352,15 +1356,15 @@ namespace eastl
 
 				bPrevious = compare(*(last - 2), *(last - 1));
 
-				for(int i = 2; i <= 32; i++)
+				for(int i = 2; i <= nPairs; i++)
 				{
 					const bool bFalling = compare(*(last - (i + 1)), *(last - i));
 					nChanges += int(bFalling != bPrevious);
 					bPrevious = bFalling;
 				}
 
-				if(nChanges < 22)
-					return Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, false_type());
+				if((nChanges * 31) < (22 * (nPairs - 1)))
+					return Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, bWhole, false_type());
 			}
 
 			const value_type pivot(*first);
@@ -1590,7 +1594,7 @@ namespace eastl
 
 		EA_DISABLE_VC_WARNING(4702) // unreachable code (MSVC reports it for comparators that would make a scan endless)
 		template <typename RandomAccessIterator, typename Compare, typename Branchless>
-		void pdq_sort(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, int nBadAllowed, bool bLeftmost, Branchless branchless)
+		void pdq_sort(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, int nBadAllowed, bool bLeftmost, bool bWhole, Branchless branchless)
 		{
 			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
 
@@ -1616,9 +1620,10 @@ namespace eastl
 				}
 
 				bool bAlreadyPartitioned;
-				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, branchless);
+				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, bWhole, branchless);
 				const difference_type nSizeLeft  = pivotPosition - first;
 				const difference_type nSizeRight = last - (pivotPosition + 1);
+				bWhole = false;
 
 				if((nSizeLeft < (nSize / 8)) || (nSizeRight < (nSize / 8)))
 				{
@@ -1634,7 +1639,7 @@ namespace eastl
 				        Internal::pdq_partial_insertion_sort(pivotPosition + 1, last, compare))
 					return;
 
-				Internal::pdq_sort(first, pivotPosition, compare, nBadAllowed, bLeftmost, branchless);
+				Internal::pdq_sort(first, pivotPosition, compare, nBadAllowed, bLeftmost, false, branchless);
 				first = pivotPosition + 1;
 				bLeftmost = false;
 			}
@@ -1651,6 +1656,7 @@ namespace eastl
 			typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
 
 			bool bLeftmost = true;
+			bool bWhole = true;
 			int nBadAllowed = int(Internal::Log2(last - first));
 			uint32_t nRandom = uint32_t(last - first) | 1u; // Not 0, which xorshift32 would keep.
 
@@ -1676,7 +1682,8 @@ namespace eastl
 				}
 
 				bool bAlreadyPartitioned;
-				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, branchless);
+				const RandomAccessIterator pivotPosition = Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, bWhole, branchless);
+				bWhole = false;
 
 				if(nth == pivotPosition)
 					return;
@@ -1758,7 +1765,7 @@ namespace eastl
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
 
 		if((last - first) > 1)
-			Internal::pdq_sort(first, last, compare, int(Internal::Log2(last - first)), true,
+			Internal::pdq_sort(first, last, compare, int(Internal::Log2(last - first)), true, true,
 				Internal::is_branchless_partition<value_type, typename eastl::remove_cvref<Compare>::type>());
 	}
 
