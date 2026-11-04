@@ -359,8 +359,9 @@ private:
 	template<typename U, typename V, typename... Us>
 	friend class TupleVecImpl;
 
+	// Qualified, since an unqualified friend would declare a new TupleVecInternal::move_iterator.
 	template<typename U>
-	friend class move_iterator;
+	friend class eastl::move_iterator;
 public:
 	typedef eastl::random_access_iterator_tag iterator_category;
 	typedef tuple<Ts...> value_type;

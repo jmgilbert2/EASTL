@@ -1337,6 +1337,18 @@ int TestTupleVector()
 			}
 		}
 
+		// dereference move-iters: they move the elements through a tuple of rvalue references
+		{
+			tuple_vector<int, MoveOnlyType> srcMoveVec;
+			srcMoveVec.emplace_back(1, MoveOnlyType(1));
+
+			tuple<int, MoveOnlyType> moved(*make_move_iterator(srcMoveVec.begin()));
+
+			EATEST_VERIFY(get<0>(moved) == 1);
+			EATEST_VERIFY(get<1>(moved) == MoveOnlyType(1));
+			EATEST_VERIFY(srcMoveVec.get<1>()[0] == MoveOnlyType(0));
+		}
+
 		srcVec.clear();
 		EATEST_VERIFY(TestObject::IsClear());
 
