@@ -199,12 +199,13 @@ namespace Internal
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
 		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
 
-		template <typename T, typename = typename enable_if<is_constructible<ValueType, T&&>::value>::type>
+		// Excludes TupleLeaf so that it can't stand in for a deleted copy or move by building the element from the leaf.
+		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value && is_constructible<ValueType, T&&>::value>>
 		explicit EA_CONSTEXPR TupleLeaf(T&& t)
 			: mValue(eastl::forward<T>(t))
 		{
 		}
-		
+
 		TupleLeaf(const TupleLeaf&) = default;
 		TupleLeaf(TupleLeaf&&) noexcept = default;
 
@@ -261,7 +262,7 @@ namespace Internal
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
 		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
 
-		template <typename T, typename = typename enable_if<is_constructible<ValueType, T&&>::value>::type>
+		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value && is_constructible<ValueType, T&&>::value>>
 		explicit EA_CONSTEXPR TupleLeaf(T&& t)
 			: mValue(eastl::forward<T>(t))
 		{

@@ -85,6 +85,23 @@ struct FromAnything
 	template <typename T> FromAnything(const T&) {}
 };
 
+// Not movable, but constructible from anything else, so a tuple of it could be "moved" by building the element from
+// the tuple's internals.
+struct DeletedMoveFromAnything
+{
+	DeletedMoveFromAnything() = default;
+	DeletedMoveFromAnything(DeletedMoveFromAnything&&) = delete;
+	template <typename T> DeletedMoveFromAnything(T&&) {}
+};
+
+struct DeletedMoveFromAnythingNonEmpty
+{
+	int mX = 0;
+	DeletedMoveFromAnythingNonEmpty() = default;
+	DeletedMoveFromAnythingNonEmpty(DeletedMoveFromAnythingNonEmpty&&) = delete;
+	template <typename T> DeletedMoveFromAnythingNonEmpty(T&&) {}
+};
+
 }  // namespace TestTupleInternal
 
 #if EASTL_INLINE_VARIABLE_ENABLED
@@ -901,6 +918,11 @@ int TestTuple()
 		static_assert(!is_swappable_v<tuple<NoCopyMove>>, "tuple<NoCopyMove> is not swappable");
 		static_assert(!is_move_constructible_v<tuple<NoCopyMoveNonEmpty>>, "tuple<NoCopyMoveNonEmpty> is not move constructible");
 		static_assert(!is_move_assignable_v<tuple<NoCopyMoveNonEmpty>>, "tuple<NoCopyMoveNonEmpty> is not move assignable");
+		static_assert(!is_move_constructible_v<tuple<DeletedMoveFromAnything>>, "tuple<DeletedMoveFromAnything> is not move constructible");
+		static_assert(!is_move_constructible_v<tuple<DeletedMoveFromAnythingNonEmpty>>, "tuple<DeletedMoveFromAnythingNonEmpty> is not move constructible");
+		static_assert(!is_move_constructible_v<tuple<int, DeletedMoveFromAnythingNonEmpty>>, "tuple<int, DeletedMoveFromAnythingNonEmpty> is not move constructible");
+		static_assert(is_move_constructible_v<tuple<int, MoveOnlyType>> && !is_copy_constructible_v<tuple<int, MoveOnlyType>>, "tuple<int, MoveOnlyType> is only moved");
+		static_assert(is_copy_constructible_v<tuple<int, TestObject>> && is_move_constructible_v<tuple<int, TestObject>>, "tuple<int, TestObject> is copied and moved");
 
 		static_assert(is_trivially_copy_constructible_v<tuple<int>>, "EASTL extension, tuple<int> is trivially copy constructible.");
 		static_assert(is_trivially_destructible_v<tuple<int>>, "tuple<int> is trivially destructible");
