@@ -1327,27 +1327,23 @@ namespace eastl
 		// then swapped in pairs.
 		//
 		// That pays off when the other partition's branches would be mispredicted, which is the case for random input,
-		// while those of sorted, reversed, sawtooth and similar inputs are predicted. So a range of 256 elements or more
-		// first has the order of adjacent elements at each end sampled, 33 of them from 1024 elements on and n / 32 + 1
-		// below: along random input, rising and falling pairs change about two times out of three, and along those inputs
-		// far less often. Below 22 changes out of 62 (in proportion for the smaller samples), the range is partitioned with
-		// branches. (When only ranges of 1024 elements or more were sampled, nth_element on 1000 reversed ints took up to
-		// 1.5 times as long as EASTL's previous introselect, and sort on 1000 rotated sorted ints 1.4 times as long as its
-		// previous introsort; with this sample, 1.1 and 1.3 times.) The sample leaves out the pivot: compared with a pivot
-		// far from the median, which isn't rare in the parts of a random range, random elements change between "less" and
-		// "not less" rarely too.
+		// while those of sorted, reversed, sawtooth and similar inputs are predicted. So a range of 1024 elements or more
+		// first has the order of 33 adjacent elements at each end sampled: along random input, rising and falling pairs
+		// change about two times out of three, and along those inputs far less often. Below 22 changes (out of 62), the
+		// range is partitioned with branches. The sample leaves out the pivot: compared with a pivot far from the median,
+		// which isn't rare in the parts of a random range, random elements change between "less" and "not less" rarely
+		// too.
 		template <typename RandomAccessIterator, typename Compare>
 		RandomAccessIterator pdq_partition_right(RandomAccessIterator first, RandomAccessIterator last, Compare& compare, bool& bAlreadyPartitioned, true_type)
 		{
 			typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
 
-			if((last - first) >= 256)
+			if((last - first) >= 1024)
 			{
-				const int nPairs = ((last - first) >= 1024) ? 32 : int((last - first) / 32);
 				int nChanges = 0;
 				bool bPrevious = compare(*(first + 2), *(first + 1));
 
-				for(int i = 2; i <= nPairs; i++)
+				for(int i = 2; i <= 32; i++)
 				{
 					const bool bFalling = compare(*(first + (i + 1)), *(first + i));
 					nChanges += int(bFalling != bPrevious);
@@ -1356,14 +1352,14 @@ namespace eastl
 
 				bPrevious = compare(*(last - 2), *(last - 1));
 
-				for(int i = 2; i <= nPairs; i++)
+				for(int i = 2; i <= 32; i++)
 				{
 					const bool bFalling = compare(*(last - (i + 1)), *(last - i));
 					nChanges += int(bFalling != bPrevious);
 					bPrevious = bFalling;
 				}
 
-				if((nChanges * 31) < (22 * (nPairs - 1)))
+				if(nChanges < 22)
 					return Internal::pdq_partition_right(first, last, compare, bAlreadyPartitioned, false_type());
 			}
 
