@@ -16,6 +16,7 @@
 #include "EASTLTest.h"
 #include <EASTL/sort.h>
 #include <EASTL/bonus/sort_extra.h>
+#include <EASTL/bonus/tuple_vector.h>
 #include <EASTL/vector.h>
 #include <EASTL/list.h>
 #include <EASTL/deque.h>
@@ -939,6 +940,67 @@ int TestSort()
 		EATEST_VERIFY(intArray.size() == 100);
 	}
 	#endif
+
+	// sort and nth_element pick the pivot by iterator and partition around it in place: they only move and swap
+	// elements, never copy them, so they also work on move-only elements, including tuple_vector's.
+	{
+		// A move-only type whose move operations are defaulted is trivially copyable, but can't be copied.
+		struct DefaultedMoveOnly
+		{
+			int mKey;
+			explicit DefaultedMoveOnly(int key) : mKey(key) {}
+			DefaultedMoveOnly(DefaultedMoveOnly&&) = default;
+			DefaultedMoveOnly& operator=(DefaultedMoveOnly&&) = default;
+		};
+		static_assert(eastl::is_trivially_copyable<DefaultedMoveOnly>::value && !eastl::is_copy_constructible<DefaultedMoveOnly>::value, "");
+		auto keyLess = [](const DefaultedMoveOnly& a, const DefaultedMoveOnly& b) { return a.mKey < b.mKey; };
+
+		vector<DefaultedMoveOnly> moveOnly;
+		for(int i = 0; i < 500; i++)
+			moveOnly.push_back(DefaultedMoveOnly((i * 7919) % 97));
+		sort(moveOnly.begin(), moveOnly.end(), keyLess);
+		EATEST_VERIFY(is_sorted(moveOnly.begin(), moveOnly.end(), keyLess));
+		nth_element(moveOnly.begin(), moveOnly.begin() + 100, moveOnly.end(), [](const DefaultedMoveOnly& a, const DefaultedMoveOnly& b) { return b.mKey < a.mKey; });
+		vector<int> descending;
+		for(int i = 0; i < 500; i++)
+			descending.push_back((i * 7919) % 97);
+		sort(descending.begin(), descending.end(), greater<int>());
+		EATEST_VERIFY(moveOnly[100].mKey == descending[100]);
+	}
+	{
+		vector<int> keys;
+		for(int i = 0; i < 500; i++)
+			keys.push_back((i * 7919) % 97); // Many duplicates.
+		sort(keys.begin(), keys.end());
+
+		TestObject::Reset();
+		{
+			vector<TestObject> objects;
+			for(int i = 0; i < 500; i++)
+				objects.push_back(TestObject((i * 7919) % 97));
+			const int64_t copiesBefore = TestObject::sTOCopyCtorCount + TestObject::sTOCopyAssignCount;
+
+			sort(objects.begin(), objects.end());
+			EATEST_VERIFY(is_sorted(objects.begin(), objects.end()));
+			nth_element(objects.begin(), objects.begin() + 250, objects.end(), [](const TestObject& a, const TestObject& b) { return b < a; });
+			nth_element(objects.begin(), objects.begin() + 100, objects.end());
+			EATEST_VERIFY(objects[100].mX == keys[100]);
+			EATEST_VERIFY(TestObject::sTOCopyCtorCount + TestObject::sTOCopyAssignCount == copiesBefore);
+		}
+		EATEST_VERIFY(TestObject::IsClear());
+		TestObject::Reset();
+
+		tuple_vector<int, MoveOnlyType> moveOnly;
+		for(int i = 0; i < 500; i++)
+			moveOnly.push_back(int((i * 7919) % 97), MoveOnlyType(i));
+		auto lessKey = [](const auto& a, const auto& b) { return get<0>(a) < get<0>(b); };
+		sort(moveOnly.begin(), moveOnly.end(), lessKey);
+		EATEST_VERIFY(is_sorted(moveOnly.begin(), moveOnly.end(), lessKey));
+		for(eastl_size_t i = 0; i < moveOnly.size(); i++)
+			EATEST_VERIFY((get<1>(moveOnly[i]).mVal * 7919) % 97 == get<0>(moveOnly[i]));
+		nth_element(moveOnly.begin(), moveOnly.begin() + 100, moveOnly.end(), lessKey);
+		EATEST_VERIFY(get<0>(moveOnly[100]) == keys[100]);
+	}
 
 	#if 0 // Disabled because it takes a long time and thus far seems to show no bug in quick_sort.
 	{
