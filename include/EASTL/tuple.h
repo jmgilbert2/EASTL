@@ -183,7 +183,7 @@ namespace Internal
 	class TupleLeaf;
 
 	template <size_t I, typename ValueType, bool IsEmpty>
-	inline void swap(TupleLeaf<I, ValueType, IsEmpty>& a, TupleLeaf<I, ValueType, IsEmpty>& b)
+	inline EA_CPP20_CONSTEXPR void swap(TupleLeaf<I, ValueType, IsEmpty>& a, TupleLeaf<I, ValueType, IsEmpty>& b)
 	{
 		using eastl::swap; // Unqualified so that user-defined swaps are found via argument-dependent lookup.
 		swap(a.getInternal(), b.getInternal());
@@ -235,7 +235,7 @@ namespace Internal
 			return *this;
 		}
 
-		int swap(TupleLeaf& t)
+		EA_CPP20_CONSTEXPR int swap(TupleLeaf& t)
 		{
 			eastl::Internal::swap(*this, t);
 			return 0;
@@ -280,7 +280,7 @@ namespace Internal
 			return *this;
 		}
 
-		int swap(TupleLeaf& t)
+		EA_CPP20_CONSTEXPR int swap(TupleLeaf& t)
 		{
 			eastl::Internal::swap(*this, t);
 			return 0;
@@ -364,7 +364,7 @@ namespace Internal
 			return *this;
 		}
 
-		void swap(TupleImpl& t) { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<TupleLeaf<Indices, Ts>&>(t))...); }
+		EA_CPP20_CONSTEXPR void swap(TupleImpl& t) { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<TupleLeaf<Indices, Ts>&>(t))...); }
 	};
 
 	template <size_t I, typename Indices, typename... Ts>
@@ -820,7 +820,7 @@ public:
 		return *this;
 	}
 
-	void swap(tuple& t) { mImpl.swap(t.mImpl); }
+	EA_CPP20_CONSTEXPR void swap(tuple& t) { mImpl.swap(t.mImpl); }
 
 private:
 	typedef Internal::TupleImpl<make_index_sequence<sizeof...(Ts) + 1>, T, Ts...> Impl;
@@ -856,7 +856,7 @@ template <>
 class tuple<>
 {
 public:
-	void swap(tuple&) {}
+	EA_CPP20_CONSTEXPR void swap(tuple&) {}
 };
 
 template <size_t I, typename... Ts>
@@ -908,7 +908,7 @@ inline EA_CPP14_CONSTEXPR const T&& get(const tuple<Ts...>&& t)
 }
 
 template <typename... Ts, typename eastl::enable_if<eastl::conjunction<eastl::is_swappable<Ts>...>::value, int>::type = 0>
-inline void swap(tuple<Ts...>& a, tuple<Ts...>& b)
+inline EA_CPP20_CONSTEXPR void swap(tuple<Ts...>& a, tuple<Ts...>& b)
 {
 	a.swap(b);
 }

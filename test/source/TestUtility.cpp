@@ -725,6 +725,28 @@ static int TestUtilitySwap()
 		EATEST_VERIFY(h1.hash_function().mId == 2 && h2.hash_function().mId == 1 && h1.empty() && h2.size() == 1);
 	}
 
+#if defined(EA_COMPILER_CPP20_ENABLED)
+	// swap, the array swap, iter_swap, swap_ranges and pair's swaps are constexpr since C++20, like std's.
+	{
+		constexpr auto swapped = []
+		{
+			int a = 1, b = 2;
+			eastl::swap(a, b);
+			int x[2] = {3, 4}, y[2] = {5, 6};
+			eastl::swap(x, y);
+			eastl::iter_swap(x, x + 1);
+			eastl::swap_ranges(x, x + 1, y);
+			eastl::pair<int, long> p1(7, 8), p2(9, 10);
+			p1.swap(p2);
+			swap(p1, p2);
+			p1.swap(p2);
+			return (a == 2) && (b == 1) && (x[0] == 3) && (x[1] == 5) && (y[0] == 6) && (y[1] == 4) &&
+			       (p1.first == 9) && (p1.second == 10) && (p2.first == 7) && (p2.second == 8);
+		};
+		static_assert(swapped(), "constexpr swap");
+	}
+#endif
+
 #ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
 	{
 		// std code on EASTL types: std::swap and eastl::swap are both found by argument-dependent lookup
