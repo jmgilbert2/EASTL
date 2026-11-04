@@ -217,6 +217,8 @@ namespace Internal
 		// TupleImpl. So we explicitly implement the assignment so it isn't deleted in tuple<T&>.
 		// When ValueType isn't copy (move) assignable, the parameter is nonesuch instead, so this is no longer the
 		// copy (move) assignment: the copy assignment is then implicitly deleted, as the standard requires for tuple.
+		// The move assignment forwards the element like std::tuple's: a reference element is assigned from an lvalue,
+		// i.e. the referenced object is copied, not moved from.
 		EA_CPP20_CONSTEXPR TupleLeaf& operator=(conditional_t<is_copy_assignable<ValueType>::value, const TupleLeaf&, const nonesuch&> t)
 		{
 			mValue = t.getInternal();
@@ -224,7 +226,7 @@ namespace Internal
 		}
 		EA_CPP20_CONSTEXPR TupleLeaf& operator=(conditional_t<is_move_assignable<ValueType>::value, TupleLeaf&&, nonesuch&&> t) noexcept
 		{
-			mValue = eastl::move(t.getInternal());
+			mValue = eastl::forward<ValueType>(t.getInternal());
 			return *this;
 		}
 

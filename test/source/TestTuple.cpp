@@ -918,6 +918,37 @@ int TestTuple()
 		EATEST_VERIFY(get<0>(t1) == 3);
 	}
 
+	// Move-assigning a tuple<T&> assigns each referenced object from an lvalue, like std::tuple: the source objects are
+	// copied, not moved from, and an element type whose move assignment is deleted is fine.
+	{
+		TestObject::Reset();
+		{
+			TestObject a(1), b(2);
+			const int64_t moves = TestObject::sTOMoveAssignCount, copies = TestObject::sTOCopyAssignCount;
+			eastl::tie(a) = eastl::tie(b);
+			tuple<TestObject&> ta(a), tb(b);
+			ta = eastl::move(tb);
+			EATEST_VERIFY((a.mX == 2) && (b.mX == 2));
+			EATEST_VERIFY((TestObject::sTOMoveAssignCount == moves) && (TestObject::sTOCopyAssignCount == copies + 2));
+		}
+		EATEST_VERIFY(TestObject::IsClear());
+		TestObject::Reset();
+
+		struct NoMoveAssign
+		{
+			int mX = 0;
+			NoMoveAssign() = default;
+			NoMoveAssign& operator=(const NoMoveAssign&) = default;
+			NoMoveAssign& operator=(NoMoveAssign&&) = delete;
+		};
+		static_assert(is_move_assignable_v<tuple<NoMoveAssign&>>, "tuple<NoMoveAssign&> is move assignable");
+		NoMoveAssign x, y;
+		y.mX = 3;
+		tuple<NoMoveAssign&> tx(x), ty(y);
+		tx = eastl::move(ty);
+		EATEST_VERIFY(x.mX == 3);
+	}
+
 	// copy and move are deleted when an element can't be copied or moved, like std::tuple.
 	{
 		static_assert(!is_copy_assignable_v<tuple<const int>>, "tuple<const int> is not copy assignable");
