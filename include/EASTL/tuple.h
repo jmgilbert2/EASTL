@@ -846,7 +846,9 @@ public:
 	EA_CPP20_CONSTEXPR void swap(tuple& t) { mImpl.swap(t.mImpl); }
 
 	// C++23: swaps the elements of const tuples, i.e. the objects that a tuple of references refers to. This is what
-	// swap(*a, *b) uses for an iterator whose reference is a tuple of references (tuple_vector's).
+	// swap(*a, *b) uses for an iterator whose reference is a tuple of references (tuple_vector's). A template so that
+	// it's only instantiated when called: explicitly instantiating or dll-exporting a tuple<int> must still compile.
+	template <int = 0>
 	EA_CPP20_CONSTEXPR void swap(const tuple& t) const { mImpl.swap(t.mImpl); }
 
 private:

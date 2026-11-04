@@ -12,6 +12,10 @@ EA_DISABLE_VC_WARNING(4623 4625 4413 4510)
 
 #if EASTL_TUPLE_ENABLED
 
+// An explicit instantiation defines every non-template member, so the const swap must not break it for
+// elements that can't be swapped as const.
+template class eastl::tuple<int, float>;
+
 namespace TestTupleInternal
 {
 
