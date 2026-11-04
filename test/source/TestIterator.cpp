@@ -231,6 +231,95 @@ int TestIterator_moveIterator()
 }
 
 
+// An iterator over ints with its own iter_move, which counts its calls.
+struct IterMoveCountingIterator
+{
+	using iterator_category = eastl::bidirectional_iterator_tag;
+	using value_type        = int;
+	using difference_type   = ptrdiff_t;
+	using pointer           = int*;
+	using reference         = int&;
+
+	static int sIterMoveCount;
+	int* mp;
+
+	int& operator*() const { return *mp; }
+	IterMoveCountingIterator& operator++() { ++mp; return *this; }
+	IterMoveCountingIterator operator++(int) { IterMoveCountingIterator temp = *this; ++mp; return temp; }
+	IterMoveCountingIterator& operator--() { --mp; return *this; }
+	IterMoveCountingIterator operator--(int) { IterMoveCountingIterator temp = *this; --mp; return temp; }
+	bool operator==(const IterMoveCountingIterator& x) const { return mp == x.mp; }
+	bool operator!=(const IterMoveCountingIterator& x) const { return mp != x.mp; }
+
+	friend int&& iter_move(const IterMoveCountingIterator& it) { ++sIterMoveCount; return eastl::move(*it.mp); }
+};
+
+int IterMoveCountingIterator::sIterMoveCount = 0;
+
+int TestIterator_iterMove()
+{
+	int nErrorCount = 0;
+
+	// The default moves from an lvalue and returns anything else as it is.
+	{
+		struct ProxyIterator { int operator*() const { return 42; } };
+
+		static_assert(eastl::is_same_v<decltype(eastl::iter_move(eastl::declval<int* const&>())), int&&>, "iter_move(int*)");
+		static_assert(eastl::is_same_v<decltype(eastl::iter_move(eastl::declval<const int* const&>())), const int&&>, "iter_move(const int*)");
+		static_assert(eastl::is_same_v<decltype(eastl::iter_move(eastl::declval<const eastl::move_iterator<int*>&>())), int&&>, "iter_move(move_iterator<int*>)");
+		static_assert(eastl::is_same_v<decltype(eastl::iter_move(eastl::declval<const ProxyIterator&>())), int>, "iter_move(ProxyIterator)");
+
+		// noexcept when dereferencing is, like std's.
+		struct NothrowIterator { int& operator*() const noexcept; };
+		using eastl::iter_move;
+		static_assert(noexcept(iter_move(eastl::declval<int* const&>())), "iter_move(int*) is noexcept");
+		static_assert(noexcept(iter_move(eastl::declval<const NothrowIterator&>())), "iter_move(NothrowIterator) is noexcept");
+		static_assert(!noexcept(iter_move(eastl::declval<const ProxyIterator&>())), "iter_move(ProxyIterator) isn't noexcept");
+		static_assert(noexcept(iter_move(eastl::declval<const eastl::reverse_iterator<int*>&>())), "iter_move(reverse_iterator<int*>) is noexcept");
+		static_assert(noexcept(*eastl::declval<const eastl::move_iterator<int*>&>()), "move_iterator<int*>::operator* is noexcept");
+
+		eastl::vector<eastl::string> v = {"a", "b"};
+		eastl::string s(eastl::iter_move(v.begin()));
+		EATEST_VERIFY((s == "a") && v[0].empty());
+	}
+
+	// Algorithms and iterator adaptors move through an iterator's own iter_move, found by argument-dependent lookup.
+	{
+		using It = IterMoveCountingIterator;
+		int a[4] = {1, 2, 3, 4};
+		int b[4] = {};
+
+		It::sIterMoveCount = 0;
+		eastl::move(It{a}, It{a + 4}, b);
+		EATEST_VERIFY((It::sIterMoveCount == 4) && (b[3] == 4));
+
+		It::sIterMoveCount = 0;
+		eastl::move_backward(It{a}, It{a + 4}, b + 4);
+		EATEST_VERIFY(It::sIterMoveCount == 4);
+
+		It::sIterMoveCount = 0;
+		eastl::move(eastl::make_reverse_iterator(It{a + 4}), eastl::make_reverse_iterator(It{a}), b);
+		EATEST_VERIFY((It::sIterMoveCount == 4) && (b[0] == 4) && (b[3] == 1));
+
+		It::sIterMoveCount = 0;
+		auto moveIter = eastl::make_move_iterator(It{a + 1});
+		static_assert(eastl::is_same_v<decltype(*moveIter), int&&>, "move_iterator::operator*");
+		EATEST_VERIFY((*moveIter == 2) && (It::sIterMoveCount == 1));
+
+		It::sIterMoveCount = 0;
+		It last = eastl::remove(It{a}, It{a + 4}, 2);
+		EATEST_VERIFY((last.mp == a + 3) && (It::sIterMoveCount == 2) && (a[1] == 3) && (a[2] == 4));
+
+		It::sIterMoveCount = 0;
+		using eastl::iter_move;
+		int i = iter_move(It{a});
+		EATEST_VERIFY((i == 1) && (It::sIterMoveCount == 1));
+	}
+
+	return nErrorCount;
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // TestIterator
@@ -240,6 +329,7 @@ int TestIterator()
 	int nErrorCount = 0;
 	nErrorCount += TestIterator_advance();
 	nErrorCount += TestIterator_moveIterator();
+	nErrorCount += TestIterator_iterMove();
 
 	{
 		// reverse_iterator

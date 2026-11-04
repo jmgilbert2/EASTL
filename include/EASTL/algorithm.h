@@ -1115,7 +1115,7 @@ namespace eastl
 	move_n_impl(InputIterator first, Size n, OutputIterator result, eastl::input_iterator_tag)
 	{
 		for(; n > 0; --n)
-			*result++ = eastl::move(*first++);
+			*result++ = iter_move(first++);
 		return result;
 	}
 
@@ -1212,7 +1212,7 @@ namespace eastl
 		static BidirectionalIterator2 move_or_copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last, BidirectionalIterator2 resultEnd)
 		{
 			while(first != last)
-				*--resultEnd = eastl::move(*--last);
+				*--resultEnd = iter_move(--last);
 			return resultEnd; // resultEnd now points to the beginning of the destination sequence instead of the end.
 		}
 	};
@@ -1227,7 +1227,7 @@ namespace eastl
 			typedef typename eastl::iterator_traits<BidirectionalIterator1>::difference_type difference_type;
 
 			for(difference_type n = (last - first); n > 0; --n)
-				*--resultEnd = eastl::move(*--last);
+				*--resultEnd = iter_move(--last);
 			return resultEnd; // resultEnd now points to the beginning of the destination sequence instead of the end.
 		}
 	};
@@ -2630,7 +2630,7 @@ namespace eastl
 			{
 				if (!(*i == value))
 				{
-					*first++ = eastl::move(*i);
+					*first++ = iter_move(i);
 				}
 			}
 		}
@@ -2671,7 +2671,7 @@ namespace eastl
 			{
 				if (!predicate(*i))
 				{
-					*first++ = eastl::move(*i);
+					*first++ = iter_move(i);
 				}
 			}
 		}
@@ -2714,7 +2714,7 @@ namespace eastl
 					function(*i);
 					continue;
 				}
-				*first = eastl::move(*i);
+				*first = iter_move(i);
 				++first;
 			}
 		}
@@ -2758,7 +2758,7 @@ namespace eastl
 					function(*i);
 					continue;
 				}
-				*first = eastl::move(*i);
+				*first = iter_move(i);
 				++first;
 			}
 		}
@@ -4135,7 +4135,7 @@ namespace eastl
 		{
 			typedef typename eastl::iterator_traits<ForwardIterator>::value_type value_type;
 
-			value_type temp(eastl::move(*first));
+			value_type temp(iter_move(first));
 			ForwardIterator result = eastl::move(eastl::next(first), last, first); // Note that while our template type is BidirectionalIterator, if the actual
 			*result = eastl::move(temp);                                           // iterator is a RandomAccessIterator then this move will be a memmove for trivially copyable types.
 
@@ -4149,7 +4149,7 @@ namespace eastl
 			typedef typename eastl::iterator_traits<BidirectionalIterator>::value_type value_type;
 
 			BidirectionalIterator beforeLast = eastl::prev(last);
-			value_type temp(eastl::move(*beforeLast));
+			value_type temp(iter_move(beforeLast));
 			BidirectionalIterator result = eastl::move_backward(first, beforeLast, last); // Note that while our template type is BidirectionalIterator, if the actual
 			*first = eastl::move(temp);                                                   // iterator is a RandomAccessIterator then this move will be a memmove for trivially copyable types.
 
@@ -4268,12 +4268,12 @@ namespace eastl
 
 				for(RandomAccessIterator p = first + g; p != first;)
 				{
-					temp = eastl::move(*--p);
+					temp = iter_move(--p);
 					RandomAccessIterator p1 = p;
 					RandomAccessIterator p2 = p + m1;
 					do
 					{
-						*p1 = eastl::move(*p2);
+						*p1 = iter_move(p2);
 						p1 = p2;
 						const difference_type d = (last - p2);
 

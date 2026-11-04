@@ -241,13 +241,13 @@ namespace eastl
 
 			for (++i; i != last; ++i)
 			{
-				value_type insertValue(eastl::move(*i));
+				value_type insertValue(iter_move(i));
 				BidirectionalIterator insertPosition = i;
 
 				for (BidirectionalIterator movePosition = i; movePosition != first && compare(insertValue, *(--movePosition)); --insertPosition)
 				{
 					EASTL_VALIDATE_COMPARE(!compare(*movePosition, insertValue));
-					*insertPosition = eastl::move(*movePosition);
+					*insertPosition = iter_move(movePosition);
 				}
 
 				*insertPosition = eastl::move(insertValue);
@@ -663,19 +663,19 @@ namespace eastl
 		ForwardIterator result1 = first;
 		value_type* result2 = buffer;
 
-		*result2 = eastl::move(*first);
+		*result2 = iter_move(first);
 		++result2;
 		++first;
 		for (; first != last; ++first)
 		{
 			if (pred(*first))
 			{
-				*result1 = eastl::move(*first);
+				*result1 = iter_move(first);
 				++result1;
 			}
 			else
 			{
-				*result2 = eastl::move(*first);
+				*result2 = iter_move(first);
 				++result2;
 			}
 		}
@@ -832,12 +832,12 @@ namespace eastl
 				typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
 
 				RandomAccessIterator end(current), prev(current);
-				value_type           value(eastl::forward<value_type>(*current));
+				value_type           value(iter_move(current));
 
 				for(--prev; value < *prev; --end, (void)--prev) // We skip checking for (prev >= first) because quick_sort (our caller) makes this unnecessary.
 				{
 					EASTL_VALIDATE_COMPARE(!(*prev < value)); // Validate that the compare function is sane.
-					*end = eastl::forward<value_type>(*prev);
+					*end = iter_move(prev);
 				}
 
 				*end = eastl::forward<value_type>(value);
@@ -857,12 +857,12 @@ namespace eastl
 				typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
 
 				RandomAccessIterator end(current), prev(current);
-				value_type           value(eastl::forward<value_type>(*current));
+				value_type           value(iter_move(current));
 
 				for(--prev; compare(value, *prev); --end, (void)--prev) // We skip checking for (prev >= first) because quick_sort (our caller) makes this unnecessary.
 				{
 					EASTL_VALIDATE_COMPARE(!compare(*prev, value)); // Validate that the compare function is sane.
-					*end = eastl::forward<value_type>(*prev);
+					*end = iter_move(prev);
 				}
 
 				*end = eastl::forward<value_type>(value);
@@ -884,8 +884,8 @@ namespace eastl
 			if(*i < *first)
 			{
 				EASTL_VALIDATE_COMPARE(!(*first < *i)); // Validate that the compare function is sane.
-				value_type temp(eastl::forward<value_type>(*i));
-				*i = eastl::forward<value_type>(*first);
+				value_type temp(iter_move(i));
+				*i = iter_move(first);
 				eastl::adjust_heap<RandomAccessIterator, difference_type, value_type>
 								  (first, difference_type(0), difference_type(middle - first), difference_type(0), eastl::forward<value_type>(temp));
 			}
@@ -908,8 +908,8 @@ namespace eastl
 			if(compare(*i, *first))
 			{
 				EASTL_VALIDATE_COMPARE(!compare(*first, *i)); // Validate that the compare function is sane.
-				value_type temp(eastl::forward<value_type>(*i));
-				*i = eastl::forward<value_type>(*first);
+				value_type temp(iter_move(i));
+				*i = iter_move(first);
 				eastl::adjust_heap<RandomAccessIterator, difference_type, value_type, Compare>
 								  (first, difference_type(0), difference_type(middle - first), difference_type(0), eastl::forward<value_type>(temp), compare);
 			}

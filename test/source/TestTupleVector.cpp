@@ -995,6 +995,58 @@ int TestTupleVector()
 		}
 	}
 
+	// Algorithms move elements through the iterator's iter_move (a tuple of rvalue references) rather than copying them,
+	// so they also work on move-only elements.
+	{
+		auto greater = [](const auto& l, const auto& r) { return get<0>(l) > get<0>(r); };
+		auto isSorted = [](const auto& v) {
+			for (eastl_size_t i = 0; i < v.size(); ++i)
+				if ((get<0>(v[i]) != (int)(v.size() - i)) || (get<1>(v[i]).mX != get<0>(v[i]) * 10))
+					return false;
+			return true;
+		};
+
+		TestObject::Reset();
+		{
+			tuple_vector<int, TestObject> testVec;
+			for (int i = 1; i <= 20; ++i)
+				testVec.push_back(i, TestObject(i * 10));
+
+			const int64_t copiesBefore = TestObject::sTOCopyCtorCount + TestObject::sTOCopyAssignCount;
+			eastl::insertion_sort(testVec.begin(), testVec.end(), greater);
+			EATEST_VERIFY(isSorted(testVec));
+			eastl::reverse(testVec.begin(), testVec.end());
+			eastl::partial_sort(testVec.begin(), testVec.end(), testVec.end(), greater);
+			EATEST_VERIFY(isSorted(testVec));
+			eastl::reverse(testVec.begin(), testVec.end());
+			eastl::make_heap(testVec.begin(), testVec.end(), greater);
+			eastl::sort_heap(testVec.begin(), testVec.end(), greater);
+			EATEST_VERIFY(isSorted(testVec));
+			eastl::iter_swap(testVec.begin(), testVec.begin() + 1);
+			eastl::iter_swap(testVec.begin(), testVec.begin() + 1);
+			EATEST_VERIFY(isSorted(testVec));
+			EATEST_VERIFY(TestObject::sTOCopyCtorCount + TestObject::sTOCopyAssignCount == copiesBefore);
+		}
+		EATEST_VERIFY(TestObject::IsClear());
+		TestObject::Reset();
+
+		struct MoveOnlyX
+		{
+			int mX;
+			MoveOnlyX(int x) : mX(x) {}
+			MoveOnlyX(MoveOnlyX&&) = default;
+			MoveOnlyX& operator=(MoveOnlyX&&) = default;
+		};
+		tuple_vector<int, MoveOnlyX> moveOnlyVec;
+		for (int i = 1; i <= 20; ++i)
+			moveOnlyVec.push_back(int(i), MoveOnlyX(i * 10));
+		eastl::insertion_sort(moveOnlyVec.begin(), moveOnlyVec.end(), greater);
+		EATEST_VERIFY(isSorted(moveOnlyVec));
+		eastl::reverse(moveOnlyVec.begin(), moveOnlyVec.end());
+		eastl::partial_sort(moveOnlyVec.begin(), moveOnlyVec.end(), moveOnlyVec.end(), greater);
+		EATEST_VERIFY(isSorted(moveOnlyVec));
+	}
+
 	// Test multitude of constructors
 	{
 		MallocAllocator ma;
