@@ -569,6 +569,12 @@ namespace SwapTest
 	};
 
 	inline void swap(AdlSwappableHash& a, AdlSwappableHash& b) { eastl::swap(a.mId, b.mId); }
+
+	// Two types swappable with each other only through their own swap overloads.
+	struct Left { int mValue = 0; };
+	struct Right { int mValue = 0; };
+	inline void swap(Left& a, Right& b) { eastl::swap(a.mValue, b.mValue); }
+	inline void swap(Right& a, Left& b) { eastl::swap(a.mValue, b.mValue); }
 }
 
 
@@ -687,6 +693,16 @@ static int TestUtilitySwap()
     #endif // EASTL_VARIABLE_TEMPLATES_ENABLED
 #endif
 #endif // EASTL_VARIADIC_TEMPLATES_ENABLED
+
+	{
+		// iter_swap(a, b) is swap(*a, *b) whenever that's valid, like std::iter_swap, also for different element types.
+		SwapTest::Left left;
+		SwapTest::Right right;
+		left.mValue = 1;
+		right.mValue = 2;
+		eastl::iter_swap(&left, &right);
+		EATEST_VERIFY(left.mValue == 2 && right.mValue == 1);
+	}
 
 	{
 		// User-defined swaps found via argument-dependent lookup are used.

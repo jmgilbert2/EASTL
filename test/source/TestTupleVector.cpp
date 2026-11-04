@@ -12,6 +12,19 @@
 
 using namespace eastl;
 
+namespace TestTupleVectorInternal
+{
+	// Counts the calls of its own swap, found by argument-dependent lookup.
+	struct SwapCounter
+	{
+		int mX = 0;
+		static int sSwaps;
+		SwapCounter(int x) : mX(x) {}
+		friend void swap(SwapCounter& a, SwapCounter& b) { eastl::swap(a.mX, b.mX); ++sSwaps; }
+	};
+	int SwapCounter::sSwaps = 0;
+}
+
 int TestTupleVector()
 {
 	int nErrorCount = 0;
@@ -993,6 +1006,22 @@ int TestTupleVector()
 			if (i > 0 && get<0>(testVec[i]) == get<0>(testVec[i - 1]))
 				EATEST_VERIFY(get<1>(testVec[i - 1]) < get<1>(testVec[i]));
 		}
+	}
+
+	// iter_swap swaps tuple_vector elements one by one with their own swap (through tuple's const swap), like
+	// std::iter_swap's swap(*a, *b), rather than moving whole tuples through a temporary.
+	{
+		using TestTupleVectorInternal::SwapCounter;
+		SwapCounter::sSwaps = 0;
+
+		tuple_vector<int, SwapCounter> testVec;
+		testVec.push_back(1, SwapCounter(10));
+		testVec.push_back(2, SwapCounter(20));
+		eastl::iter_swap(testVec.begin(), testVec.begin() + 1);
+		EATEST_VERIFY((get<0>(testVec[0]) == 2) && (get<1>(testVec[0]).mX == 20) && (get<1>(testVec[1]).mX == 10));
+		EATEST_VERIFY(SwapCounter::sSwaps == 1);
+		eastl::reverse(testVec.begin(), testVec.end());
+		EATEST_VERIFY((get<1>(testVec[0]).mX == 10) && (SwapCounter::sSwaps == 2));
 	}
 
 	// Algorithms move elements through the iterator's iter_move (a tuple of rvalue references) rather than copying them,

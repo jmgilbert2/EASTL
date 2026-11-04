@@ -189,6 +189,14 @@ namespace Internal
 		swap(a.getInternal(), b.getInternal());
 	}
 
+	// For tuple's const swap: a reference element swaps the referenced objects.
+	template <size_t I, typename ValueType, bool IsEmpty>
+	inline EA_CPP20_CONSTEXPR void swap(const TupleLeaf<I, ValueType, IsEmpty>& a, const TupleLeaf<I, ValueType, IsEmpty>& b)
+	{
+		using eastl::swap;
+		swap(a.getInternal(), b.getInternal());
+	}
+
 	template <size_t I, typename ValueType, bool IsEmpty>
 	class TupleLeaf
 	{
@@ -243,6 +251,12 @@ namespace Internal
 			return 0;
 		}
 
+		EA_CPP20_CONSTEXPR int swap(const TupleLeaf& t) const
+		{
+			eastl::Internal::swap(*this, t);
+			return 0;
+		}
+
 		EA_CPP14_CONSTEXPR ValueType& getInternal() { return mValue; }
 		EA_CONSTEXPR const ValueType& getInternal() const { return mValue; }
 
@@ -283,6 +297,12 @@ namespace Internal
 		}
 
 		EA_CPP20_CONSTEXPR int swap(TupleLeaf& t)
+		{
+			eastl::Internal::swap(*this, t);
+			return 0;
+		}
+
+		EA_CPP20_CONSTEXPR int swap(const TupleLeaf& t) const
 		{
 			eastl::Internal::swap(*this, t);
 			return 0;
@@ -367,6 +387,7 @@ namespace Internal
 		}
 
 		EA_CPP20_CONSTEXPR void swap(TupleImpl& t) { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<TupleLeaf<Indices, Ts>&>(t))...); }
+		EA_CPP20_CONSTEXPR void swap(const TupleImpl& t) const { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<const TupleLeaf<Indices, Ts>&>(t))...); }
 	};
 
 	template <size_t I, typename Indices, typename... Ts>
@@ -824,6 +845,12 @@ public:
 
 	EA_CPP20_CONSTEXPR void swap(tuple& t) { mImpl.swap(t.mImpl); }
 
+	// C++23: swaps the elements of const tuples, i.e. the objects that a tuple of references refers to. This is what
+	// swap(*a, *b) uses for an iterator whose reference is a tuple of references (tuple_vector's). A template so that
+	// it's only instantiated when called: explicitly instantiating or dll-exporting a tuple<int> must still compile.
+	template <int = 0>
+	EA_CPP20_CONSTEXPR void swap(const tuple& t) const { mImpl.swap(t.mImpl); }
+
 private:
 	typedef Internal::TupleImpl<make_index_sequence<sizeof...(Ts) + 1>, T, Ts...> Impl;
 	Impl mImpl;
@@ -859,6 +886,7 @@ class tuple<>
 {
 public:
 	EA_CPP20_CONSTEXPR void swap(tuple&) {}
+	EA_CPP20_CONSTEXPR void swap(const tuple&) const {}
 };
 
 template <size_t I, typename... Ts>
@@ -911,6 +939,13 @@ inline EA_CPP14_CONSTEXPR const T&& get(const tuple<Ts...>&& t)
 
 template <typename... Ts, typename eastl::enable_if<eastl::conjunction<eastl::is_swappable<Ts>...>::value, int>::type = 0>
 inline EA_CPP20_CONSTEXPR void swap(tuple<Ts...>& a, tuple<Ts...>& b)
+{
+	a.swap(b);
+}
+
+// C++23: only for element types that can be swapped as const, e.g. references.
+template <typename... Ts, typename eastl::enable_if<eastl::conjunction<eastl::is_swappable<const Ts>...>::value, int>::type = 0>
+inline EA_CPP20_CONSTEXPR void swap(const tuple<Ts...>& a, const tuple<Ts...>& b)
 {
 	a.swap(b);
 }
