@@ -941,6 +941,56 @@ int TestSort()
 	}
 	#endif
 
+	// The stable sorts, radix_sort and stable_partition move elements between the range and their buffer instead of
+	// copying them, so they also work on move-only elements, and stay stable.
+	{
+		struct KeyOf { typedef uint16_t radix_type; uint16_t operator()(const TestObject& t) const { return (uint16_t)t.mX; } };
+		auto byKey = [](const TestObject& a, const TestObject& b) { return a.mX < b.mX; };
+		auto isEven = [](const TestObject& t) { return (t.mX % 2) == 0; };
+		const int count = 300;
+
+		TestObject::Reset();
+		{
+			vector<TestObject> a, buffer(count);
+			a.reserve(count);
+			for(int i = 0; i < count; i++)
+				a.push_back(TestObject((i * 7919) % 97));
+			const int64_t copiesBefore = TestObject::sTOCopyCtorCount + TestObject::sTOCopyAssignCount;
+
+			stable_sort(a.begin(), a.end(), byKey);
+			EATEST_VERIFY(is_sorted(a.begin(), a.end(), byKey));
+			reverse(a.begin(), a.end());
+			merge_sort_buffer(a.begin(), a.end(), buffer.data(), byKey);
+			EATEST_VERIFY(is_sorted(a.begin(), a.end(), byKey));
+			reverse(a.begin(), a.end());
+			tim_sort_buffer(a.begin(), a.end(), buffer.data(), byKey);
+			EATEST_VERIFY(is_sorted(a.begin(), a.end(), byKey));
+			reverse(a.begin(), a.end());
+			radix_sort<TestObject*, KeyOf>(a.begin(), a.end(), buffer.begin());
+			EATEST_VERIFY(is_sorted(a.begin(), a.end(), byKey));
+			stable_partition(a.begin(), a.end(), isEven);
+			EATEST_VERIFY(is_partitioned(a.begin(), a.end(), isEven));
+			EATEST_VERIFY(TestObject::sTOCopyCtorCount + TestObject::sTOCopyAssignCount == copiesBefore);
+		}
+		EATEST_VERIFY(TestObject::IsClear());
+		TestObject::Reset();
+
+		// Move-only elements, with an index to check stability.
+		auto byVal = [](const MoveOnlyTypeDefaultCtor& a, const MoveOnlyTypeDefaultCtor& b) { return (a.mVal / 1000) < (b.mVal / 1000); };
+		vector<MoveOnlyTypeDefaultCtor> moveOnly, moveOnlyBuffer(count);
+		for(int i = 0; i < count; i++)
+			moveOnly.push_back(MoveOnlyTypeDefaultCtor(((i * 7919) % 97) * 1000 + i));
+		stable_sort(moveOnly.begin(), moveOnly.end(), byVal);
+		for(int i = 1; i < count; i++)
+			EATEST_VERIFY(moveOnly[i - 1].mVal < moveOnly[i].mVal); // Equal keys keep their index order.
+		tim_sort_buffer(moveOnly.begin(), moveOnly.end(), moveOnlyBuffer.data(), byVal);
+		for(int i = 1; i < count; i++)
+			EATEST_VERIFY(moveOnly[i - 1].mVal < moveOnly[i].mVal);
+		stable_partition(moveOnly.begin(), moveOnly.end(), [](const MoveOnlyTypeDefaultCtor& m) { return (m.mVal / 1000) % 2 != 0; });
+		for(int i = 1; i < count; i++)
+			EATEST_VERIFY(((moveOnly[i - 1].mVal / 1000) % 2 == (moveOnly[i].mVal / 1000) % 2) ? (moveOnly[i - 1].mVal < moveOnly[i].mVal) : ((moveOnly[i - 1].mVal / 1000) % 2 != 0));
+	}
+
 	// sort and nth_element pick the pivot by iterator and partition around it in place: they only move and swap
 	// elements, never copy them, so they also work on move-only elements, including tuple_vector's.
 	{

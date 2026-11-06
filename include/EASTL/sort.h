@@ -207,6 +207,38 @@ namespace eastl
 		}
 	}
 
+	namespace Internal
+	{
+		// merge_move
+		//
+		// Like merge, with the same comparisons, but moves the elements instead of copying them. The sorts use it to
+		// merge between a range and a buffer, so an element is never moved onto itself.
+		template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
+		OutputIterator merge_move(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare& compare)
+		{
+			while((first1 != last1) && (first2 != last2))
+			{
+				if(compare(*first2, *first1))
+				{
+					EASTL_VALIDATE_COMPARE(!compare(*first1, *first2)); // Validate that the compare function is sane.
+					*result = iter_move(first2);
+					++first2;
+				}
+				else
+				{
+					*result = iter_move(first1);
+					++first1;
+				}
+				++result;
+			}
+
+			if (first1 == last1)
+				return eastl::move(first2, last2, result);
+			else
+				return eastl::move(first1, last1, result);
+		}
+	}
+
 	template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 	inline OutputIterator merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 	{
@@ -388,17 +420,17 @@ namespace eastl
 
 				for (++iSorted; iSorted != last; ++iSorted)
 				{
-					const value_type temp(*iSorted);
+					value_type temp(iter_move(iSorted));
 
 					iNext = iCurrent = iSorted;
 
 					for (--iCurrent; (iNext != first) && compare(temp, *iCurrent); --iNext, (void)--iCurrent)
 					{
 						EASTL_VALIDATE_COMPARE(!compare(*iCurrent, temp)); // Validate that the compare function is sane.
-						*iNext = *iCurrent;
+						*iNext = iter_move(iCurrent);
 					}
 
-					*iNext = temp;
+					*iNext = eastl::move(temp);
 				}
 			}
 		}
@@ -432,7 +464,7 @@ namespace eastl
 			if (sort_impl(first, last, pBuffer, difference_type(0), compare) == RL_Buffer)
 			{
 				const difference_type nCount = last - first;
-				eastl::copy<T*, RandomAccessIterator>(pBuffer, pBuffer + nCount, first);
+				eastl::move(pBuffer, pBuffer + nCount, first);
 			}
 			EASTL_DEV_ASSERT((eastl::is_sorted<RandomAccessIterator, StrictWeakOrdering>(first, last, compare)));
 		}
@@ -508,14 +540,14 @@ namespace eastl
 			{
 				if (secondHalfLocation == RL_SourceRange)
 				{
-					eastl::merge<RandomAccessIterator, RandomAccessIterator, T*, StrictWeakOrdering>(first, first + nMid, first + nMid, last, pBuffer, compare);
+					Internal::merge_move(first, first + nMid, first + nMid, last, pBuffer, compare);
 					EASTL_DEV_ASSERT((eastl::is_sorted<T*, StrictWeakOrdering>(pBuffer, pBuffer + nCount, compare)));
 					return RL_Buffer;
 				}
 				else
 				{
-					eastl::copy(first, first + nMid, pBuffer);
-					eastl::merge<T*, T*, RandomAccessIterator, StrictWeakOrdering>(pBuffer, pBuffer + nMid, pBuffer + nMid, pBuffer + nCount, first, compare);
+					eastl::move(first, first + nMid, pBuffer);
+					Internal::merge_move(pBuffer, pBuffer + nMid, pBuffer + nMid, pBuffer + nCount, first, compare);
 					EASTL_DEV_ASSERT((eastl::is_sorted<RandomAccessIterator, StrictWeakOrdering>(first, last, compare)));
 					return RL_SourceRange;
 				}
@@ -524,14 +556,14 @@ namespace eastl
 			{
 				if (secondHalfLocation == RL_SourceRange)
 				{
-					eastl::copy(first + nMid, last, pBuffer + nMid);
-					eastl::merge<T*, T*, RandomAccessIterator, StrictWeakOrdering>(pBuffer, pBuffer + nMid, pBuffer + nMid, pBuffer + nCount, first, compare);
+					eastl::move(first + nMid, last, pBuffer + nMid);
+					Internal::merge_move(pBuffer, pBuffer + nMid, pBuffer + nMid, pBuffer + nCount, first, compare);
 					EASTL_DEV_ASSERT((eastl::is_sorted<RandomAccessIterator, StrictWeakOrdering>(first, last, compare)));
 					return RL_SourceRange;
 				}
 				else
 				{
-					eastl::merge<T*, T*, RandomAccessIterator, StrictWeakOrdering>(pBuffer, pBuffer + nMid, pBuffer + nMid, pBuffer + nCount, first, compare);
+					Internal::merge_move(pBuffer, pBuffer + nMid, pBuffer + nMid, pBuffer + nCount, first, compare);
 					EASTL_DEV_ASSERT((eastl::is_sorted<RandomAccessIterator, StrictWeakOrdering>(first, last, compare)));
 					return RL_SourceRange;
 				}
@@ -578,7 +610,7 @@ namespace eastl
 		{
 			// We need to allocate an array of nCount value_type objects as a temporary buffer.
 			value_type* const pBuffer = (value_type*)allocate_memory(allocator, nCount * sizeof(value_type), EASTL_ALIGN_OF(value_type), 0);
-			eastl::uninitialized_fill(pBuffer, pBuffer + nCount, value_type());
+			eastl::uninitialized_value_construct(pBuffer, pBuffer + nCount);
 
 			eastl::merge_sort_buffer<RandomAccessIterator, value_type, StrictWeakOrdering>
 									(first, last, pBuffer, compare);
@@ -658,7 +690,7 @@ namespace eastl
 		auto allocator = *get_default_allocator(0);
 		value_type* const buffer =
 		    (value_type*)allocate_memory(allocator, requested_size * sizeof(value_type), EASTL_ALIGN_OF(value_type), 0);
-		eastl::uninitialized_fill(buffer, buffer + requested_size, value_type());
+		eastl::uninitialized_value_construct(buffer, buffer + requested_size);
 
 		ForwardIterator result1 = first;
 		value_type* result2 = buffer;
@@ -680,7 +712,7 @@ namespace eastl
 			}
 		}
 
-		eastl::copy(buffer, result2, result1);
+		eastl::move(buffer, result2, result1);
 
 		eastl::destruct(buffer, buffer + requested_size);
 		EASTLFree(allocator, buffer, requested_size * sizeof(value_type));
@@ -1128,7 +1160,7 @@ namespace eastl
 		{
 			while(start < end)
 			{
-				eastl::swap(*(first + start), *(first + end));
+				eastl::iter_swap(first + start, first + end);
 				++start;
 				--end;
 			}
@@ -1231,8 +1263,8 @@ namespace eastl
 
 			if(A < B) // If the first run is shorter than the second run... merge left.
 			{
-				// Copy to another location so we have room in the main array to put the sorted items.
-				eastl::copy(first + curr, first + curr + A, pBuffer);
+				// Move to another location so we have room in the main array to put the sorted items.
+				eastl::move(first + curr, first + curr + A, pBuffer);
 
 				#if EASTL_DEV_DEBUG
 					typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
@@ -1243,42 +1275,30 @@ namespace eastl
 
 				intptr_t i = 0;
 				intptr_t j = curr + A;
-				
-				for(intptr_t k = curr; k < curr + A + B; k++)
+
+				// Once the first run (in the buffer) is used up, the rest of the second run is already in place.
+				for(intptr_t k = curr; i < A; k++)
 				{
-					if((i < A) && (j < (curr + A + B)))
-					{
-						if(!compare(*(first + j), *(pBuffer + i))) // If (first[j] >= pBuffer[i])...
-							*(first + k) = *(pBuffer + i++);
-						else
-							*(first + k) = *(first + j++);
-					}
-					else if(i < A)
-						*(first + k) = *(pBuffer + i++);
+					if((j < (curr + A + B)) && compare(*(first + j), *(pBuffer + i))) // If (first[j] < pBuffer[i])...
+						*(first + k) = iter_move(first + j++);
 					else
-						*(first + k) = *(first + j++);
+						*(first + k) = eastl::move(*(pBuffer + i++));
 				}
 			}
 			else // Else the second run is equal or shorter... merge right.
 			{
-				eastl::copy(first + curr + A, first + curr + A + B, pBuffer);
+				eastl::move(first + curr + A, first + curr + A + B, pBuffer);
 
 				intptr_t i = B - 1;
 				intptr_t j = curr + A - 1;
-				
-				for(intptr_t k = curr + A + B - 1; k >= curr; k--)
+
+				// Once the second run (in the buffer) is used up, the rest of the first run is already in place.
+				for(intptr_t k = curr + A + B - 1; i >= 0; k--)
 				{
-					if((i >= 0) && (j >= curr))
-					{
-						if(compare(*(pBuffer + i), *(first + j))) // If (pBuffer[i] < first[j]) ...
-							*(first + k) = *(first + j--);
-						else
-							*(first + k) = *(pBuffer + i--);
-					}
-					else if(i >= 0)
-						*(first + k) = *(pBuffer + i--);
+					if((j >= curr) && compare(*(pBuffer + i), *(first + j))) // If (pBuffer[i] < first[j]) ...
+						*(first + k) = iter_move(first + j--);
 					else
-						*(first + k) = *(first + j--);
+						*(first + k) = eastl::move(*(pBuffer + i--));
 				}
 			}
 		}
@@ -1685,7 +1705,7 @@ namespace eastl
 						{
 							IntegerType key = extractKey(*temp);
 							const size_t digit = (key >> j) & bucketMask;
-							buffer[bucketPosition[digit]++] = *temp;
+							buffer[bucketPosition[digit]++] = iter_move(temp);
 						}
 					}
 					// Compute the histogram while performing the scatter operation
@@ -1703,7 +1723,7 @@ namespace eastl
 						{
 							const IntegerType key = extractKey(*temp);
 							const size_t digit = (key >> j) & bucketMask;
-							buffer[bucketPosition[digit]++] = *temp;
+							buffer[bucketPosition[digit]++] = iter_move(temp);
 
 							// Update histogram for the next scatter operation
 							++bucketSize[(key >> jNext) & bucketMask];
@@ -1719,12 +1739,12 @@ namespace eastl
 
 			if (srcFirst != first)
 			{
-				// Copy values back into the expected buffer
+				// Move the values back into the expected buffer
 				// GCC 12 to 15 report writes past the end of buffer at -O3; buffer is first here, and the loop
-				// copies last - srcFirst elements into it.
+				// moves last - srcFirst elements into it.
 				EA_DISABLE_GCC_WARNING(-Wstringop-overflow)
 				for (temp = srcFirst; temp != last; ++temp)
-					*buffer++ = *temp;
+					*buffer++ = iter_move(temp);
 				EA_RESTORE_GCC_WARNING()
 			}
 		}
