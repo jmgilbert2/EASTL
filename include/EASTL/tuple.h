@@ -174,7 +174,7 @@ namespace Internal
 	// Provides a vessel to expand variadic packs.
 	//
 	template <typename... Ts>
-	void swallow(Ts&&...) {}
+	EA_CPP14_CONSTEXPR void swallow(Ts&&...) {}
 
 
 	// TupleLeaf
@@ -183,9 +183,17 @@ namespace Internal
 	class TupleLeaf;
 
 	template <size_t I, typename ValueType, bool IsEmpty>
-	inline void swap(TupleLeaf<I, ValueType, IsEmpty>& a, TupleLeaf<I, ValueType, IsEmpty>& b)
+	inline EA_CPP20_CONSTEXPR void swap(TupleLeaf<I, ValueType, IsEmpty>& a, TupleLeaf<I, ValueType, IsEmpty>& b)
 	{
 		using eastl::swap; // Unqualified so that user-defined swaps are found via argument-dependent lookup.
+		swap(a.getInternal(), b.getInternal());
+	}
+
+	// For tuple's const swap: a reference element swaps the referenced objects.
+	template <size_t I, typename ValueType, bool IsEmpty>
+	inline EA_CPP20_CONSTEXPR void swap(const TupleLeaf<I, ValueType, IsEmpty>& a, const TupleLeaf<I, ValueType, IsEmpty>& b)
+	{
+		using eastl::swap;
 		swap(a.getInternal(), b.getInternal());
 	}
 
@@ -193,18 +201,19 @@ namespace Internal
 	class TupleLeaf
 	{
 	public:
-		TupleLeaf() : mValue() {}
+		EA_CONSTEXPR TupleLeaf() : mValue() {}
 
 		// We shouldn't need this explicit constructor as it should be handled by the template below but OSX clang
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
-		explicit TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
+		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
 
-		template <typename T, typename = typename enable_if<is_constructible<ValueType, T&&>::value>::type>
-		explicit TupleLeaf(T&& t)
+		// Excludes TupleLeaf so that it can't stand in for a deleted copy or move by building the element from the leaf.
+		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value && is_constructible<ValueType, T&&>::value>>
+		explicit EA_CONSTEXPR TupleLeaf(T&& t)
 			: mValue(eastl::forward<T>(t))
 		{
 		}
-		
+
 		TupleLeaf(const TupleLeaf&) = default;
 		TupleLeaf(TupleLeaf&&) noexcept = default;
 
@@ -216,32 +225,40 @@ namespace Internal
 		// TupleImpl. So we explicitly implement the assignment so it isn't deleted in tuple<T&>.
 		// When ValueType isn't copy (move) assignable, the parameter is nonesuch instead, so this is no longer the
 		// copy (move) assignment: the copy assignment is then implicitly deleted, as the standard requires for tuple.
-		TupleLeaf& operator=(conditional_t<is_copy_assignable<ValueType>::value, const TupleLeaf&, const nonesuch&> t)
+		// The move assignment forwards the element like std::tuple's: a reference element is assigned from an lvalue,
+		// i.e. the referenced object is copied, not moved from.
+		EA_CPP20_CONSTEXPR TupleLeaf& operator=(conditional_t<is_copy_assignable<ValueType>::value, const TupleLeaf&, const nonesuch&> t)
 		{
 			mValue = t.getInternal();
 			return *this;
 		}
-		TupleLeaf& operator=(conditional_t<is_move_assignable<ValueType>::value, TupleLeaf&&, nonesuch&&> t) noexcept
+		EA_CPP20_CONSTEXPR TupleLeaf& operator=(conditional_t<is_move_assignable<ValueType>::value, TupleLeaf&&, nonesuch&&> t) noexcept
 		{
-			mValue = eastl::move(t.getInternal());
+			mValue = eastl::forward<ValueType>(t.getInternal());
 			return *this;
 		}
 
 		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value>>
-		TupleLeaf& operator=(T&& t)
+		EA_CPP20_CONSTEXPR TupleLeaf& operator=(T&& t)
 		{
 			mValue = eastl::forward<T>(t);
 			return *this;
 		}
 
-		int swap(TupleLeaf& t)
+		EA_CPP20_CONSTEXPR int swap(TupleLeaf& t)
 		{
 			eastl::Internal::swap(*this, t);
 			return 0;
 		}
 
-		ValueType& getInternal() { return mValue; }
-		const ValueType& getInternal() const { return mValue; }
+		EA_CPP20_CONSTEXPR int swap(const TupleLeaf& t) const
+		{
+			eastl::Internal::swap(*this, t);
+			return 0;
+		}
+
+		EA_CPP14_CONSTEXPR ValueType& getInternal() { return mValue; }
+		EA_CONSTEXPR const ValueType& getInternal() const { return mValue; }
 
 	private:
 		ValueType mValue;  
@@ -259,10 +276,10 @@ namespace Internal
 
 		// We shouldn't need this explicit constructor as it should be handled by the template below but OSX clang
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
-		explicit TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
+		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
 
-		template <typename T, typename = typename enable_if<is_constructible<ValueType, T&&>::value>::type>
-		explicit TupleLeaf(T&& t)
+		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value && is_constructible<ValueType, T&&>::value>>
+		explicit EA_CONSTEXPR TupleLeaf(T&& t)
 			: mValue(eastl::forward<T>(t))
 		{
 		}
@@ -273,20 +290,26 @@ namespace Internal
 		TupleLeaf& operator=(TupleLeaf&&) noexcept = default;
 
 		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value>>
-		TupleLeaf& operator=(T&& t)
+		EA_CPP20_CONSTEXPR TupleLeaf& operator=(T&& t)
 		{
 			mValue = eastl::forward<T>(t);
 			return *this;
 		}
 
-		int swap(TupleLeaf& t)
+		EA_CPP20_CONSTEXPR int swap(TupleLeaf& t)
 		{
 			eastl::Internal::swap(*this, t);
 			return 0;
 		}
 
-		ValueType& getInternal() { return mValue; }
-		const ValueType& getInternal() const { return mValue; }
+		EA_CPP20_CONSTEXPR int swap(const TupleLeaf& t) const
+		{
+			eastl::Internal::swap(*this, t);
+			return 0;
+		}
+
+		EA_CPP14_CONSTEXPR ValueType& getInternal() { return mValue; }
+		EA_CONSTEXPR const ValueType& getInternal() const { return mValue; }
 
 	private:
 		ValueType mValue;
@@ -337,7 +360,7 @@ namespace Internal
 		// https://connect.microsoft.com/VisualStudio/feedback/details/1126958/error-in-template-parameter-pack-expansion-of-std-index-sequence
 		// 
 		template <typename... Us, typename... ValueTypes>
-		explicit TupleImpl(integer_sequence<size_t, Indices...>, TupleTypes<Us...>, ValueTypes&&... values)
+		explicit EA_CONSTEXPR TupleImpl(integer_sequence<size_t, Indices...>, TupleTypes<Us...>, ValueTypes&&... values)
 			: TupleLeaf<Indices, Ts>(eastl::forward<ValueTypes>(values))...
 		{
 		}
@@ -350,73 +373,87 @@ namespace Internal
 		// These (and TupleLeaf's operator=(T&&)) exclude their own class so that they can't stand in for a deleted
 		// copy or move: tuple<NonMovable> must not be move constructible or assignable.
 		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
-		TupleImpl(OtherTuple&& t)
+		EA_CONSTEXPR TupleImpl(OtherTuple&& t)
 			: TupleLeaf<Indices, Ts>(eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...
 		{
 		}
 
 		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
-		TupleImpl& operator=(OtherTuple&& t)
+		EA_CPP20_CONSTEXPR TupleImpl& operator=(OtherTuple&& t)
 		{
 			swallow(TupleLeaf<Indices, Ts>::operator=(
 						eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...);
 			return *this;
 		}
 
-		void swap(TupleImpl& t) { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<TupleLeaf<Indices, Ts>&>(t))...); }
+		EA_CPP20_CONSTEXPR void swap(TupleImpl& t) { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<TupleLeaf<Indices, Ts>&>(t))...); }
+		EA_CPP20_CONSTEXPR void swap(const TupleImpl& t) const { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<const TupleLeaf<Indices, Ts>&>(t))...); }
 	};
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<TupleLeaf<I, Type>&>(t).getInternal();
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline const_tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(const TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR const tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(const TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<const TupleLeaf<I, Type>&>(t).getInternal();
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(TupleImpl<Indices, Ts...>&& t)
+	inline EA_CPP14_CONSTEXPR tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(TupleImpl<Indices, Ts...>&& t)
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<Type&&>(static_cast<TupleLeaf<I, Type>&>(t).getInternal());
 	}
 
+	template <size_t I, typename Indices, typename... Ts>
+	inline EA_CPP14_CONSTEXPR const tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(const TupleImpl<Indices, Ts...>&& t)
+	{
+		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
+		return static_cast<const Type&&>(static_cast<const TupleLeaf<I, Type>&>(t).getInternal());
+	}
+
 	template <typename T, typename Indices, typename... Ts>
-	inline T& getImpl(TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR T& getImpl(TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<TupleLeaf<Index::index, T>&>(t).getInternal();
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline const T& getImpl(const TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR const T& getImpl(const TupleImpl<Indices, Ts...>& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<const TupleLeaf<Index::index, T>&>(t).getInternal();
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline T&& getImpl(TupleImpl<Indices, Ts...>&& t)
+	inline EA_CPP14_CONSTEXPR T&& getImpl(TupleImpl<Indices, Ts...>&& t)
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<T&&>(static_cast<TupleLeaf<Index::index, T>&>(t).getInternal());
 	}
 
+	template <typename T, typename Indices, typename... Ts>
+	inline EA_CPP14_CONSTEXPR const T&& getImpl(const TupleImpl<Indices, Ts...>&& t)
+	{
+		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
+		return static_cast<const T&&>(static_cast<const TupleLeaf<Index::index, T>&>(t).getInternal());
+	}
+
 
 	// TupleLike
 	//
-	// type-trait that determines if a type is an eastl::tuple or an eastl::pair.
+	// type-trait that determines if a type is an eastl::tuple or an eastl::pair. A volatile one isn't: get can't read its
+	// elements, so it can't be the source of a conversion or an assignment.
 	//
 	template <typename T> struct TupleLike                   : public false_type {};
 	template <typename T> struct TupleLike<const T>          : public TupleLike<T> {};
-	template <typename T> struct TupleLike<volatile T>       : public TupleLike<T> {};
-	template <typename T> struct TupleLike<const volatile T> : public TupleLike<T> {};
 
 	template <typename... Ts>
 	struct TupleLike<tuple<Ts...>> : public true_type {};
@@ -456,9 +493,53 @@ namespace Internal
 	};
 
 
+	// TupleConstructible
+	//
+	// Whether tuple's converting constructor from another tuple or a pair takes part, like std::tuple's: the sizes
+	// match and each element is constructible from the source's element. A one-element tuple<T> also leaves the source
+	// to the copy and move constructors when the element types are the same, and to the element constructor when T can
+	// be built from the whole source (so tuple<any>(tuple<int>) holds the tuple). The same-type test comes first so
+	// that copying a tuple<any> doesn't ask whether any is constructible from that tuple, which recurses.
+	//
+	template <bool IsSameSize, typename From, typename To, typename FromTuple>
+	struct TupleConstructibleImpl : public false_type
+	{
+	};
+
+	template <typename... FromTypes, typename... ToTypes, typename FromTuple>
+	struct TupleConstructibleImpl<true, TupleTypes<FromTypes...>, TupleTypes<ToTypes...>, FromTuple>
+		: public conjunction<is_constructible<ToTypes, FromTypes>...>
+	{
+	};
+
+	template <typename FromType, typename ToType, typename FromTuple>
+	struct TupleConstructibleImpl<true, TupleTypes<FromType>, TupleTypes<ToType>, FromTuple>
+		: public conjunction<negation<is_same<ToType, tuple_element_t<0, remove_cvref_t<FromTuple>>>>,
+		                     is_constructible<ToType, FromType>,
+		                     negation<is_convertible<FromTuple, ToType>>,
+		                     negation<is_constructible<ToType, FromTuple>>>
+	{
+	};
+
+	template <typename From, typename To,
+			  bool = TupleLike<typename remove_reference<From>::type>::value,
+			  bool = TupleLike<typename remove_reference<To>::type>::value>
+	struct TupleConstructible : public false_type
+	{
+	};
+
+	template <typename From, typename To>
+	struct TupleConstructible<From, To, true, true>
+		: public TupleConstructibleImpl<tuple_size<typename remove_reference<From>::type>::value ==
+				tuple_size<typename remove_reference<To>::type>::value,
+				MakeTupleTypes_t<From>, MakeTupleTypes_t<To>, From>
+	{
+	};
+
+
 	// TupleAssignable
 	//
-	//
+	// The assignment assigns to each element as an lvalue, so that's what is tested.
 	//
 	template <bool IsSameSize, typename Target, typename From>
 	struct TupleAssignableImpl : public false_type
@@ -467,7 +548,7 @@ namespace Internal
 
 	template <typename... TargetTypes, typename... FromTypes>
 	struct TupleAssignableImpl<true, TupleTypes<TargetTypes...>, TupleTypes<FromTypes...>>
-		: public bool_constant<conjunction<is_assignable<TargetTypes, FromTypes>...>::value>
+		: public bool_constant<conjunction<is_assignable<TargetTypes&, FromTypes>...>::value>
 	{
 	};
 
@@ -542,6 +623,45 @@ namespace Internal
 	using TupleExplicitlyConvertible_t = enable_if_t<TupleExplicitlyConvertible<TargetTupleType, FromTypes...>::value, bool>;
 
 
+	// TupleBindsTemporary and TupleBindsTemporaryFromTuple
+	//
+	// Whether initializing a tuple's elements from forwarded arguments, or from the forwarded elements of another tuple
+	// or a pair, binds a reference element to a temporary (C++23's rule, applied in every language mode).
+	//
+	template <bool IsSameSize, typename From, typename To>
+	struct TupleBindsTemporaryImpl : public false_type
+	{
+	};
+
+	template <typename... FromTypes, typename... ToTypes>
+	struct TupleBindsTemporaryImpl<true, TupleTypes<FromTypes...>, TupleTypes<ToTypes...>>
+		: public disjunction<bool_constant<reference_constructs_from_temporary_v<ToTypes, FromTypes&&>>...>
+	{
+	};
+
+	template <typename TargetTupleType, typename... FromTypes>
+	struct TupleBindsTemporary
+		: public TupleBindsTemporaryImpl<tuple_size<TargetTupleType>::value == sizeof...(FromTypes),
+				TupleTypes<FromTypes...>, MakeTupleTypes_t<TargetTupleType>>
+	{
+	};
+
+	template <typename From, typename To,
+			  bool = TupleLike<typename remove_reference<From>::type>::value,
+			  bool = TupleLike<typename remove_reference<To>::type>::value>
+	struct TupleBindsTemporaryFromTuple : public false_type
+	{
+	};
+
+	template <typename From, typename To>
+	struct TupleBindsTemporaryFromTuple<From, To, true, true>
+		: public TupleBindsTemporaryImpl<tuple_size<typename remove_reference<From>::type>::value ==
+				tuple_size<typename remove_reference<To>::type>::value,
+				MakeTupleTypes_t<From>, MakeTupleTypes_t<To>>
+	{
+	};
+
+
 	// TupleEqual
 	//
 	//
@@ -550,7 +670,7 @@ namespace Internal
 	struct TupleEqual
 	{
 		template <typename Tuple1, typename Tuple2>
-		bool operator()(const Tuple1& t1, const Tuple2& t2)
+		EA_CONSTEXPR bool operator()(const Tuple1& t1, const Tuple2& t2)
 		{
 			static_assert(tuple_size<Tuple1>::value == tuple_size<Tuple2>::value, "comparing tuples of different sizes.");
 			return TupleEqual<I - 1>()(t1, t2) && get<I - 1>(t1) == get<I - 1>(t2);
@@ -561,7 +681,7 @@ namespace Internal
 	struct TupleEqual<0>
 	{
 		template <typename Tuple1, typename Tuple2>
-		bool operator()(const Tuple1&, const Tuple2&)
+		EA_CONSTEXPR bool operator()(const Tuple1&, const Tuple2&)
 		{
 			return true;
 		}
@@ -575,7 +695,7 @@ namespace Internal
 	struct TupleLess
 	{
 		template <typename Tuple1, typename Tuple2>
-		bool operator()(const Tuple1& t1, const Tuple2& t2)
+		EA_CONSTEXPR bool operator()(const Tuple1& t1, const Tuple2& t2)
 		{
 			static_assert(tuple_size<Tuple1>::value == tuple_size<Tuple2>::value, "comparing tuples of different sizes.");
 			return TupleLess<I - 1>()(t1, t2) || (!TupleLess<I - 1>()(t2, t1) && get<I - 1>(t1) < get<I - 1>(t2));
@@ -586,7 +706,7 @@ namespace Internal
 	struct TupleLess<0>
 	{
 		template <typename Tuple1, typename Tuple2>
-		bool operator()(const Tuple1&, const Tuple2&)
+		EA_CONSTEXPR bool operator()(const Tuple1&, const Tuple2&)
 		{
 			return false;
 		}
@@ -630,8 +750,24 @@ template <typename T, typename... Ts>
 class tuple<T, Ts...>
 {
 public:
-	EA_CONSTEXPR tuple() = default;
-	
+	// Like std::tuple's, the default constructor takes part only when every element is default constructible, and
+	// it's explicit when an element's default constructor is. The leaves value-initialize the elements.
+	template <typename T2 = T,
+		enable_if_t<conjunction<is_default_constructible<T2>, is_default_constructible<Ts>...>::value &&
+		            conjunction<Internal::is_implicitly_default_constructible<T2>,
+		                        Internal::is_implicitly_default_constructible<Ts>...>::value, int> = 0>
+	EA_CONSTEXPR tuple()
+	{
+	}
+
+	template <typename T2 = T,
+		enable_if_t<conjunction<is_default_constructible<T2>, is_default_constructible<Ts>...>::value &&
+		            !conjunction<Internal::is_implicitly_default_constructible<T2>,
+		                         Internal::is_implicitly_default_constructible<Ts>...>::value, int> = 0>
+	explicit EA_CONSTEXPR tuple()
+	{
+	}
+
 	template <typename T2 = T, 
 		Internal::TupleImplicitlyConvertible_t<tuple, const T2&, const Ts&...> = 0>
 	EA_CONSTEXPR tuple(const T& t, const Ts&... ts)
@@ -646,8 +782,12 @@ public:
 	{
 	}
 
+	// A one-element tuple doesn't take a tuple of its own type here: that's the copy or move constructor's job. This is
+	// checked before the element's constructibility, which could recurse into the tuple's own (e.g. for tuple<any>).
 	template <typename U, typename... Us,
-		Internal::TupleImplicitlyConvertible_t<tuple, U, Us...> = 0>
+		enable_if_t<sizeof...(Ts) != 0 || !is_same<remove_cvref_t<U>, tuple>::value, bool> = false,
+		Internal::TupleImplicitlyConvertible_t<tuple, U, Us...> = 0,
+		enable_if_t<!Internal::TupleBindsTemporary<tuple, U, Us...>::value, bool> = false>
 		EA_CONSTEXPR tuple(U&& u, Us&&... us)
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
 					eastl::forward<Us>(us)...)
@@ -655,51 +795,89 @@ public:
 	}
 
 	template <typename U, typename... Us,
-		Internal::TupleExplicitlyConvertible_t<tuple, U, Us...> = 0>
+		enable_if_t<sizeof...(Ts) != 0 || !is_same<remove_cvref_t<U>, tuple>::value, bool> = false,
+		Internal::TupleExplicitlyConvertible_t<tuple, U, Us...> = 0,
+		enable_if_t<!Internal::TupleBindsTemporary<tuple, U, Us...>::value, bool> = false>
 		explicit EA_CONSTEXPR tuple(U&& u, Us&&... us)
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
 					eastl::forward<Us>(us)...)
 	{
 	}
 
+	// Deleted rather than left out when a reference element would bind a temporary, like std::tuple's in C++23 (applied
+	// in every language mode), so that tuple(const T&, const Ts&...) can't bind the same temporary instead. Like
+	// std::tuple's, it leaves a one-element tuple's own type to the copy and move constructors (e.g. for a
+	// tuple<const any&>, whose element could be built from the tuple through a temporary).
+	template <typename U, typename... Us,
+		enable_if_t<sizeof...(Ts) != 0 || !is_same<remove_cvref_t<U>, tuple>::value, bool> = false,
+		enable_if_t<(Internal::TupleImplicitlyConvertible<tuple, U, Us...>::value ||
+		             Internal::TupleExplicitlyConvertible<tuple, U, Us...>::value) &&
+		            Internal::TupleBindsTemporary<tuple, U, Us...>::value, bool> = false>
+	tuple(U&& u, Us&&... us) = delete;
+
+	// Converting constructors from another tuple or a pair, of any value category. Like the element constructors,
+	// they're explicit exactly when an element conversion isn't implicit.
 	template <typename OtherTuple,
-			  typename enable_if<Internal::TupleConvertible<OtherTuple, tuple>::value, bool>::type = false>
-	tuple(OtherTuple&& t)
+			  enable_if_t<Internal::TupleConstructible<OtherTuple, tuple>::value &&
+			              !Internal::TupleBindsTemporaryFromTuple<OtherTuple, tuple>::value &&
+			              Internal::TupleConvertible<OtherTuple, tuple>::value, bool> = false>
+	EA_CONSTEXPR tuple(OtherTuple&& t)
+		: mImpl(eastl::forward<OtherTuple>(t))
+	{
+	}
+
+	template <typename OtherTuple,
+			  enable_if_t<Internal::TupleConstructible<OtherTuple, tuple>::value &&
+			              !Internal::TupleBindsTemporaryFromTuple<OtherTuple, tuple>::value &&
+			              !Internal::TupleConvertible<OtherTuple, tuple>::value, bool> = false>
+	explicit EA_CONSTEXPR tuple(OtherTuple&& t)
 		: mImpl(eastl::forward<OtherTuple>(t))
 	{
 	}
 
 	template <typename OtherTuple,
 			  typename enable_if<Internal::TupleAssignable<tuple, OtherTuple>::value, bool>::type = false>
-	tuple& operator=(OtherTuple&& t)
+	EA_CPP20_CONSTEXPR tuple& operator=(OtherTuple&& t)
 	{
 		mImpl.operator=(eastl::forward<OtherTuple>(t));
 		return *this;
 	}
 
-	void swap(tuple& t) { mImpl.swap(t.mImpl); }
+	EA_CPP20_CONSTEXPR void swap(tuple& t) { mImpl.swap(t.mImpl); }
+
+	// C++23: swaps the elements of const tuples, i.e. the objects that a tuple of references refers to. This is what
+	// swap(*a, *b) uses for an iterator whose reference is a tuple of references (tuple_vector's). A template so that
+	// it's only instantiated when called: explicitly instantiating or dll-exporting a tuple<int> must still compile.
+	template <int = 0>
+	EA_CPP20_CONSTEXPR void swap(const tuple& t) const { mImpl.swap(t.mImpl); }
 
 private:
 	typedef Internal::TupleImpl<make_index_sequence<sizeof...(Ts) + 1>, T, Ts...> Impl;
 	Impl mImpl;
 
 	template <size_t I, typename... Ts_>
-	friend tuple_element_t<I, tuple<Ts_...>>& get(tuple<Ts_...>& t);
+	friend EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>& get(tuple<Ts_...>& t);
 
 	template <size_t I, typename... Ts_>
-	friend const_tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t);
+	friend EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t);
 
 	template <size_t I, typename... Ts_>
-	friend tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t);
+	friend EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t);
+
+	template <size_t I, typename... Ts_>
+	friend EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts_...>>&& get(const tuple<Ts_...>&& t);
 
 	template <typename T_, typename... ts_>
-	friend T_& get(tuple<ts_...>& t);
+	friend EA_CPP14_CONSTEXPR T_& get(tuple<ts_...>& t);
 
 	template <typename T_, typename... ts_>
-	friend const T_& get(const tuple<ts_...>& t);
+	friend EA_CPP14_CONSTEXPR const T_& get(const tuple<ts_...>& t);
 
 	template <typename T_, typename... ts_>
-	friend T_&& get(tuple<ts_...>&& t);
+	friend EA_CPP14_CONSTEXPR T_&& get(tuple<ts_...>&& t);
+
+	template <typename T_, typename... ts_>
+	friend EA_CPP14_CONSTEXPR const T_&& get(const tuple<ts_...>&& t);
 };
 
 // template specialization for an empty tuple
@@ -707,47 +885,67 @@ template <>
 class tuple<>
 {
 public:
-	void swap(tuple&) {}
+	EA_CPP20_CONSTEXPR void swap(tuple&) {}
+	EA_CPP20_CONSTEXPR void swap(const tuple&) const {}
 };
 
 template <size_t I, typename... Ts>
-inline tuple_element_t<I, tuple<Ts...>>& get(tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts...>>& get(tuple<Ts...>& t)
 {
 	return Internal::getImpl<I>(t.mImpl);
 }
 
 template <size_t I, typename... Ts>
-inline const_tuple_element_t<I, tuple<Ts...>>& get(const tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts...>>& get(const tuple<Ts...>& t)
 {
 	return Internal::getImpl<I>(t.mImpl);
 }
 
 template <size_t I, typename... Ts>
-inline tuple_element_t<I, tuple<Ts...>>&& get(tuple<Ts...>&& t)
+inline EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts...>>&& get(tuple<Ts...>&& t)
+{
+	return Internal::getImpl<I>(eastl::move(t.mImpl));
+}
+
+template <size_t I, typename... Ts>
+inline EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts...>>&& get(const tuple<Ts...>&& t)
 {
 	return Internal::getImpl<I>(eastl::move(t.mImpl));
 }
 
 template <typename T, typename... Ts>
-inline T& get(tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR T& get(tuple<Ts...>& t)
 {
 	return Internal::getImpl<T>(t.mImpl);
 }
 
 template <typename T, typename... Ts>
-inline const T& get(const tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR const T& get(const tuple<Ts...>& t)
 {
 	return Internal::getImpl<T>(t.mImpl);
 }
 
 template <typename T, typename... Ts>
-inline T&& get(tuple<Ts...>&& t)
+inline EA_CPP14_CONSTEXPR T&& get(tuple<Ts...>&& t)
+{
+	return Internal::getImpl<T>(eastl::move(t.mImpl));
+}
+
+template <typename T, typename... Ts>
+inline EA_CPP14_CONSTEXPR const T&& get(const tuple<Ts...>&& t)
 {
 	return Internal::getImpl<T>(eastl::move(t.mImpl));
 }
 
 template <typename... Ts, typename eastl::enable_if<eastl::conjunction<eastl::is_swappable<Ts>...>::value, int>::type = 0>
-inline void swap(tuple<Ts...>& a, tuple<Ts...>& b)
+inline EA_CPP20_CONSTEXPR void swap(tuple<Ts...>& a, tuple<Ts...>& b)
+{
+	a.swap(b);
+}
+
+// C++23: only for element types that can be swapped as const, e.g. references.
+template <typename... Ts, typename eastl::enable_if<eastl::conjunction<eastl::is_swappable<const Ts>...>::value, int>::type = 0>
+inline EA_CPP20_CONSTEXPR void swap(const tuple<Ts...>& a, const tuple<Ts...>& b)
 {
 	a.swap(b);
 }
@@ -757,7 +955,7 @@ inline void swap(tuple<Ts...>& a, tuple<Ts...>& b)
 //
 //
 template <typename... T1s, typename... T2s>
-inline bool operator==(const tuple<T1s...>& t1, const tuple<T2s...>& t2)
+inline EA_CONSTEXPR bool operator==(const tuple<T1s...>& t1, const tuple<T2s...>& t2)
 {
 	return Internal::TupleEqual<sizeof...(T1s)>()(t1, t2);
 }
@@ -770,15 +968,15 @@ inline constexpr std::common_comparison_category_t<synth_three_way_result<T1s, T
 }
 #else
 template <typename... T1s, typename... T2s>
-inline bool operator<(const tuple<T1s...>& t1, const tuple<T2s...>& t2)
+inline EA_CONSTEXPR bool operator<(const tuple<T1s...>& t1, const tuple<T2s...>& t2)
 {
 	return Internal::TupleLess<sizeof...(T1s)>()(t1, t2);
 }
 
-template <typename... T1s, typename... T2s> inline bool operator!=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t1 == t2); }
-template <typename... T1s, typename... T2s> inline bool operator> (const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return t2 < t1; }
-template <typename... T1s, typename... T2s> inline bool operator<=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t2 < t1); }
-template <typename... T1s, typename... T2s> inline bool operator>=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t1 < t2); }
+template <typename... T1s, typename... T2s> inline EA_CONSTEXPR bool operator!=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t1 == t2); }
+template <typename... T1s, typename... T2s> inline EA_CONSTEXPR bool operator> (const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return t2 < t1; }
+template <typename... T1s, typename... T2s> inline EA_CONSTEXPR bool operator<=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t2 < t1); }
+template <typename... T1s, typename... T2s> inline EA_CONSTEXPR bool operator>=(const tuple<T1s...>& t1, const tuple<T2s...>& t2) { return !(t1 < t2); }
 #endif
 
 namespace Internal
@@ -798,7 +996,7 @@ namespace Internal
 		using ResultType = tuple<T1s..., T2s...>;
 
 		template <typename Tuple1, typename Tuple2>
-		static inline ResultType DoCat2(Tuple1&& t1, Tuple2&& t2)
+		static inline EA_CONSTEXPR ResultType DoCat2(Tuple1&& t1, Tuple2&& t2)
 		{
 			return ResultType(get<I1s>(eastl::forward<Tuple1>(t1))..., get<I2s>(eastl::forward<Tuple2>(t2))...);
 		}
@@ -817,7 +1015,7 @@ namespace Internal
 		using ResultType = typename TCI::ResultType;
 
 		template <typename Tuple1, typename Tuple2>
-		static inline ResultType DoCat2(Tuple1&& t1, Tuple2&& t2)
+		static inline EA_CONSTEXPR ResultType DoCat2(Tuple1&& t1, Tuple2&& t2)
 		{
 			return TCI::DoCat2(eastl::forward<Tuple1>(t1), eastl::forward<Tuple2>(t2));
 		}
@@ -835,7 +1033,7 @@ namespace Internal
 		using ResultType      = typename TupleCat<FirstResultType, TuplesRest...>::ResultType;
 
 		template <typename TupleArg1, typename TupleArg2, typename... TupleArgsRest>
-		static inline ResultType DoCat(TupleArg1&& t1, TupleArg2&& t2, TupleArgsRest&&... ts)
+		static inline EA_CONSTEXPR ResultType DoCat(TupleArg1&& t1, TupleArg2&& t2, TupleArgsRest&&... ts)
 		{
 			return TupleCat<FirstResultType, TuplesRest...>::DoCat(
 				TC2::DoCat2(eastl::forward<TupleArg1>(t1), eastl::forward<TupleArg2>(t2)),
@@ -850,7 +1048,7 @@ namespace Internal
 		using ResultType = typename TC2::ResultType;
 
 		template <typename TupleArg1, typename TupleArg2>
-		static inline ResultType DoCat(TupleArg1&& t1, TupleArg2&& t2)
+		static inline EA_CONSTEXPR ResultType DoCat(TupleArg1&& t1, TupleArg2&& t2)
 		{
 			return TC2::DoCat2(eastl::forward<TupleArg1>(t1), eastl::forward<TupleArg2>(t2));
 		}
@@ -862,7 +1060,7 @@ namespace Internal
 		using ResultType = tuple<Ts...>;
 		
 		template <typename TupleArg>
-		static inline tuple<Ts...> DoCat(TupleArg&& t)
+		static inline EA_CONSTEXPR tuple<Ts...> DoCat(TupleArg&& t)
 		{
 			return eastl::forward<TupleArg>(t);
 		}
@@ -873,7 +1071,7 @@ namespace Internal
 	{
 		using ResultType = tuple<>;
 		
-		static inline tuple<> DoCat()
+		static inline EA_CONSTEXPR tuple<> DoCat()
 		{
 			return {};
 		}
@@ -884,7 +1082,7 @@ namespace Internal
 //
 //
 template <typename... Tuples>
-inline typename Internal::TupleCat<eastl::remove_cvref_t<Tuples>...>::ResultType tuple_cat(Tuples&&... ts)
+inline EA_CONSTEXPR typename Internal::TupleCat<eastl::remove_cvref_t<Tuples>...>::ResultType tuple_cat(Tuples&&... ts)
 {
 	return Internal::TupleCat<eastl::remove_cvref_t<Tuples>...>::DoCat(eastl::forward<Tuples>(ts)...);
 }
@@ -980,6 +1178,10 @@ namespace detail
 template <typename T, typename Tuple, size_t... I>
 constexpr eastl::enable_if_t<eastl::is_constructible_v<T, decltype(eastl::get<I>(eastl::declval<Tuple>()))...>, T> make_from_tuple_impl(Tuple&& t, eastl::index_sequence<I...>)
 {
+	// C++23's Mandates, applied in every language mode.
+	static_assert(sizeof...(I) != 1 ||
+	              !eastl::disjunction<eastl::bool_constant<Internal::reference_constructs_from_temporary_v<T, decltype(eastl::get<I>(eastl::declval<Tuple>()))>>...>::value,
+	              "make_from_tuple: T would be a reference bound to a temporary");
 	return T(eastl::get<I>(eastl::forward<Tuple>(t))...);
 }
 }  // namespace detail

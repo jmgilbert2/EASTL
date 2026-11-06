@@ -359,12 +359,13 @@ private:
 	template<typename U, typename V, typename... Us>
 	friend class TupleVecImpl;
 
+	// Qualified, since an unqualified friend would declare a new TupleVecInternal::move_iterator.
 	template<typename U>
-	friend class move_iterator;
+	friend class eastl::move_iterator;
 public:
 	typedef eastl::random_access_iterator_tag iterator_category;
 	typedef tuple<Ts...> value_type;
-	typedef eastl_size_t difference_type;
+	typedef eastl_ssize_t difference_type;
 	typedef tuple<Ts*...> pointer;
 	typedef tuple<Ts&... > reference;
 
@@ -387,6 +388,12 @@ public:
 	bool operator==(const TupleVecIter& other) const { return mIndex == other.mIndex && mpData[0] == other.mpData[0]; }
 	bool operator!=(const TupleVecIter& other) const { return mIndex != other.mIndex || mpData[0] != other.mpData[0]; }
 	reference operator*() const { return MakeReference(); }
+
+	// Moves the elements through a tuple of rvalue references, like move_iterator<TupleVecIter> below.
+	friend tuple<Ts&&...> iter_move(const this_type& it) EA_NOEXCEPT
+	{
+		return tuple<Ts&&...>(eastl::move(((Ts*)it.mpData[Indices])[it.mIndex])...);
+	}
 
 	this_type& operator++() { ++mIndex; return *this; }
 	this_type operator++(int)
@@ -428,7 +435,7 @@ public:
 		return temp -= n;
 	}
 
-	difference_type operator-(const this_type& rhs) const { return mIndex - rhs.mIndex; }
+	difference_type operator-(const this_type& rhs) const { return difference_type(mIndex - rhs.mIndex); }
 	bool operator<(const this_type& rhs) const { return mIndex < rhs.mIndex; }
 	bool operator>(const this_type& rhs) const { return mIndex > rhs.mIndex; }
 	bool operator>=(const this_type& rhs) const { return mIndex >= rhs.mIndex; }
