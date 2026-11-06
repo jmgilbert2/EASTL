@@ -207,38 +207,6 @@ namespace eastl
 		}
 	}
 
-	namespace Internal
-	{
-		// merge_move
-		//
-		// Like merge, with the same comparisons, but moves the elements instead of copying them. The sorts use it to
-		// merge between a range and a buffer, so an element is never moved onto itself.
-		template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
-		OutputIterator merge_move(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare& compare)
-		{
-			while((first1 != last1) && (first2 != last2))
-			{
-				if(compare(*first2, *first1))
-				{
-					EASTL_VALIDATE_COMPARE(!compare(*first1, *first2)); // Validate that the compare function is sane.
-					*result = iter_move(first2);
-					++first2;
-				}
-				else
-				{
-					*result = iter_move(first1);
-					++first1;
-				}
-				++result;
-			}
-
-			if (first1 == last1)
-				return eastl::move(first2, last2, result);
-			else
-				return eastl::move(first1, last1, result);
-		}
-	}
-
 	template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 	inline OutputIterator merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 	{
@@ -273,16 +241,30 @@ namespace eastl
 
 			for (++i; i != last; ++i)
 			{
-				value_type insertValue(iter_move(i));
-				BidirectionalIterator insertPosition = i;
+				BidirectionalIterator movePosition = i;
 
-				for (BidirectionalIterator movePosition = i; movePosition != first && compare(insertValue, *(--movePosition)); --insertPosition)
+				if (compare(*i, *--movePosition)) // Elements already in place aren't moved.
 				{
-					EASTL_VALIDATE_COMPARE(!compare(*movePosition, insertValue));
-					*insertPosition = iter_move(movePosition);
-				}
+					EASTL_VALIDATE_COMPARE(!compare(*movePosition, *i));
+					value_type insertValue(iter_move(i));
+					BidirectionalIterator insertPosition = i;
 
-				*insertPosition = eastl::move(insertValue);
+					if (compare(insertValue, *first)) // If it goes first, move the sorted elements up as one range.
+					{
+						eastl::move_backward(first, i, ++insertPosition);
+						insertPosition = first;
+					}
+					else
+					{
+						do
+						{
+							*insertPosition = iter_move(movePosition);
+							insertPosition = movePosition;
+						} while (compare(insertValue, *--movePosition)); // *first doesn't follow insertValue, so it stops the scan.
+					}
+
+					*insertPosition = eastl::move(insertValue);
+				}
 			}
 		}
 	} // insertion_sort
@@ -296,6 +278,59 @@ namespace eastl
 		insertion_sort<BidirectionalIterator>(first, last, Less());
 
 	} // insertion_sort
+
+
+	namespace Internal
+	{
+		// Insertion-sorts the elements nSpace apart, all the sequences in one pass over the range: each element is inserted
+		// among the sorted elements before it in its sequence. Large gaps leave each insertion about one element to move.
+		//
+		// A trivially copyable element is taken out into a temporary and the elements before it move up by nSpace: one move
+		// per step instead of a swap's three, and the temporary stays in registers.
+		template <typename RandomAccessIterator, typename StrictWeakOrdering>
+		void shell_sort_insert(RandomAccessIterator first, RandomAccessIterator last, typename eastl::iterator_traits<RandomAccessIterator>::difference_type nSpace, StrictWeakOrdering& compare, true_type)
+		{
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
+
+			for(RandomAccessIterator iInsert = first + nSpace; iInsert != last; ++iInsert)
+			{
+				if(compare(*iInsert, *(iInsert - nSpace)))
+				{
+					EASTL_VALIDATE_COMPARE(!compare(*(iInsert - nSpace), *iInsert)); // Validate that the compare function is sane.
+					value_type value(iter_move(iInsert));
+					RandomAccessIterator iHole = iInsert;
+
+					do
+					{
+						*iHole = iter_move(iHole - nSpace);
+						iHole -= nSpace;
+					} while(((iHole - first) >= nSpace) && compare(value, *(iHole - nSpace))); // Don't form an iterator before first.
+
+					*iHole = eastl::move(value);
+				}
+			}
+		}
+
+		// Other elements are swapped down instead: building and destroying a temporary for each insertion costs more than
+		// the moves it saves. Through a temporary, 100,000 reversed tuple<int, string> took 4.5 times as long as with swaps,
+		// and strings 1.5 times (with MSVC: the moved-from string is reset byte by byte, then read back whole).
+		template <typename RandomAccessIterator, typename StrictWeakOrdering>
+		void shell_sort_insert(RandomAccessIterator first, RandomAccessIterator last, typename eastl::iterator_traits<RandomAccessIterator>::difference_type nSpace, StrictWeakOrdering& compare, false_type)
+		{
+			for(RandomAccessIterator iInsert = first + nSpace; iInsert != last; ++iInsert)
+			{
+				for(RandomAccessIterator iRight = iInsert; compare(*iRight, *(iRight - nSpace)); )
+				{
+					EASTL_VALIDATE_COMPARE(!compare(*(iRight - nSpace), *iRight)); // Validate that the compare function is sane.
+					eastl::iter_swap(iRight, iRight - nSpace);
+					iRight -= nSpace;
+
+					if((iRight - first) < nSpace) // Don't form an iterator before first.
+						break;
+				}
+			}
+		}
+	} // namespace Internal
 
 
 	/// shell_sort
@@ -312,6 +347,7 @@ namespace eastl
 	void shell_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering compare)
 	{
 		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
+		typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type      value_type;
 
 		// We use the Knuth 'h' sequence below, as it is easy to calculate at runtime. 
 		// However, possibly we are better off using a different sequence based on a table.
@@ -329,43 +365,7 @@ namespace eastl
 
 			// nSpace will iterate from the largest Knuth 'h' element smaller than the size of the range down to 1 (inclusive).
 			for(nSpace = (nSpace - 1) / 3; nSpace >= 1; nSpace = (nSpace - 1) / 3)  // Integer division is less than ideal.
-			{
-				for(difference_type i = 0; i < nSpace; i++)
-				{
-					const RandomAccessIterator iInsertFirst = first + i; // range: [first, first + nSpace)
-
-					// After completion of this next loop the elements
-					//   iInsertFirst + K * nSpace
-					// for K = [0, 1, 2, ...) form a sorted range.
-					// This loop is essentially an insertion sort.
-
-					// Note: we can only move the iterator forward if we know we won't overrun the
-					// end(), otherwise we can invoke undefined behaviour. So we need to check we
-					// have enough space before moving the iterator.
-					RandomAccessIterator iSorted = iInsertFirst;
-					while(eastl::distance(iSorted, last) > nSpace)
-					{
-						RandomAccessIterator iLeft = iSorted;
-						iSorted += nSpace;
-						RandomAccessIterator iRight = iSorted;
-
-						// the elements (with distance nSpace) prior to iRight are sorted.
-						// move iRight into its sorted position.
-						while(compare(*iRight, *iLeft))
-						{
-							EASTL_VALIDATE_COMPARE(!compare(*iLeft, *iRight)); // Validate that the compare function is sane.
-
-							eastl::iter_swap(iRight, iLeft);
-
-							if (iLeft == iInsertFirst) // don't iterate iLeft past the valid range.
-								break;
-
-							iRight = iLeft;
-							iLeft -= nSpace;
-						}
-					}
-				}
-			}
+				Internal::shell_sort_insert(first, last, nSpace, compare, eastl::is_trivially_copyable<value_type>());
 		}
 	} // shell_sort
 
@@ -405,197 +405,10 @@ namespace eastl
 
 	namespace Internal
 	{
-		// Sorts a range whose initial (start - first) entries are already sorted.
-		// This function is a useful helper to the tim_sort function.
-		// This is the same as insertion_sort except that it has a start parameter which indicates
-		// where the start of the unsorted data is.
-		template <typename BidirectionalIterator, typename StrictWeakOrdering>
-		void insertion_sort_already_started(BidirectionalIterator first, BidirectionalIterator last, BidirectionalIterator start, StrictWeakOrdering compare)
-		{
-			typedef typename eastl::iterator_traits<BidirectionalIterator>::value_type value_type;
-
-			if (first != last) // if the range is non-empty...
-			{
-				BidirectionalIterator iCurrent, iNext, iSorted = start - 1;
-
-				for (++iSorted; iSorted != last; ++iSorted)
-				{
-					value_type temp(iter_move(iSorted));
-
-					iNext = iCurrent = iSorted;
-
-					for (--iCurrent; (iNext != first) && compare(temp, *iCurrent); --iNext, (void)--iCurrent)
-					{
-						EASTL_VALIDATE_COMPARE(!compare(*iCurrent, temp)); // Validate that the compare function is sane.
-						*iNext = iter_move(iCurrent);
-					}
-
-					*iNext = eastl::move(temp);
-				}
-			}
-		}
-	}
-
-
-
-	/// merge_sort_buffer
-	///
-	/// Implements the MergeSort algorithm with a user-supplied buffer.
-	/// The input buffer must be able to hold a number of items equal to 'last - first'.
-	/// Note that merge_sort_buffer requires a random access iterator, which usually means 
-	/// an array (eg. vector, deque).
-	///
-	/// The algorithm used for merge sort is not the standard merge sort.  It has been modified
-	/// to improve performance for data that is already partially sorted.  In fact, if data
-	/// is completely sorted, then performance is O(n), but even data with partially sorted
-	/// regions can benefit from the modifications.
-	///
-	/// 'InsertionSortLimit' specifies a size limit for which the algorithm will use insertion sort.
-	/// Due to the overhead of merge sort, it is often faster to use insertion sort once the size of a region
-	/// is fairly small.  However, insertion sort is not as efficient (in terms of assignments orcomparisons)
-	/// so choosing a value that is too large will reduce performance.  Generally a value of 16 to 32 is reasonable,
-	/// but the best choose will depend on the data being sorted.
-	template <typename RandomAccessIterator, typename T, typename StrictWeakOrdering, typename difference_type, int InsertionSortLimit>
-	class MergeSorter
-	{
-	public:
-		static void sort(RandomAccessIterator first, RandomAccessIterator last, T* pBuffer, StrictWeakOrdering compare)
-		{
-			if (sort_impl(first, last, pBuffer, difference_type(0), compare) == RL_Buffer)
-			{
-				const difference_type nCount = last - first;
-				eastl::move(pBuffer, pBuffer + nCount, first);
-			}
-			EASTL_DEV_ASSERT((eastl::is_sorted<RandomAccessIterator, StrictWeakOrdering>(first, last, compare)));
-		}
-
-	private:
-		static_assert(InsertionSortLimit > 1, "Sequences of length 1 are already sorted.  Use a larger value for InsertionSortLimit");
-
-		enum ResultLocation
-		{
-			RL_SourceRange,	// i.e. result is in the range defined by [first, last)
-			RL_Buffer,		// i.e. result is in pBuffer
-		};
-
-		// sort_impl
-		//
-		// This sort routine sorts the data in [first, last) and places the result in pBuffer or in the original range of the input.  The actual
-		// location of the data is indicated by the enum returned.
-		// 
-		// lastSortedEnd is used to specify a that data in the range [first, first + lastSortedEnd] is already sorted.  This information is used
-		// to avoid unnecessary merge sorting of already sorted data.  lastSortedEnd is a hint, and can be an under estimate of the sorted elements
-		// (i.e. it is legal to pass 0).
-		static ResultLocation sort_impl(RandomAccessIterator first, RandomAccessIterator last, T* pBuffer, difference_type lastSortedEnd, StrictWeakOrdering compare)
-		{
-			const difference_type nCount = last - first;
-
-			if (lastSortedEnd < 1)
-			{
-				lastSortedEnd = eastl::is_sorted_until<RandomAccessIterator, StrictWeakOrdering>(first, last, compare) - first;
-			}
-
-			// Sort the region unless lastSortedEnd indicates it is already sorted.
-			if (lastSortedEnd < nCount)
-			{
-				// If the size is less than or equal to InsertionSortLimit use insertion sort instead of recursing further.
-				if (nCount <= InsertionSortLimit)
-				{
-					eastl::Internal::insertion_sort_already_started<RandomAccessIterator, StrictWeakOrdering>(first, last, first + lastSortedEnd, compare);
-					return RL_SourceRange;
-				}
-				else
-				{
-					const difference_type nMid = nCount / 2;
-
-					ResultLocation firstHalfLocation = RL_SourceRange;
-					// Don't sort the first half if it is already sorted.
-					if (lastSortedEnd < nMid)
-					{
-						firstHalfLocation = sort_impl(first, first + nMid, pBuffer, lastSortedEnd, compare);
-					}
-
-					ResultLocation secondHalfLocation = sort_impl(first + nMid, last, pBuffer + nMid, lastSortedEnd - nMid, compare);
-
-					return merge_halves(first, last, nMid, pBuffer, firstHalfLocation, secondHalfLocation, compare);
-				}
-			}
-			else
-			{
-				EASTL_DEV_ASSERT((eastl::is_sorted<RandomAccessIterator, StrictWeakOrdering>(first, last, compare)));
-				return RL_SourceRange;
-			}
-		}
-
-		// merge_halves
-		//
-		// Merge two sorted regions of elements.
-		// The inputs to this method effectively define two large buffers.  The variables 'firstHalfLocation' and 'secondHalfLocation' define where the data to be
-		// merged is located within the two buffers.  It is entirely possible that the two areas to be merged could be entirely located in either of the larger buffers.
-		// Upon returning the merged results will be in one of the two buffers (indicated by the return result).
-		static ResultLocation merge_halves(RandomAccessIterator first, RandomAccessIterator last, difference_type nMid, T* pBuffer, ResultLocation firstHalfLocation, ResultLocation secondHalfLocation, StrictWeakOrdering compare)
-		{
-			const difference_type nCount = last - first;
-			if (firstHalfLocation == RL_SourceRange)
-			{
-				if (secondHalfLocation == RL_SourceRange)
-				{
-					Internal::merge_move(first, first + nMid, first + nMid, last, pBuffer, compare);
-					EASTL_DEV_ASSERT((eastl::is_sorted<T*, StrictWeakOrdering>(pBuffer, pBuffer + nCount, compare)));
-					return RL_Buffer;
-				}
-				else
-				{
-					eastl::move(first, first + nMid, pBuffer);
-					Internal::merge_move(pBuffer, pBuffer + nMid, pBuffer + nMid, pBuffer + nCount, first, compare);
-					EASTL_DEV_ASSERT((eastl::is_sorted<RandomAccessIterator, StrictWeakOrdering>(first, last, compare)));
-					return RL_SourceRange;
-				}
-			}
-			else
-			{
-				if (secondHalfLocation == RL_SourceRange)
-				{
-					eastl::move(first + nMid, last, pBuffer + nMid);
-					Internal::merge_move(pBuffer, pBuffer + nMid, pBuffer + nMid, pBuffer + nCount, first, compare);
-					EASTL_DEV_ASSERT((eastl::is_sorted<RandomAccessIterator, StrictWeakOrdering>(first, last, compare)));
-					return RL_SourceRange;
-				}
-				else
-				{
-					Internal::merge_move(pBuffer, pBuffer + nMid, pBuffer + nMid, pBuffer + nCount, first, compare);
-					EASTL_DEV_ASSERT((eastl::is_sorted<RandomAccessIterator, StrictWeakOrdering>(first, last, compare)));
-					return RL_SourceRange;
-				}
-			}
-		}
-
-	};
-
-
-	template <typename RandomAccessIterator, typename T, typename StrictWeakOrdering>
-	void merge_sort_buffer(RandomAccessIterator first, RandomAccessIterator last, T* pBuffer, StrictWeakOrdering compare)
-	{
-		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
-		MergeSorter<RandomAccessIterator, T, StrictWeakOrdering, difference_type, 16>::sort(first, last, pBuffer, compare);
-	}
-
-	template <typename RandomAccessIterator, typename T>
-	inline void merge_sort_buffer(RandomAccessIterator first, RandomAccessIterator last, T* pBuffer)
-	{
-		typedef eastl::less<typename eastl::iterator_traits<RandomAccessIterator>::value_type> Less;
-
-		eastl::merge_sort_buffer<RandomAccessIterator, T, Less>(first, last, pBuffer, Less());
-	}
-
-
-
-	namespace Internal
-	{
-		// The merge sort that merge_sort and stable_sort use. Like the MSVC STL's std::stable_sort, it needs a buffer
-		// for only half the range: it sorts each half with the buffer, then merges the halves through it. A half is
-		// sorted top-down, alternating between the range and the buffer so that each level moves each element once:
-		// merge_sort_in_place sorts the two halves of its range into the buffer and merges them back, and
+		// The merge sort that merge_sort, stable_sort and merge_sort_buffer use. Like the MSVC STL's std::stable_sort,
+		// merge_sort needs a buffer for only half the range: it sorts each half with the buffer, then merges the halves
+		// through it. A range is sorted top-down, alternating between the range and the buffer so that each level moves each
+		// element once: merge_sort_in_place sorts the two halves of its range into the buffer and merges them back, and
 		// merge_sort_move sorts the two halves of its range in place and merges them into the buffer. Short ranges are
 		// insertion-sorted. Parts found already sorted stay where they are, and adjacent runs already in order, or
 		// entirely in reverse order, are moved without being merged.
@@ -637,7 +450,7 @@ namespace eastl
 						{
 							*hole = iter_move(hole - 1);
 							--hole;
-						} while((hole != first) && compare(value, *(hole - 1)));
+						} while(compare(value, *(hole - 1))); // *first doesn't follow value, so it stops the scan.
 					}
 
 					*hole = eastl::move(value);
@@ -683,7 +496,7 @@ namespace eastl
 						{
 							*pHole = eastl::move(*(pHole - 1));
 							--pHole;
-						} while((pHole != pDest) && compare(*next, *(pHole - 1)));
+						} while(compare(*next, *(pHole - 1))); // *pDest doesn't follow *next, so it stops the scan.
 					}
 
 					*pHole = iter_move(next);
@@ -724,7 +537,7 @@ namespace eastl
 		}
 
 		// Merges the adjacent non-empty sorted ranges [first, mid) and [mid, last) in place, using pBuffer, which holds
-		// at least as many elements as the larger of the two.
+		// at least as many elements as the shorter of the two.
 		template <typename RandomAccessIterator, typename T, typename StrictWeakOrdering>
 		void merge_halves_with_buffer(RandomAccessIterator first, RandomAccessIterator mid, RandomAccessIterator last, T* pBuffer, StrictWeakOrdering& compare)
 		{
@@ -873,6 +686,36 @@ namespace eastl
 			}
 		}
 	}
+
+
+	/// merge_sort_buffer
+	///
+	/// Implements the MergeSort algorithm with a user-supplied buffer.
+	/// The input buffer must be able to hold a number of items equal to 'last - first'.
+	/// Note that merge_sort_buffer requires a random access iterator, which usually means 
+	/// an array (eg. vector, deque).
+	///
+	/// It is merge_sort's algorithm, sorting the whole range with the buffer instead of each half. It adapts to data that
+	/// is already partially sorted: if data is completely sorted, then performance is O(n), and even data with
+	/// partially sorted regions benefits. The elements left in the buffer are moved-from.
+	///
+	template <typename RandomAccessIterator, typename T, typename StrictWeakOrdering>
+	void merge_sort_buffer(RandomAccessIterator first, RandomAccessIterator last, T* pBuffer, StrictWeakOrdering compare)
+	{
+		typedef typename eastl::iterator_traits<RandomAccessIterator>::difference_type difference_type;
+
+		if((last - first) > 1)
+			Internal::merge_sort_in_place(first, last, pBuffer, difference_type(0), compare);
+	}
+
+	template <typename RandomAccessIterator, typename T>
+	inline void merge_sort_buffer(RandomAccessIterator first, RandomAccessIterator last, T* pBuffer)
+	{
+		typedef eastl::less<typename eastl::iterator_traits<RandomAccessIterator>::value_type> Less;
+
+		eastl::merge_sort_buffer<RandomAccessIterator, T, Less>(first, last, pBuffer, Less());
+	}
+
 
 
 	/// merge_sort
@@ -1189,15 +1032,20 @@ namespace eastl
 				typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
 
 				RandomAccessIterator end(current), prev(current);
-				value_type           value(iter_move(current));
 
-				for(--prev; compare(value, *prev); --end, (void)--prev) // We skip checking for (prev >= first) because quick_sort (our caller) makes this unnecessary.
+				if(compare(*current, *--prev)) // Elements already in place aren't moved.
 				{
-					EASTL_VALIDATE_COMPARE(!compare(*prev, value)); // Validate that the compare function is sane.
-					*end = iter_move(prev);
-				}
+					value_type value(iter_move(current));
 
-				*end = eastl::forward<value_type>(value);
+					do // We skip checking for (prev >= first) because quick_sort (our caller) makes this unnecessary.
+					{
+						EASTL_VALIDATE_COMPARE(!compare(*prev, value)); // Validate that the compare function is sane.
+						*end = iter_move(prev);
+						--end;
+					} while(compare(value, *--prev));
+
+					*end = eastl::move(value);
+				}
 			}
 		}
 	} // namespace Internal
@@ -1561,46 +1409,8 @@ namespace eastl
 
 			EASTL_DEV_ASSERT((A < 10000000) && (B < 10000000) && (curr < 10000000)); // Sanity check.
 
-			if(A < B) // If the first run is shorter than the second run... merge left.
-			{
-				// Move to another location so we have room in the main array to put the sorted items.
-				eastl::move(first + curr, first + curr + A, pBuffer);
-
-				#if EASTL_DEV_DEBUG
-					typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
-
-					for(intptr_t i = 0; i < A; i++)
-						*(first + curr + i) = value_type();
-				#endif
-
-				intptr_t i = 0;
-				intptr_t j = curr + A;
-
-				// Once the first run (in the buffer) is used up, the rest of the second run is already in place.
-				for(intptr_t k = curr; i < A; k++)
-				{
-					if((j < (curr + A + B)) && compare(*(first + j), *(pBuffer + i))) // If (first[j] < pBuffer[i])...
-						*(first + k) = iter_move(first + j++);
-					else
-						*(first + k) = eastl::move(*(pBuffer + i++));
-				}
-			}
-			else // Else the second run is equal or shorter... merge right.
-			{
-				eastl::move(first + curr + A, first + curr + A + B, pBuffer);
-
-				intptr_t i = B - 1;
-				intptr_t j = curr + A - 1;
-
-				// Once the second run (in the buffer) is used up, the rest of the first run is already in place.
-				for(intptr_t k = curr + A + B - 1; i >= 0; k--)
-				{
-					if((j >= curr) && compare(*(pBuffer + i), *(first + j))) // If (pBuffer[i] < first[j]) ...
-						*(first + k) = iter_move(first + j--);
-					else
-						*(first + k) = eastl::move(*(pBuffer + i--));
-				}
-			}
+			// The buffer holds at least as many elements as the shorter run.
+			merge_halves_with_buffer(first + curr, first + curr + A, first + curr + A + B, pBuffer, compare);
 		}
 
 
@@ -1751,7 +1561,7 @@ namespace eastl
 
 			if(run > len)               // If there is any additional data we want to sort to bring up the run length to minrun.
 			{
-				insertion_sort_already_started<RandomAccessIterator, StrictWeakOrdering>(first + curr, first + curr + run, first + curr + len, compare);
+				merge_sort_insertion_sort(first + curr, first + curr + len, first + curr + run, compare);
 				len = run;
 			}
 
@@ -1842,7 +1652,7 @@ namespace eastl
 		}
 		else if (size < 64)
 		{
-			insertion_sort_already_started(first, first + size, first + 1, compare);
+			merge_sort_insertion_sort(first, first + 1, first + size, compare);
 		}
 		else
 		{
