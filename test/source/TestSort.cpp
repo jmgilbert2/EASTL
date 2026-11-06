@@ -1211,6 +1211,38 @@ int TestSort()
 		TestObject::Reset();
 	}
 
+	// nth_element is O(n log n) in the worst case. McIlroy's adversary ("A Killer Adversary for Quicksort") is a valid
+	// comparator that decides the order of the elements while the algorithm compares them, so as to defeat the median of
+	// three: it made nth_element quadratic.
+	{
+		struct Adversary
+		{
+			int* mpValue; int mGas; int* mpSolidCount; int* mpCandidate; int* mpCallCount;
+
+			bool operator()(int x, int y) const
+			{
+				++*mpCallCount;
+				if((mpValue[x] == mGas) && (mpValue[y] == mGas))
+					mpValue[(x == *mpCandidate) ? x : y] = (*mpSolidCount)++;
+				if(mpValue[x] == mGas)
+					*mpCandidate = x;
+				else if(mpValue[y] == mGas)
+					*mpCandidate = y;
+				return mpValue[x] < mpValue[y];
+			}
+		};
+
+		const int n = 3000;
+		vector<int> ids, values(n, n);
+		for(int i = 0; i < n; i++)
+			ids.push_back(i);
+		int solidCount = 0, candidate = 0, callCount = 0;
+		nth_element(ids.begin(), ids.begin() + n / 2, ids.end(), Adversary{values.data(), n, &solidCount, &candidate, &callCount});
+		EATEST_VERIFY(callCount < 20 * n * 12);
+		for(int i = 0; i < n; i++)
+			EATEST_VERIFY((i < n / 2) ? (values[ids[i]] <= values[ids[n / 2]]) : (values[ids[i]] >= values[ids[n / 2]]));
+	}
+
 	#if 0 // Disabled because it takes a long time and thus far seems to show no bug in quick_sort.
 	{
 		// Regression of Coverity report for Madden 2014 that quick_sort is reading beyond an array bounds within insertion_sort_simple.
