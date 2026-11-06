@@ -337,6 +337,26 @@ int TestFunctional()
 		}
 	}
 
+	{
+		// A disabled hash, as in std: not default constructible, not copyable or movable, and no call operator.
+		// Only cv-unqualified arithmetic, enum and pointer types get an enabled hash.
+		struct NotHashable {};
+		enum class HashColor { Red, Green };
+
+		static_assert(!is_default_constructible<hash<NotHashable>>::value, "hash<NotHashable> is disabled");
+		static_assert(!is_copy_constructible<hash<NotHashable>>::value, "hash<NotHashable> is disabled");
+		static_assert(!is_move_constructible<hash<NotHashable>>::value, "hash<NotHashable> is disabled");
+		static_assert(!is_copy_assignable<hash<NotHashable>>::value, "hash<NotHashable> is disabled");
+		static_assert(!is_move_assignable<hash<NotHashable>>::value, "hash<NotHashable> is disabled");
+		static_assert(!is_default_constructible<hash<const int>>::value, "hash<const int> is disabled");
+		static_assert(!is_default_constructible<hash<volatile int>>::value, "hash<volatile int> is disabled");
+		static_assert(!is_default_constructible<hash<const HashColor>>::value, "hash<const HashColor> is disabled");
+
+		static_assert(is_default_constructible<hash<HashColor>>::value && is_copy_constructible<hash<HashColor>>::value, "enum hash is enabled");
+		EATEST_VERIFY(hash<HashColor>()(HashColor::Green) == 1);
+		EATEST_VERIFY(hash<std::nullptr_t>()(nullptr) == hash<int*>()(nullptr));
+	}
+
 
 #if defined(EA_COMPILER_CPP11_ENABLED) && EASTL_VARIADIC_TEMPLATES_ENABLED
 	// On platforms do not support variadic templates the eastl::invoke (eastl::mem_fn is built on eastl::invoke)

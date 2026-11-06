@@ -147,6 +147,10 @@ int TestVariantHash()
 	static_assert(!has_default_hash_v<variant<no_hash, monostate>>, "!hashable");
 	static_assert(!has_default_hash_v<variant<monostate, no_hash>>, "!hashable");
 
+	// A disabled hash, as in std: not default constructible and not copyable.
+	static_assert(!is_default_constructible<hash<variant<no_hash>>>::value, "hash<variant<no_hash>> is disabled");
+	static_assert(!is_copy_constructible<hash<variant<monostate, no_hash>>>::value, "hash<variant<monostate, no_hash>> is disabled");
+
 	return nErrorCount;
 }
 

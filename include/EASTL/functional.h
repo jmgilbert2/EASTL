@@ -554,10 +554,23 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	namespace Internal
 	{
+		// A disabled hash specialization, as the standard defines it ([unord.hash]): not default constructible, not
+		// copyable or movable, and no call operator, so traits and SFINAE checks see that the type isn't hashable.
+		struct disabled_hash
+		{
+			disabled_hash() = delete;
+			disabled_hash(const disabled_hash&) = delete;
+			disabled_hash(disabled_hash&&) = delete;
+			disabled_hash& operator=(const disabled_hash&) = delete;
+			disabled_hash& operator=(disabled_hash&&) = delete;
+		};
+
 		// utility to disable the generic template specialization that is
 		// used for enum types only.
+		EA_DISABLE_VC_WARNING(4623) // default constructor was implicitly defined as deleted: that is how a disabled hash is disabled.
 		template <typename T, bool Enabled>
-		struct EnableHashIf {};
+		struct EnableHashIf : disabled_hash {};
+		EA_RESTORE_VC_WARNING()
 
 		template <typename T>
 		struct EnableHashIf<T, true>
@@ -569,11 +582,16 @@ namespace eastl
 
 	template <typename T> struct hash;
 
+	EA_DISABLE_VC_WARNING(4623) // default constructor was implicitly defined as deleted: that is how a disabled hash is disabled.
 	template <typename T>
-	struct hash : Internal::EnableHashIf<T, is_enum_v<T>> {};
+	struct hash : Internal::EnableHashIf<T, is_enum_v<T> && !is_const_v<T> && !is_volatile_v<T>> {}; // Like std, only cv-unqualified enums.
+	EA_RESTORE_VC_WARNING()
 
 	template <typename T> struct hash<T*> // Note that we use the pointer as-is and don't divide by sizeof(T*). This is because the table is of a prime size and this division doesn't benefit distribution.
 		{ size_t operator()(T* p) const { return size_t(uintptr_t(p)); } };
+
+	template <> struct hash<std::nullptr_t> // Like std; the same value as hash<T*> of a null pointer.
+		{ size_t operator()(std::nullptr_t) const { return 0; } };
 
 	template <> struct hash<bool>
 		{ size_t operator()(bool val) const { return static_cast<size_t>(val); } };

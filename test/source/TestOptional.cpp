@@ -1109,6 +1109,16 @@ int TestOptional()
 			optional<string> o = string(pMessage);
 			VERIFY(hash_optional_t{}(o) == hash<string>{}(pMessage));
 		}
+
+		{
+			// Like std: disabled when hash<T> is, and optional<const T> is hashed with hash<T>.
+			struct NotHashable {};
+			static_assert(!is_default_constructible<hash<optional<NotHashable>>>::value, "hash<optional<NotHashable>> is disabled");
+			static_assert(!is_copy_constructible<hash<optional<NotHashable>>>::value, "hash<optional<NotHashable>> is disabled");
+
+			optional<const int> c = 7;
+			VERIFY(hash<optional<const int>>{}(c) == hash<int>{}(7));
+		}
 	}
 
 	// sorting
