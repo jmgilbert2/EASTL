@@ -590,11 +590,297 @@ namespace eastl
 
 
 
+	namespace Internal
+	{
+		// The merge sort that merge_sort and stable_sort use. Like the MSVC STL's std::stable_sort, it needs a buffer
+		// for only half the range: it sorts each half with the buffer, then merges the halves through it. A half is
+		// sorted top-down, alternating between the range and the buffer so that each level moves each element once:
+		// merge_sort_in_place sorts the two halves of its range into the buffer and merges them back, and
+		// merge_sort_move sorts the two halves of its range in place and merges them into the buffer. Short ranges are
+		// insertion-sorted. Parts found already sorted stay where they are, and adjacent runs already in order, or
+		// entirely in reverse order, are moved without being merged.
+
+		// The longest range that is insertion-sorted: 32 elements like the MSVC STL when moves are copies of trivially
+		// copyable elements, else 24, where the insertion sort's extra moves cost more than the merging they save.
+		template <typename T>
+		struct merge_sort_run_length : integral_constant<intptr_t, is_trivially_copyable<T>::value ? 32 : 24> {};
+
+		// Insertion-sorts the range [first, last), whose part [first, next) is sorted and not empty.
+		template <typename RandomAccessIterator, typename StrictWeakOrdering>
+		void merge_sort_insertion_sort(RandomAccessIterator first, RandomAccessIterator next, RandomAccessIterator last, StrictWeakOrdering& compare)
+		{
+			typedef typename eastl::iterator_traits<RandomAccessIterator>::value_type value_type;
+
+			if(((next - first) == 1) && (next != last) && compare(*next, *first))
+			{
+				// Reverse a strictly decreasing prefix instead of inserting its elements one by one.
+				do
+					++next;
+				while((next != last) && compare(*next, *(next - 1)));
+
+				eastl::reverse(first, next);
+			}
+
+			for(; next != last; ++next)
+			{
+				if(compare(*next, *(next - 1)))
+				{
+					EASTL_VALIDATE_COMPARE(!compare(*(next - 1), *next)); // Validate that the compare function is sane.
+					value_type value(iter_move(next));
+					RandomAccessIterator hole = next;
+
+					if(compare(value, *first)) // If it goes first, move the sorted elements up as one range.
+						hole = eastl::move_backward(first, next, next + 1) - 1;
+					else
+					{
+						do
+						{
+							*hole = iter_move(hole - 1);
+							--hole;
+						} while((hole != first) && compare(value, *(hole - 1)));
+					}
+
+					*hole = eastl::move(value);
+				}
+			}
+		}
+
+		// Moves the non-empty range [first, last) to pDest, insertion-sorting it there.
+		template <typename RandomAccessIterator, typename T, typename StrictWeakOrdering>
+		void merge_sort_insertion_move(RandomAccessIterator first, RandomAccessIterator last, T* pDest, StrictWeakOrdering& compare)
+		{
+			T* pDestLast = pDest;
+			RandomAccessIterator next = first + 1;
+
+			if((next != last) && compare(*next, *first))
+			{
+				// Move a strictly decreasing prefix in reverse instead of inserting its elements one by one.
+				do
+					++next;
+				while((next != last) && compare(*next, *(next - 1)));
+
+				for(RandomAccessIterator current = next; current != first; ++pDestLast)
+					*pDestLast = iter_move(--current);
+			}
+			else
+			{
+				*pDestLast = iter_move(first);
+				++pDestLast;
+			}
+
+			for(; next != last; ++next, ++pDestLast)
+			{
+				if(compare(*next, *(pDestLast - 1)))
+				{
+					EASTL_VALIDATE_COMPARE(!compare(*(pDestLast - 1), *next)); // Validate that the compare function is sane.
+					T* pHole = pDestLast;
+
+					if(compare(*next, *pDest)) // If it goes first, move the sorted elements up as one range.
+						pHole = eastl::move_backward(pDest, pDestLast, pDestLast + 1) - 1;
+					else
+					{
+						do
+						{
+							*pHole = eastl::move(*(pHole - 1));
+							--pHole;
+						} while((pHole != pDest) && compare(*next, *(pHole - 1)));
+					}
+
+					*pHole = iter_move(next);
+				}
+				else
+					*pDestLast = iter_move(next);
+			}
+		}
+
+		// Moves the adjacent non-empty sorted runs [first, mid) and [mid, last), merged, to result.
+		template <typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
+		OutputIterator merge_move_runs(InputIterator first, InputIterator mid, InputIterator last, OutputIterator result, StrictWeakOrdering& compare)
+		{
+			if(!compare(*mid, *(mid - 1)))
+				return eastl::move(first, last, result);
+
+			if(compare(*(last - 1), *first))
+				return eastl::move(first, mid, eastl::move(mid, last, result));
+
+			for(InputIterator next = mid;;)
+			{
+				if(compare(*next, *first))
+				{
+					EASTL_VALIDATE_COMPARE(!compare(*first, *next)); // Validate that the compare function is sane.
+					*result = iter_move(next);
+					++result;
+					if(++next == last)
+						return eastl::move(first, mid, result);
+				}
+				else
+				{
+					*result = iter_move(first);
+					++result;
+					if(++first == mid)
+						return eastl::move(next, last, result);
+				}
+			}
+		}
+
+		// Merges the adjacent non-empty sorted ranges [first, mid) and [mid, last) in place, using pBuffer, which holds
+		// at least as many elements as the larger of the two.
+		template <typename RandomAccessIterator, typename T, typename StrictWeakOrdering>
+		void merge_halves_with_buffer(RandomAccessIterator first, RandomAccessIterator mid, RandomAccessIterator last, T* pBuffer, StrictWeakOrdering& compare)
+		{
+			if(!compare(*mid, *(mid - 1)))
+				return;
+
+			// The elements of the first half that don't follow any of the second half, and those of the second half
+			// that don't precede any of the first half, stay where they are.
+			typedef typename eastl::remove_reference<typename eastl::iterator_traits<RandomAccessIterator>::reference>::type element_type;
+
+			first = eastl::upper_bound<RandomAccessIterator, element_type, StrictWeakOrdering&>(first, mid, *mid, compare);
+			last  = eastl::lower_bound<RandomAccessIterator, element_type, StrictWeakOrdering&>(mid, last, *(mid - 1), compare);
+
+			if((mid - first) <= (last - mid))
+			{
+				// Move the first part to the buffer and merge forward.
+				T* const pBufferLast = eastl::move(first, mid, pBuffer);
+
+				for(T* pCurrent = pBuffer;;)
+				{
+					if(compare(*mid, *pCurrent))
+					{
+						EASTL_VALIDATE_COMPARE(!compare(*pCurrent, *mid)); // Validate that the compare function is sane.
+						*first = iter_move(mid);
+						++first;
+						if(++mid == last)
+						{
+							eastl::move(pCurrent, pBufferLast, first);
+							return;
+						}
+					}
+					else
+					{
+						*first = eastl::move(*pCurrent);
+						++first;
+						if(++pCurrent == pBufferLast)
+							return; // The rest of the second part is already in place.
+					}
+				}
+			}
+			else
+			{
+				// Move the second part to the buffer and merge backward.
+				T* pCurrent = eastl::move(mid, last, pBuffer) - 1;
+
+				for(--mid;;)
+				{
+					if(compare(*pCurrent, *mid))
+					{
+						EASTL_VALIDATE_COMPARE(!compare(*mid, *pCurrent)); // Validate that the compare function is sane.
+						*--last = iter_move(mid);
+						if(mid == first)
+						{
+							eastl::move_backward(pBuffer, pCurrent + 1, last);
+							return;
+						}
+						--mid;
+					}
+					else
+					{
+						*--last = eastl::move(*pCurrent);
+						if(pCurrent == pBuffer)
+							return; // The rest of the first part is already in place.
+						--pCurrent;
+					}
+				}
+			}
+		}
+
+		// Starts the lifetime of the n elements of pBuffer: by default-initialization when that does nothing, else by moving
+		// the n elements at first into the buffer and back, so that the elements needn't be default-constructible.
+		template <typename RandomAccessIterator, typename T, typename difference_type>
+		void merge_sort_construct_buffer(RandomAccessIterator, T* pBuffer, difference_type n, true_type)
+		{
+			eastl::uninitialized_default_construct(pBuffer, pBuffer + n);
+		}
+
+		template <typename RandomAccessIterator, typename T, typename difference_type>
+		void merge_sort_construct_buffer(RandomAccessIterator first, T* pBuffer, difference_type n, false_type)
+		{
+			eastl::uninitialized_move(first, first + n, pBuffer);
+			eastl::move(pBuffer, pBuffer + n, first);
+		}
+
+		template <typename RandomAccessIterator, typename T, typename difference_type, typename StrictWeakOrdering>
+		void merge_sort_move(RandomAccessIterator first, RandomAccessIterator last, T* pDest, difference_type nSorted, StrictWeakOrdering& compare);
+
+		// Sorts the non-empty range [first, last), whose first nSorted elements are known to be sorted when nSorted > 0,
+		// using pBuffer, which holds at least (last - first) elements.
+		template <typename RandomAccessIterator, typename T, typename difference_type, typename StrictWeakOrdering>
+		void merge_sort_in_place(RandomAccessIterator first, RandomAccessIterator last, T* pBuffer, difference_type nSorted, StrictWeakOrdering& compare)
+		{
+			const difference_type nCount = last - first;
+
+			if(nSorted < 1)
+				nSorted = eastl::is_sorted_until<RandomAccessIterator, StrictWeakOrdering&>(first, last, compare) - first;
+
+			if(nSorted < nCount)
+			{
+				if(nCount <= difference_type(merge_sort_run_length<T>::value))
+					merge_sort_insertion_sort(first, first + nSorted, last, compare);
+				else
+				{
+					const difference_type nMid = nCount / 2;
+					const RandomAccessIterator mid = first + nMid;
+					const difference_type nSortedSecond = eastl::is_sorted_until<RandomAccessIterator, StrictWeakOrdering&>(mid, last, compare) - mid;
+
+					if((nSorted >= nMid) || (nSortedSecond == (nCount - nMid)))
+					{
+						// A half is sorted: sort the other one in place, then merge them through the buffer.
+						merge_sort_in_place(first, mid, pBuffer, nSorted, compare);
+						merge_sort_in_place(mid, last, pBuffer, nSortedSecond, compare);
+						merge_halves_with_buffer(first, mid, last, pBuffer, compare);
+					}
+					else
+					{
+						merge_sort_move(first, mid, pBuffer, nSorted, compare);
+						merge_sort_move(mid, last, pBuffer + nMid, nSortedSecond, compare);
+						merge_move_runs(pBuffer, pBuffer + nMid, pBuffer + nCount, first, compare);
+					}
+				}
+			}
+		}
+
+		// Moves the non-empty range [first, last), whose first nSorted elements are known to be sorted when nSorted > 0,
+		// sorted, to pDest, which holds at least (last - first) elements.
+		template <typename RandomAccessIterator, typename T, typename difference_type, typename StrictWeakOrdering>
+		void merge_sort_move(RandomAccessIterator first, RandomAccessIterator last, T* pDest, difference_type nSorted, StrictWeakOrdering& compare)
+		{
+			const difference_type nCount = last - first;
+
+			if(nSorted < 1)
+				nSorted = eastl::is_sorted_until<RandomAccessIterator, StrictWeakOrdering&>(first, last, compare) - first;
+
+			if(nSorted >= nCount)
+				eastl::move(first, last, pDest);
+			else if(nCount <= difference_type(merge_sort_run_length<T>::value))
+				merge_sort_insertion_move(first, last, pDest, compare);
+			else
+			{
+				const difference_type nMid = nCount / 2;
+
+				merge_sort_in_place(first, first + nMid, pDest, nSorted, compare);
+				merge_sort_in_place(first + nMid, last, pDest + nMid, difference_type(0), compare);
+				merge_move_runs(first, first + nMid, last, pDest, compare);
+			}
+		}
+	}
+
+
 	/// merge_sort
 	///
 	/// Implements the MergeSort algorithm.
-	/// This algorithm allocates memory via the user-supplied allocator. Use merge_sort_buffer
-	/// function if you want a version which doesn't allocate memory.
+	/// This algorithm allocates memory via the user-supplied allocator, a buffer for half the elements
+	/// (rounded up), unless the range is already sorted or short enough to be insertion-sorted. Use
+	/// merge_sort_buffer function if you want a version which doesn't allocate memory.
 	/// Note that merge_sort requires a random access iterator, which usually means 
 	/// an array (eg. vector, deque).
 	/// 
@@ -608,15 +894,29 @@ namespace eastl
 
 		if(nCount > 1)
 		{
-			// We need to allocate an array of nCount value_type objects as a temporary buffer.
-			value_type* const pBuffer = (value_type*)allocate_memory(allocator, nCount * sizeof(value_type), EASTL_ALIGN_OF(value_type), 0);
-			eastl::uninitialized_value_construct(pBuffer, pBuffer + nCount);
+			const difference_type nSorted = eastl::is_sorted_until<RandomAccessIterator, StrictWeakOrdering&>(first, last, compare) - first;
 
-			eastl::merge_sort_buffer<RandomAccessIterator, value_type, StrictWeakOrdering>
-									(first, last, pBuffer, compare);
+			if(nSorted < nCount)
+			{
+				if(nCount <= difference_type(Internal::merge_sort_run_length<value_type>::value))
+					Internal::merge_sort_insertion_sort(first, first + nSorted, last, compare);
+				else
+				{
+					// Sort each half using the buffer, then merge them through it.
+					const difference_type nHalf = nCount - (nCount / 2);
+					const RandomAccessIterator mid = first + nHalf;
+					value_type* const pBuffer = (value_type*)allocate_memory(allocator, nHalf * sizeof(value_type), EASTL_ALIGN_OF(value_type), 0);
 
-			eastl::destruct(pBuffer, pBuffer + nCount);
-			EASTLFree(allocator, pBuffer, nCount * sizeof(value_type));
+					Internal::merge_sort_construct_buffer(first, pBuffer, nHalf, eastl::is_trivially_default_constructible<value_type>());
+
+					Internal::merge_sort_in_place(first, mid, pBuffer, nSorted, compare);
+					Internal::merge_sort_in_place(mid, last, pBuffer, nSorted - nHalf, compare);
+					Internal::merge_halves_with_buffer(first, mid, last, pBuffer, compare);
+
+					eastl::destruct(pBuffer, pBuffer + nHalf);
+					EASTLFree(allocator, pBuffer, nHalf * sizeof(value_type));
+				}
+			}
 		}
 	}
 
