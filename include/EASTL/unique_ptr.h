@@ -100,31 +100,26 @@ namespace eastl
 		/// Construct a unique_ptr from a pointer allocated via new.
 		/// Example usage:
 		///    unique_ptr<int> ptr;
+		/// Like std, this and the next two constructors don't participate for a pointer or non-default-constructible deleter.
+		template <typename D = deleter_type, typename = eastl::enable_if_t<Internal::is_unique_ptr_deleter_default_constructible<D>::value>>
 		EA_CPP14_CONSTEXPR unique_ptr() EA_NOEXCEPT
-			: mPair(pointer())
-		{
-			static_assert(!eastl::is_pointer<deleter_type>::value, "unique_ptr deleter default-constructed with null pointer. Use a different constructor or change your deleter to a class.");
-		}
+			: mPair(pointer()) {}
 
 		/// unique_ptr
 		/// Construct a unique_ptr from a null pointer.
 		/// Example usage:
 		///    unique_ptr<int> ptr(nullptr);
+		template <typename D = deleter_type, typename = eastl::enable_if_t<Internal::is_unique_ptr_deleter_default_constructible<D>::value>>
 		EA_CPP14_CONSTEXPR unique_ptr(std::nullptr_t) EA_NOEXCEPT
-			: mPair(pointer())
-		{
-			static_assert(!eastl::is_pointer<deleter_type>::value, "unique_ptr deleter default-constructed with null pointer. Use a different constructor or change your deleter to a class.");
-		}
+			: mPair(pointer()) {}
 
 		/// unique_ptr
 		/// Construct a unique_ptr from a pointer allocated via new.
 		/// Example usage:
 		///    unique_ptr<int> ptr(new int(3));
+		template <typename D = deleter_type, typename = eastl::enable_if_t<Internal::is_unique_ptr_deleter_default_constructible<D>::value>>
 		explicit unique_ptr(pointer pValue) EA_NOEXCEPT
-			: mPair(pValue)
-		{
-			static_assert(!eastl::is_pointer<deleter_type>::value, "unique_ptr deleter default-constructed with null pointer. Use a different constructor or change your deleter to a class.");
-		}
+			: mPair(pValue) {}
 
 		/// unique_ptr
 		/// Constructs a unique_ptr with the owner pointer and deleter specified
@@ -361,27 +356,20 @@ namespace eastl
 		typedef typename Internal::unique_pointer_type<element_type, deleter_type>::type pointer;
 
 	public:
+		// Like std, this and the next two constructors don't participate for a pointer or non-default-constructible deleter.
+		template <typename D = deleter_type, typename = eastl::enable_if_t<Internal::is_unique_ptr_deleter_default_constructible<D>::value>>
 		EA_CPP14_CONSTEXPR unique_ptr() EA_NOEXCEPT
-			: mPair(pointer())
-		{
-			static_assert(!eastl::is_pointer<deleter_type>::value, "unique_ptr deleter default-constructed with null pointer. Use a different constructor or change your deleter to a class.");
-		}
+			: mPair(pointer()) {}
 
+		template <typename D = deleter_type, typename = eastl::enable_if_t<Internal::is_unique_ptr_deleter_default_constructible<D>::value>>
 		EA_CPP14_CONSTEXPR unique_ptr(std::nullptr_t) EA_NOEXCEPT
-			: mPair(pointer())
-		{
-			static_assert(!eastl::is_pointer<deleter_type>::value, "unique_ptr deleter default-constructed with null pointer. Use a different constructor or change your deleter to a class.");
-		}
+			: mPair(pointer()) {}
 
-		template <typename P,
-		          typename = eastl::enable_if_t<Internal::is_array_cv_convertible<P, pointer>::value>> // Pointers to types derived from T are rejected by the constructors, and by reset.
+		template <typename P, typename D = deleter_type,
+		          typename = eastl::enable_if_t<Internal::is_array_cv_convertible<P, pointer>::value && // Pointers to types derived from T are rejected by the constructors, and by reset.
+		                                        Internal::is_unique_ptr_deleter_default_constructible<D>::value>>
 		 explicit unique_ptr(P pArray) EA_NOEXCEPT
-		    : mPair(pArray)
-		{
-			static_assert(!eastl::is_pointer<deleter_type>::value,
-			              "unique_ptr deleter default-constructed with null pointer. Use a different constructor or "
-			              "change your deleter to a class.");
-		}
+		    : mPair(pArray) {}
 
 		template <typename P>
 		unique_ptr(P pArray, typename eastl::conditional<eastl::is_lvalue_reference<deleter_type>::value, deleter_type,

@@ -877,6 +877,28 @@ static int Test_unique_ptr()
 		static_assert(sizeof(unique_ptr<int, EmptyDeleter>) == sizeof(int*), "empty base optimization");
 	}
 
+	// Like std, the constructors that value-initialize the deleter don't participate for a pointer or
+	// non-default-constructible deleter.
+	{
+		struct RefDeleter { void operator()(int* p) const { delete p; } };
+
+		static_assert(!is_default_constructible<unique_ptr<int, void (*)(int*)>>::value, "pointer deleter");
+		static_assert(!is_constructible<unique_ptr<int, void (*)(int*)>, std::nullptr_t>::value, "pointer deleter");
+		static_assert(!is_constructible<unique_ptr<int, void (*)(int*)>, int*>::value, "pointer deleter");
+		static_assert(!is_default_constructible<unique_ptr<int, RefDeleter&>>::value, "reference deleter");
+		static_assert(!is_constructible<unique_ptr<int, RefDeleter&>, int*>::value, "reference deleter");
+		static_assert(!is_default_constructible<unique_ptr<int[], void (*)(int*)>>::value, "pointer deleter");
+		static_assert(!is_constructible<unique_ptr<int[], void (*)(int*)>, int*>::value, "pointer deleter");
+		static_assert(!is_constructible<unique_ptr<int[], RefDeleter&>, int*>::value, "reference deleter");
+
+		// The constructors that take the deleter stay available.
+		RefDeleter d;
+		unique_ptr<int, RefDeleter&> p(new int(4), d);
+		EATEST_VERIFY(*p == 4);
+		unique_ptr<int, void (*)(int*)> q(new int(5), [](int* x) { delete x; });
+		EATEST_VERIFY(*q == 5);
+	}
+
 	}
 
 	return nErrorCount;
@@ -1379,6 +1401,28 @@ static int Test_shared_ptr()
 		// To do.
 	}
 	#endif
+
+	{
+		// Like std, the deleter constructors participate only if d(p) is well-formed and the deleter is move constructible.
+		struct NotDeleter {};
+		struct IntDeleter { void operator()(int* p) const { delete p; } };
+		struct PinnedDeleter
+		{
+			PinnedDeleter() = default;
+			PinnedDeleter(const PinnedDeleter&) = delete;
+			void operator()(int* p) const { delete p; }
+		};
+
+		static_assert(!is_constructible<shared_ptr<int>, int*, NotDeleter>::value, "d(p) isn't well-formed");
+		static_assert(!is_constructible<shared_ptr<int>, int*, NotDeleter, EASTLAllocatorType>::value, "d(p) isn't well-formed");
+		static_assert(!is_constructible<shared_ptr<int>, std::nullptr_t, NotDeleter>::value, "d(nullptr) isn't well-formed");
+		static_assert(!is_constructible<shared_ptr<int>, std::nullptr_t, NotDeleter, EASTLAllocatorType>::value, "d(nullptr) isn't well-formed");
+		static_assert(!is_constructible<shared_ptr<int>, int*, PinnedDeleter>::value, "the deleter isn't move constructible");
+		static_assert(is_constructible<shared_ptr<int>, int*, IntDeleter>::value, "valid deleter");
+
+		shared_ptr<int> sp(new int(3), IntDeleter());
+		EATEST_VERIFY(*sp == 3);
+	}
 
 	EATEST_VERIFY(A::mCount == 0);
 

@@ -430,13 +430,13 @@ namespace eastl
 		template <typename U, typename Deleter>
 		shared_ptr(U* pValue,
 		           Deleter deleter,
-		           typename eastl::enable_if<eastl::is_convertible<U*, element_type*>::value>::type* = 0)
+		           typename eastl::enable_if<eastl::is_convertible<U*, element_type*>::value && Internal::is_shared_ptr_deleter<Deleter, U*>::value>::type* = 0)
 		    : mpValue(nullptr), mpRefCount(nullptr)
 		{
 			alloc_internal(pValue, default_allocator_type(), eastl::move(deleter));
 		}
 
-		template <typename Deleter>
+		template <typename Deleter, typename = eastl::enable_if_t<Internal::is_shared_ptr_deleter<Deleter, std::nullptr_t>::value>>
 		shared_ptr(std::nullptr_t, Deleter deleter)
 		    : mpValue(nullptr), mpRefCount(nullptr) // alloc_internal will set this.
 		{
@@ -457,13 +457,13 @@ namespace eastl
 		explicit shared_ptr(U* pValue,
 		                    Deleter deleter,
 		                    const Allocator& allocator,
-		                    typename eastl::enable_if<eastl::is_convertible<U*, element_type*>::value>::type* = 0)
+		                    typename eastl::enable_if<eastl::is_convertible<U*, element_type*>::value && Internal::is_shared_ptr_deleter<Deleter, U*>::value>::type* = 0)
 		    : mpValue(nullptr), mpRefCount(nullptr) // alloc_internal will set this.
 		{
 			alloc_internal(pValue, eastl::move(allocator), eastl::move(deleter));
 		}
 
-		template <typename Deleter, typename Allocator>
+		template <typename Deleter, typename Allocator, typename = eastl::enable_if_t<Internal::is_shared_ptr_deleter<Deleter, std::nullptr_t>::value>>
 		shared_ptr(std::nullptr_t, Deleter deleter, Allocator allocator)
 			: mpValue(nullptr),
 			  mpRefCount(nullptr) // alloc_internal will set this.
