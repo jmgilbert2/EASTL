@@ -207,38 +207,6 @@ namespace eastl
 		}
 	}
 
-	namespace Internal
-	{
-		// merge_move
-		//
-		// Like merge, with the same comparisons, but moves the elements instead of copying them. The sorts use it to
-		// merge between a range and a buffer, so an element is never moved onto itself.
-		template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Compare>
-		OutputIterator merge_move(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result, Compare& compare)
-		{
-			while((first1 != last1) && (first2 != last2))
-			{
-				if(compare(*first2, *first1))
-				{
-					EASTL_VALIDATE_COMPARE(!compare(*first1, *first2)); // Validate that the compare function is sane.
-					*result = iter_move(first2);
-					++first2;
-				}
-				else
-				{
-					*result = iter_move(first1);
-					++first1;
-				}
-				++result;
-			}
-
-			if (first1 == last1)
-				return eastl::move(first2, last2, result);
-			else
-				return eastl::move(first1, last1, result);
-		}
-	}
-
 	template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
 	inline OutputIterator merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 	{
