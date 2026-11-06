@@ -496,6 +496,28 @@ int TestAny()
 		}
 	}
 
+	// Like std, the converting constructor and assignment don't participate for a non-copyable value type or an
+	// in_place_type_t.
+	{
+		struct NonCopyable
+		{
+			NonCopyable() = default;
+			NonCopyable(const NonCopyable&) = delete;
+			NonCopyable(NonCopyable&&) = default;
+		};
+
+		static_assert(!eastl::is_constructible<eastl::any, NonCopyable>::value, "non-copyable value");
+		static_assert(!eastl::is_constructible<eastl::any, NonCopyable&>::value, "non-copyable value");
+		static_assert(!eastl::is_assignable<eastl::any&, NonCopyable>::value, "non-copyable value");
+		static_assert(!eastl::is_convertible<eastl::in_place_type_t<int>, eastl::any>::value, "in_place_type_t isn't a value");
+		static_assert(eastl::is_constructible<eastl::any, eastl::in_place_type_t<int>, int>::value, "in-place construction");
+
+		eastl::any a;
+		eastl::any b = 7;
+		a = b; // A non-const any lvalue copies, it isn't stored as a value.
+		VERIFY(any_cast<int>(a) == 7);
+	}
+
 	return nErrorCount;
 }
 
