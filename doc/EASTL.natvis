@@ -665,70 +665,70 @@
 <Type Name="eastl::variant&lt;*&gt;">
 	<Intrinsic Name="index" Expression="(int)mIndex"/>
 	<DisplayString Condition="index() == size_t(-1)">[valueless_by_exception]</DisplayString>
-	<DisplayString Condition="index() ==  0" Optional="true">{{ index=0, value={($T1*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  1" Optional="true">{{ index=1, value={($T2*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  2" Optional="true">{{ index=2, value={($T3*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  3" Optional="true">{{ index=3, value={($T4*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  4" Optional="true">{{ index=4, value={($T5*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  5" Optional="true">{{ index=5, value={($T6*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  6" Optional="true">{{ index=6, value={($T7*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  7" Optional="true">{{ index=7, value={($T8*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  8" Optional="true">{{ index=8, value={($T9*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  9" Optional="true">{{ index=9, value={($T10*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  10" Optional="true">{{ index=10, value={($T11*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  11" Optional="true">{{ index=11, value={($T12*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  12" Optional="true">{{ index=12, value={($T13*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  13" Optional="true">{{ index=13, value={($T14*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  14" Optional="true">{{ index=14, value={($T15*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  15" Optional="true">{{ index=15, value={($T16*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  16" Optional="true">{{ index=16, value={($T17*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  17" Optional="true">{{ index=17, value={($T18*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  18" Optional="true">{{ index=18, value={($T19*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  19" Optional="true">{{ index=19, value={($T20*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  20" Optional="true">{{ index=20, value={($T21*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  21" Optional="true">{{ index=21, value={($T22*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  22" Optional="true">{{ index=22, value={($T23*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  23" Optional="true">{{ index=23, value={($T24*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  24" Optional="true">{{ index=24, value={($T25*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  25" Optional="true">{{ index=25, value={($T26*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  26" Optional="true">{{ index=26, value={($T27*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  27" Optional="true">{{ index=27, value={($T28*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  28" Optional="true">{{ index=28, value={($T29*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  29" Optional="true">{{ index=29, value={($T30*)mBuffer.mCharData}}</DisplayString>
-	<DisplayString Condition="index() ==  30" Optional="true">{{ index=30, value={($T31*)mBuffer.mCharData}}</DisplayString>
+	<DisplayString Condition="index() ==  0" Optional="true">{{ index=0, value={($T1*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  1" Optional="true">{{ index=1, value={($T2*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  2" Optional="true">{{ index=2, value={($T3*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  3" Optional="true">{{ index=3, value={($T4*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  4" Optional="true">{{ index=4, value={($T5*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  5" Optional="true">{{ index=5, value={($T6*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  6" Optional="true">{{ index=6, value={($T7*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  7" Optional="true">{{ index=7, value={($T8*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  8" Optional="true">{{ index=8, value={($T9*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  9" Optional="true">{{ index=9, value={($T10*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  10" Optional="true">{{ index=10, value={($T11*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  11" Optional="true">{{ index=11, value={($T12*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  12" Optional="true">{{ index=12, value={($T13*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  13" Optional="true">{{ index=13, value={($T14*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  14" Optional="true">{{ index=14, value={($T15*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  15" Optional="true">{{ index=15, value={($T16*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  16" Optional="true">{{ index=16, value={($T17*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  17" Optional="true">{{ index=17, value={($T18*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  18" Optional="true">{{ index=18, value={($T19*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  19" Optional="true">{{ index=19, value={($T20*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  20" Optional="true">{{ index=20, value={($T21*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  21" Optional="true">{{ index=21, value={($T22*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  22" Optional="true">{{ index=22, value={($T23*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  23" Optional="true">{{ index=23, value={($T24*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  24" Optional="true">{{ index=24, value={($T25*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  25" Optional="true">{{ index=25, value={($T26*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  26" Optional="true">{{ index=26, value={($T27*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  27" Optional="true">{{ index=27, value={($T28*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  28" Optional="true">{{ index=28, value={($T29*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  29" Optional="true">{{ index=29, value={($T30*)&amp;mStorage}}</DisplayString>
+	<DisplayString Condition="index() ==  30" Optional="true">{{ index=30, value={($T31*)&amp;mStorage}}</DisplayString>
 	<Expand>
 		<Item Name="index">index()</Item>
-		<Item Name="[value]" Condition="index() ==  0" Optional="true">($T1*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() ==  1" Optional="true">($T2*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() ==  2" Optional="true">($T3*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() ==  3" Optional="true">($T4*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() ==  4" Optional="true">($T5*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() ==  5" Optional="true">($T6*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() ==  6" Optional="true">($T7*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() ==  7" Optional="true">($T8*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() ==  8" Optional="true">($T9*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() ==  9" Optional="true">($T10*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 10" Optional="true">($T11*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 11" Optional="true">($T12*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 12" Optional="true">($T13*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 13" Optional="true">($T14*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 14" Optional="true">($T15*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 15" Optional="true">($T16*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 16" Optional="true">($T17*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 17" Optional="true">($T18*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 18" Optional="true">($T19*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 19" Optional="true">($T20*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 20" Optional="true">($T21*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 21" Optional="true">($T22*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 22" Optional="true">($T23*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 23" Optional="true">($T24*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 24" Optional="true">($T25*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 25" Optional="true">($T26*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 26" Optional="true">($T27*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 27" Optional="true">($T28*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 28" Optional="true">($T29*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 29" Optional="true">($T30*)mBuffer.mCharData</Item>
-		<Item Name="[value]" Condition="index() == 30" Optional="true">($T31*)mBuffer.mCharData</Item>
+		<Item Name="[value]" Condition="index() ==  0" Optional="true">($T1*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() ==  1" Optional="true">($T2*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() ==  2" Optional="true">($T3*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() ==  3" Optional="true">($T4*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() ==  4" Optional="true">($T5*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() ==  5" Optional="true">($T6*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() ==  6" Optional="true">($T7*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() ==  7" Optional="true">($T8*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() ==  8" Optional="true">($T9*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() ==  9" Optional="true">($T10*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 10" Optional="true">($T11*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 11" Optional="true">($T12*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 12" Optional="true">($T13*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 13" Optional="true">($T14*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 14" Optional="true">($T15*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 15" Optional="true">($T16*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 16" Optional="true">($T17*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 17" Optional="true">($T18*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 18" Optional="true">($T19*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 19" Optional="true">($T20*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 20" Optional="true">($T21*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 21" Optional="true">($T22*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 22" Optional="true">($T23*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 23" Optional="true">($T24*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 24" Optional="true">($T25*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 25" Optional="true">($T26*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 26" Optional="true">($T27*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 27" Optional="true">($T28*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 28" Optional="true">($T29*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 29" Optional="true">($T30*)&amp;mStorage</Item>
+		<Item Name="[value]" Condition="index() == 30" Optional="true">($T31*)&amp;mStorage</Item>
 	</Expand>
 </Type>
 

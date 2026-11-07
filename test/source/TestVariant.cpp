@@ -2369,6 +2369,229 @@ int TestVariantConvertingConstraints()
 	return nErrorCount;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Storage, constexpr support and visitation dispatch of the recursive-union variant.
+//
+namespace VariantDispatch
+{
+	// Tag<I> identifies the alternative a visitor received.
+	template <size_t I>
+	struct Tag
+	{
+		static constexpr size_t index = I;
+		char c;
+	};
+
+	template <size_t... Is>
+	eastl::variant<Tag<Is>...> MakeTagVariant(eastl::index_sequence<Is...>);
+
+	template <size_t N>
+	using TagVariant = decltype(MakeTagVariant(eastl::make_index_sequence<N>()));
+
+	// One variant per alternative: result[I] holds alternative I.
+	template <class Variant, size_t... Is>
+	eastl::array<Variant, sizeof...(Is)> MakeEachAlternative(eastl::index_sequence<Is...>)
+	{
+		return {{Variant(eastl::in_place_index<Is>)...}};
+	}
+
+	template <size_t N>
+	eastl::array<TagVariant<N>, N> MakeEachTag()
+	{
+		return MakeEachAlternative<TagVariant<N>>(eastl::make_index_sequence<N>());
+	}
+
+	// The index is the smallest signed type that holds every alternative index (MSVC STL's choice), after the storage.
+	static_assert(sizeof(eastl::variant<char>) == 2, "a 1-byte index");
+	static_assert(sizeof(eastl::variant<int, float>) == 2 * sizeof(int), "a 1-byte index in the padding after the int");
+	static_assert(sizeof(eastl::variant<double, char>) == 2 * sizeof(double), "a 1-byte index in the padding after the double");
+	static_assert(sizeof(TagVariant<126>) == 2, "126 alternatives: signed char index");
+	static_assert(sizeof(TagVariant<127>) == 4, "127 alternatives: short index");
+
+	// Constant expressions with trivially destructible alternatives (C++17 rules).
+	constexpr eastl::variant<int, float> kDefault;
+	static_assert(kDefault.index() == 0 && eastl::get<0>(kDefault) == 0, "value-initialized first alternative");
+
+	constexpr eastl::variant<int, float> kFloat(2.5f);
+	static_assert(kFloat.index() == 1 && eastl::get<1>(kFloat) == 2.5f, "converting constructor");
+	static_assert(eastl::holds_alternative<float>(kFloat) && !eastl::holds_alternative<int>(kFloat), "holds_alternative");
+	static_assert(*eastl::get_if<1>(&kFloat) == 2.5f && eastl::get_if<0>(&kFloat) == nullptr, "get_if");
+	static_assert(eastl::get<float>(kFloat) == 2.5f, "get by type");
+
+	constexpr eastl::variant<float, long> kP0608(0);
+	static_assert(kP0608.index() == 1, "variant<float, long>(0) holds long (P0608)");
+
+	constexpr eastl::variant<int, long> kLong(eastl::in_place_index<1>, 7L);
+	static_assert(eastl::visit([](auto x) { return static_cast<int>(x) * 2; }, kLong) == 14, "visit");
+	static_assert(eastl::visit([](auto x, auto y) { return static_cast<int>(x) + static_cast<int>(y); }, kFloat, kLong) == 9,
+	              "visit of two variants of different types");
+	static_assert(eastl::visit<long>([](auto x) { return x; }, kLong) == 7L, "visit<R>");
+	static_assert(eastl::visit([] { return 3; }) == 3, "visit without variants");
+
+	constexpr eastl::variant<int, float> kCopy = kFloat;
+	static_assert(kCopy == kFloat && kDefault < kFloat && kDefault != kFloat && kFloat >= kCopy, "copy and comparisons");
+
+	constexpr eastl::variant<char, Tag<1>, Tag<2>> kTag(eastl::in_place_index<2>);
+	static_assert(eastl::visit([](auto x) { return sizeof(x); }, kTag) == 1, "visit of aggregates");
+
+#if defined(EA_COMPILER_CPP20_ENABLED)
+	// Constant expressions with non-trivial alternatives (C++20: P2231). The copies add 1 so they can be counted.
+	struct NonTrivial
+	{
+		int value;
+		constexpr NonTrivial(int v) : value(v) {}
+		constexpr NonTrivial(const NonTrivial& other) : value(other.value + 1) {}
+		constexpr NonTrivial(NonTrivial&& other) noexcept : value(other.value) { other.value = -1; }
+		constexpr NonTrivial& operator=(const NonTrivial& other) { value = other.value + 10; return *this; }
+		constexpr NonTrivial& operator=(NonTrivial&& other) noexcept { value = other.value; other.value = -1; return *this; }
+		constexpr ~NonTrivial() {}
+	};
+
+	constexpr long long NonTrivialOperations()
+	{
+		using V = eastl::variant<int, NonTrivial>;
+		V a(eastl::in_place_index<1>, 1);
+		V b = a;                          // copy: 2
+		long long r = eastl::get<1>(b).value;
+		b = 5;                            // converting assignment to the other alternative
+		r = r * 10 + eastl::get<0>(b);
+		b = a;                            // copy assignment across alternatives: copy (throwing) then move (nothrow): 2
+		r = r * 10 + eastl::get<1>(b).value;
+		b = a;                            // copy assignment of the same alternative: 11
+		r = r * 100 + eastl::get<1>(b).value;
+		b.emplace<0>(3);
+		a.swap(b);                        // different alternatives
+		r = r * 10 + eastl::get<0>(a);
+		r = r * 10 + eastl::get<1>(b).value;
+		V c = eastl::move(b);             // move: 1, and the source is moved from
+		r = r * 10 + eastl::get<1>(c).value;
+		r = r * 10 + (eastl::get<1>(b).value == -1 ? 1 : 0);
+		c.emplace<NonTrivial>(4);
+		r = r * 10 + eastl::visit([](const auto& x) { if constexpr (eastl::is_same_v<eastl::remove_cvref_t<decltype(x)>, int>) return x; else return x.value; }, c);
+		return r;
+	}
+	static_assert(NonTrivialOperations() == 2521131114LL, "constexpr copy, move, assignment, emplace, swap, visit and destruction");
+#endif
+}
+
+int TestVariantDispatch()
+{
+	using namespace VariantDispatch;
+	int nErrorCount = 0;
+
+	// one variant: 3 alternatives (switch of 4 states), 7 (16), 33 (64)
+	{
+		auto each = MakeEachTag<3>();
+		for (size_t i = 0; i < each.size(); ++i)
+			EATEST_VERIFY(eastl::visit([](auto x) { return decltype(x)::index; }, each[i]) == i);
+	}
+	{
+		auto each = MakeEachTag<33>();
+		for (size_t i = 0; i < each.size(); ++i)
+			EATEST_VERIFY(eastl::visit([](auto x) { return decltype(x)::index; }, each[i]) == i);
+	}
+	{
+		auto each = MakeEachTag<7>();
+		for (size_t i = 0; i < each.size(); ++i)
+			EATEST_VERIFY(eastl::visit([](auto x) { return decltype(x)::index; }, each[i]) == i);
+	}
+
+	// several variants: 7 x 7 (switch of 64 states), 11 x 11 (switch of 256 states), 7 x 7 x 7 (table of function pointers),
+	// and variants of different types
+	{
+		auto each = MakeEachTag<7>();
+		for (size_t i = 0; i < 7; ++i)
+			for (size_t j = 0; j < 7; ++j)
+				EATEST_VERIFY(eastl::visit([](auto x, auto y) { return decltype(x)::index * 10 + decltype(y)::index; }, each[i], each[j]) == i * 10 + j);
+
+		auto each11 = MakeEachTag<11>();
+		for (size_t i = 0; i < 11; ++i)
+			for (size_t j = 0; j < 11; ++j)
+				EATEST_VERIFY(eastl::visit([](auto x, auto y) { return decltype(x)::index * 100 + decltype(y)::index; }, each11[i], each11[j]) == i * 100 + j);
+
+		for (size_t i = 0; i < 7; ++i)
+			for (size_t j = 0; j < 7; ++j)
+				for (size_t k = 0; k < 7; ++k)
+					EATEST_VERIFY(eastl::visit([](auto x, auto y, auto z) { return decltype(x)::index * 100 + decltype(y)::index * 10 + decltype(z)::index; },
+					                           each[i], each[j], each[k]) == i * 100 + j * 10 + k);
+	}
+	{
+		auto each3 = MakeEachTag<3>();
+		auto each5 = MakeEachTag<5>();
+		for (size_t i = 0; i < 3; ++i)
+			for (size_t j = 0; j < 5; ++j)
+				EATEST_VERIFY(eastl::visit([](auto x, auto y) { return decltype(x)::index * 10 + decltype(y)::index; }, each3[i], each5[j]) == i * 10 + j);
+
+		eastl::variant<int, double> a(2.5);
+		eastl::variant<char, short, long long> b(eastl::in_place_index<2>, 4LL);
+		EATEST_VERIFY(eastl::visit([](auto x, auto y) { return double(x) * double(y); }, a, b) == 10.0);
+		EATEST_VERIFY(eastl::visit<long>([](auto x, auto y) { return int(double(x) * double(y)); }, a, b) == 10L);
+	}
+
+	// visit without variants
+	{
+		int calls = 0;
+		eastl::visit([&calls] { ++calls; });
+		EATEST_VERIFY(calls == 1);
+	}
+
+	// value categories reach the visitor
+	{
+		eastl::variant<int, eastl::string> v(eastl::in_place_index<1>, "abc");
+		auto category = [](auto&& x) { return eastl::is_rvalue_reference_v<decltype(x)> ? 2 : eastl::is_const_v<eastl::remove_reference_t<decltype(x)>> ? 1 : 0; };
+		const auto& cv = v;
+		EATEST_VERIFY(eastl::visit(category, v) == 0);
+		EATEST_VERIFY(eastl::visit(category, cv) == 1);
+		EATEST_VERIFY(eastl::visit(category, eastl::move(v)) == 2);
+		eastl::string& s = eastl::visit([](auto& x) -> eastl::string& { static eastl::string other; if constexpr (eastl::is_same_v<eastl::remove_cvref_t<decltype(x)>, eastl::string>) return x; else return other; }, v);
+		EATEST_VERIFY(&s == eastl::get_if<1>(&v));
+	}
+
+	return nErrorCount;
+}
+
+int TestVariantSwapStrategies()
+{
+	using namespace VariantDispatch;
+	int nErrorCount = 0;
+
+	// trivially swappable alternatives: the object representations are swapped
+	{
+		eastl::variant<int, float> a(1), b(2.5f);
+		a.swap(b);
+		EATEST_VERIFY(a.index() == 1 && eastl::get<1>(a) == 2.5f && b.index() == 0 && eastl::get<0>(b) == 1);
+		swap(a, b);
+		EATEST_VERIFY(a.index() == 0 && eastl::get<0>(a) == 1 && b.index() == 1 && eastl::get<1>(b) == 2.5f);
+	}
+
+	// fewer than 32 alternatives, not trivially swappable: both variants are visited
+	{
+		eastl::variant<int, eastl::string> a("first"), b("second"), c(3);
+		a.swap(b);
+		EATEST_VERIFY(eastl::get<1>(a) == "second" && eastl::get<1>(b) == "first");
+		a.swap(c);
+		EATEST_VERIFY(eastl::get<0>(a) == 3 && eastl::get<1>(c) == "second");
+		c.swap(a);
+		EATEST_VERIFY(eastl::get<1>(a) == "second" && eastl::get<0>(c) == 3);
+	}
+
+	// 32 alternatives or more: same alternative swapped in place, otherwise moved through a temporary
+	{
+		using V = eastl::variant<eastl::string, Tag<0>, Tag<1>, Tag<2>, Tag<3>, Tag<4>, Tag<5>, Tag<6>, Tag<7>, Tag<8>, Tag<9>,
+		                         Tag<10>, Tag<11>, Tag<12>, Tag<13>, Tag<14>, Tag<15>, Tag<16>, Tag<17>, Tag<18>, Tag<19>, Tag<20>,
+		                         Tag<21>, Tag<22>, Tag<23>, Tag<24>, Tag<25>, Tag<26>, Tag<27>, Tag<28>, Tag<29>, Tag<30>, Tag<31>>;
+		V a("first"), b("second"), c(eastl::in_place_index<32>);
+		a.swap(b);
+		EATEST_VERIFY(eastl::get<0>(a) == "second" && eastl::get<0>(b) == "first");
+		a.swap(c);
+		EATEST_VERIFY(a.index() == 32 && eastl::get<0>(c) == "second");
+		c.swap(a);
+		EATEST_VERIFY(c.index() == 32 && eastl::get<0>(a) == "second");
+	}
+
+	return nErrorCount;
+}
+
 int TestVariant()
 {
 	int nErrorCount = 0;
@@ -2401,6 +2624,8 @@ int TestVariant()
 	nErrorCount += TestBigVariantComparison();
 	nErrorCount += TestVariantRelationalOperators();
 	nErrorCount += TestSpecialMembersDisabled();
+	nErrorCount += TestVariantDispatch();
+	nErrorCount += TestVariantSwapStrategies();
 
 	return nErrorCount;
 }

@@ -35,7 +35,7 @@ struct NonTrivialCopyCtor : Base
 	using Base::Base;
 
 	NonTrivialCopyCtor() = default;
-	NonTrivialCopyCtor(const NonTrivialCopyCtor& other) noexcept(
+	EA_CPP20_CONSTEXPR NonTrivialCopyCtor(const NonTrivialCopyCtor& other) noexcept(
 		noexcept(eastl::declval<Base>().ConstructFrom(static_cast<const Base&>(other))))
 	{
 		Base::ConstructFrom(static_cast<const Base&>(other));
@@ -65,7 +65,7 @@ struct NonTrivialMoveCtor : CopyBase
 
 	NonTrivialMoveCtor() = default;
 	NonTrivialMoveCtor(const NonTrivialMoveCtor&) = default;
-	NonTrivialMoveCtor(NonTrivialMoveCtor&& other) noexcept(
+	EA_CPP20_CONSTEXPR NonTrivialMoveCtor(NonTrivialMoveCtor&& other) noexcept(
 		noexcept(eastl::declval<SelectedBase>().ConstructFrom(static_cast<SelectedBase&&>(other))))
 	{
 		SelectedBase::ConstructFrom(static_cast<SelectedBase&&>(other));
@@ -97,7 +97,7 @@ struct NonTrivialCopyAssign : MoveBase
 	NonTrivialCopyAssign(const NonTrivialCopyAssign&) = default;
 	NonTrivialCopyAssign(NonTrivialCopyAssign&&) = default;
 
-	NonTrivialCopyAssign& operator=(const NonTrivialCopyAssign& other) noexcept(
+	EA_CPP20_CONSTEXPR NonTrivialCopyAssign& operator=(const NonTrivialCopyAssign& other) noexcept(
 		noexcept(eastl::declval<SelectedBase>().AssignFrom(static_cast<const SelectedBase&>(other))))
 	{
 		SelectedBase::AssignFrom(static_cast<const SelectedBase&>(other));
@@ -130,7 +130,7 @@ struct NonTrivialMoveAssign : CopyAssignBase
 	NonTrivialMoveAssign(NonTrivialMoveAssign&&) = default;
 	NonTrivialMoveAssign& operator=(const NonTrivialMoveAssign&) = default;
 
-	NonTrivialMoveAssign& operator=(NonTrivialMoveAssign&& other) noexcept(
+	EA_CPP20_CONSTEXPR NonTrivialMoveAssign& operator=(NonTrivialMoveAssign&& other) noexcept(
 		noexcept(eastl::declval<SelectedBase>().AssignFrom(static_cast<SelectedBase&&>(other))))
 	{
 		SelectedBase::AssignFrom(static_cast<SelectedBase&&>(other));
