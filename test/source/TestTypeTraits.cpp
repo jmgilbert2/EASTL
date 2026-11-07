@@ -411,6 +411,19 @@ namespace
 	static_assert(gIntNullptrConstant() == nullptr, "");
 }
 
+namespace TypeTraitsGroupJ
+{
+	template <typename T>
+	using type_member_t = typename T::type;
+
+	enum class ScopedEnum : unsigned char { a };
+	enum UnscopedEnum : short { b };
+	struct ThrowingConversion { operator int() const noexcept(false); };
+	struct NoexceptConversion { operator int() const noexcept; };
+	struct JBase {};
+	struct JDerived : JBase {};
+}
+
 int TestTypeTraits()
 {
 	int nErrorCount = 0;
@@ -2261,6 +2274,36 @@ int TestTypeTraits()
 		static_assert(eastl::internal::is_complete_type_v<decltype(FooFunc)>, "is_complete_type failure");
 	}
 
+	// The C++20/23 traits, like std.
+	{
+		using namespace TypeTraitsGroupJ;
+
+		// underlying_type has no member type for a type that isn't an enumeration.
+		static_assert(!is_detected<type_member_t, underlying_type<int>>::value && !is_detected<type_member_t, underlying_type<float*>>::value, "underlying_type of a non-enum");
+		static_assert(is_same<underlying_type_t<ScopedEnum>, unsigned char>::value && is_same<underlying_type_t<UnscopedEnum>, short>::value, "underlying_type");
+
+		static_assert(is_nothrow_convertible<int, long>::value && is_nothrow_convertible_v<NoexceptConversion, int>, "is_nothrow_convertible");
+		static_assert(!is_nothrow_convertible<ThrowingConversion, int>::value && is_convertible<ThrowingConversion, int>::value, "is_nothrow_convertible of a throwing conversion");
+		static_assert(is_nothrow_convertible<void, void>::value && !is_nothrow_convertible<int, void>::value && !is_nothrow_convertible<int, JDerived>::value, "is_nothrow_convertible");
+
+		static_assert(is_scoped_enum<ScopedEnum>::value && is_scoped_enum_v<ScopedEnum> && !is_scoped_enum<UnscopedEnum>::value && !is_scoped_enum<int>::value, "is_scoped_enum");
+
+		static_assert(is_same<unwrap_reference_t<reference_wrapper<int>>, int&>::value && is_same<unwrap_reference_t<int&>, int&>::value, "unwrap_reference");
+		static_assert(is_same<unwrap_ref_decay_t<const reference_wrapper<int>&>, int&>::value && is_same<unwrap_ref_decay_t<const int (&)[3]>, const int*>::value, "unwrap_ref_decay");
+
+		static_assert(is_same<common_reference_t<int&, const int&>, const int&>::value && is_same<common_reference_t<int&&, int&>, const int&>::value, "common_reference");
+		static_assert(is_same<common_reference_t<int&&, int&&>, int&&>::value && is_same<common_reference_t<JDerived&, JBase&>, JBase&>::value, "common_reference");
+		static_assert(is_same<common_reference_t<int&, long&>, long>::value && is_same<common_reference_t<int, int, long>, long>::value, "common_reference");
+		static_assert(!is_detected<type_member_t, common_reference<int, JBase>>::value && !is_detected<type_member_t, common_reference<>>::value, "no common_reference");
+	}
+
+	#if defined(EA_COMPILER_CPP20_ENABLED)
+	{
+		// is_constant_evaluated is in <EASTL/type_traits.h>, as std's is in <type_traits>.
+		constexpr bool bConstant = eastl::is_constant_evaluated();
+		static_assert(bConstant, "is_constant_evaluated");
+	}
+	#endif
 
 	return nErrorCount;
 }

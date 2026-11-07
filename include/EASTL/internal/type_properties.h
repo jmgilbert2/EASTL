@@ -31,8 +31,18 @@ namespace eastl
 	#if EASTL_COMPILER_INTRINSIC_TYPE_TRAITS_AVAILABLE && ((defined(_MSC_VER) && (_MSC_VER >= 1700)) || (defined(EA_COMPILER_GNUC) && (EA_COMPILER_VERSION >= 4007)) || defined(__clang__)) // VS2012+
 		#define EASTL_TYPE_TRAIT_underlying_type_CONFORMANCE 1    // underlying_type is conforming.
 
+		namespace internal
+		{
+			template <typename T, bool = eastl::is_enum<T>::value>
+			struct underlying_type_impl {};
+
+			template <typename T>
+			struct underlying_type_impl<T, true> { typedef __underlying_type(T) type; };
+		}
+
+		// Like std, no member type for a type that isn't an enumeration, so that the trait is SFINAE-friendly.
 		template <typename T>
-		struct underlying_type{ typedef __underlying_type(T) type; };
+		struct underlying_type : public internal::underlying_type_impl<T> {};
 
 	#else
 		#define EASTL_TYPE_TRAIT_underlying_type_CONFORMANCE 0
