@@ -27,9 +27,9 @@ namespace eastl
 	/// Returns the actual address of the object or function referenced by r, even in the presence of an overloaded operator&.
 	///
 	template<typename T>
-	T* addressof(T& value) EA_NOEXCEPT
+	EA_CONSTEXPR T* addressof(T& value) EA_NOEXCEPT
 	{
-		return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(value)));
+		return __builtin_addressof(value);
 	}
 
 	template<class T, class... Args>
