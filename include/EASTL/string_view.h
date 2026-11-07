@@ -59,6 +59,7 @@ namespace eastl
 		EA_CONSTEXPR basic_string_view(const basic_string_view& other) EA_NOEXCEPT = default;
 		EA_CONSTEXPR basic_string_view(const T* s, size_type count) : mpBegin(s), mnCount(count) {}
 		EA_CONSTEXPR basic_string_view(const T* s) : mpBegin(s), mnCount(s != nullptr ? CharStrlen(s) : 0) {}
+		basic_string_view(std::nullptr_t) = delete; // Like std (C++23).
 
 		// From a contiguous iterator and its end, as in C++20, for pointers to T (the iterators of EASTL's
 		// contiguous containers). Not for an end that converts to size_type, which is the (s, count) constructor.

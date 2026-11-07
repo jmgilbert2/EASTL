@@ -120,9 +120,10 @@ int TestStringView()
 		VERIFY(sw.size() == wcslen(pStr));
 	}
 
-	// The C++20/23 rules, like std: no string from nullptr (string_view(nullptr) stays an empty view, an EASTL
-	// extension tested in TestStringView.inl), the iterator-pair constructor and the explicit range constructor.
+	// The C++20/23 rules, like std: no construction or assignment from nullptr, the iterator-pair constructor and the
+	// explicit range constructor.
 	{
+		static_assert(!is_constructible<string_view, std::nullptr_t>::value && !is_constructible<u16string_view, std::nullptr_t>::value, "string_view(nullptr) is deleted");
 		static_assert(!is_constructible<string, std::nullptr_t>::value && !is_constructible<wstring, std::nullptr_t>::value && !is_assignable<string&, std::nullptr_t>::value, "string(nullptr) is deleted");
 		static_assert(is_constructible<string_view, const char*, const char*>::value && is_constructible<string_view, char*, char*>::value && is_constructible<string_view, const char*, size_t>::value, "(It, End) and (s, count)");
 

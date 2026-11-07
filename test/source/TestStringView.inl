@@ -18,29 +18,17 @@ int TEST_STRING_NAME()
 			VERIFY(sw.size() == sw.length());
 		}
 
-		// User-reported regression:  constructing string_view from a nullptr, NULL, 0
+		// Like std (C++23), a string_view can't be constructed from nullptr (and NULL or 0 are ambiguous). A null
+		// pointer variable still gives an empty view.
 		{
-			{
-				StringViewT sw(nullptr);
-				VERIFY(sw.empty());
-				VERIFY(sw.data() == nullptr);
-				VERIFY(sw.size() == 0);
-				VERIFY(sw.size() == sw.length());
-			}
-			{
-				StringViewT sw(0);
-				VERIFY(sw.empty());
-				VERIFY(sw.data() == nullptr);
-				VERIFY(sw.size() == 0);
-				VERIFY(sw.size() == sw.length());
-			}
-			{
-				StringViewT sw(NULL);
-				VERIFY(sw.empty());
-				VERIFY(sw.data() == nullptr);
-				VERIFY(sw.size() == 0);
-				VERIFY(sw.size() == sw.length());
-			}
+			static_assert(!eastl::is_constructible<StringViewT, std::nullptr_t>::value, "string_view(nullptr) is deleted");
+
+			const typename StringViewT::value_type* pNull = nullptr;
+			StringViewT sw(pNull);
+			VERIFY(sw.empty());
+			VERIFY(sw.data() == nullptr);
+			VERIFY(sw.size() == 0);
+			VERIFY(sw.size() == sw.length());
 		}
 
 		// EA_CONSTEXPR basic_string_view(const basic_string_view& other) = default;
