@@ -454,10 +454,10 @@ namespace eastl
 		/// is rethrown.
 		/// Postcondition: use_count() == 1 && get() == p
 		template <typename U, typename Deleter, typename Allocator>
-		explicit shared_ptr(U* pValue,
-		                    Deleter deleter,
-		                    const Allocator& allocator,
-		                    typename eastl::enable_if<eastl::is_convertible<U*, element_type*>::value && Internal::is_shared_ptr_deleter<Deleter, U*>::value>::type* = 0)
+		shared_ptr(U* pValue,
+		           Deleter deleter,
+		           const Allocator& allocator,
+		           typename eastl::enable_if<eastl::is_convertible<U*, element_type*>::value && Internal::is_shared_ptr_deleter<Deleter, U*>::value>::type* = 0)
 		    : mpValue(nullptr), mpRefCount(nullptr) // alloc_internal will set this.
 		{
 			alloc_internal(pValue, eastl::move(allocator), eastl::move(deleter));

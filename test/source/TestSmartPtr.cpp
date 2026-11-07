@@ -899,6 +899,32 @@ static int Test_unique_ptr()
 		EATEST_VERIFY(*q == 5);
 	}
 
+	// Like std, the deleter constructors participate only if the deleter can be constructed from the argument, and
+	// the rvalue one is deleted for a reference deleter (the reference would refer to the temporary).
+	{
+		struct MoveOnlyDeleter
+		{
+			MoveOnlyDeleter() = default;
+			MoveOnlyDeleter(const MoveOnlyDeleter&) = delete;
+			MoveOnlyDeleter(MoveOnlyDeleter&&) = default;
+			void operator()(int* p) const { delete p; }
+		};
+		struct RefDeleter { void operator()(int* p) const { delete p; } };
+
+		static_assert(!is_constructible<unique_ptr<int, MoveOnlyDeleter>, int*, const MoveOnlyDeleter&>::value, "the deleter can't be copied");
+		static_assert(!is_constructible<unique_ptr<int, RefDeleter&>, int*, RefDeleter&&>::value, "rvalue for a reference deleter");
+		static_assert(!is_constructible<unique_ptr<int, const RefDeleter&>, int*, RefDeleter&&>::value, "rvalue for a reference deleter");
+		static_assert(is_constructible<unique_ptr<int, const RefDeleter&>, int*, const RefDeleter&>::value, "lvalue for a reference deleter");
+		static_assert(!is_constructible<unique_ptr<int[], MoveOnlyDeleter>, int*, const MoveOnlyDeleter&>::value, "the deleter can't be copied");
+		static_assert(!is_constructible<unique_ptr<int[], RefDeleter&>, int*, RefDeleter&&>::value, "rvalue for a reference deleter");
+
+		unique_ptr<int, RefDeleter> p(new int(6), RefDeleter()); // The rvalue constructor, for a deleter that isn't a reference.
+		EATEST_VERIFY(*p == 6);
+		const RefDeleter d;
+		unique_ptr<int, const RefDeleter&> q(new int(7), d);
+		EATEST_VERIFY(*q == 7 && &q.get_deleter() == &d);
+	}
+
 	}
 
 	return nErrorCount;
@@ -1422,6 +1448,11 @@ static int Test_shared_ptr()
 
 		shared_ptr<int> sp(new int(3), IntDeleter());
 		EATEST_VERIFY(*sp == 3);
+
+		// Like std, the (p, d, a) constructor isn't explicit.
+		struct CopyListInit { static shared_ptr<int> Make(int* p) { return { p, IntDeleter(), EASTLAllocatorType() }; } };
+		shared_ptr<int> sp2 = CopyListInit::Make(new int(4));
+		EATEST_VERIFY(*sp2 == 4 && sp2.use_count() == 1);
 	}
 
 	EATEST_VERIFY(A::mCount == 0);
