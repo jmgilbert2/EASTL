@@ -58,6 +58,7 @@ namespace eastl
 		EA_CONSTEXPR basic_string_view() EA_NOEXCEPT : mpBegin(nullptr), mnCount(0) {}
 		EA_CONSTEXPR basic_string_view(const basic_string_view& other) EA_NOEXCEPT = default;
 		EA_CONSTEXPR basic_string_view(const T* s, size_type count) : mpBegin(s), mnCount(count) {}
+		// Unlike std, a null pointer gives an empty view instead of reading through it.
 		EA_CONSTEXPR basic_string_view(const T* s) : mpBegin(s), mnCount(s != nullptr ? CharStrlen(s) : 0) {}
 		basic_string_view(std::nullptr_t) = delete; // Like std (C++23).
 
