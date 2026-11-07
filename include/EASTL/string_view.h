@@ -58,7 +58,42 @@ namespace eastl
 		EA_CONSTEXPR basic_string_view() EA_NOEXCEPT : mpBegin(nullptr), mnCount(0) {}
 		EA_CONSTEXPR basic_string_view(const basic_string_view& other) EA_NOEXCEPT = default;
 		EA_CONSTEXPR basic_string_view(const T* s, size_type count) : mpBegin(s), mnCount(count) {}
+		// Unlike std, a null pointer gives an empty view instead of reading through it.
 		EA_CONSTEXPR basic_string_view(const T* s) : mpBegin(s), mnCount(s != nullptr ? CharStrlen(s) : 0) {}
+		basic_string_view(std::nullptr_t) = delete; // Like std (C++23).
+
+		// From a contiguous iterator and its end, as in C++20, for pointers to T (the iterators of EASTL's
+		// contiguous containers). Not for an end that converts to size_type, which is the (s, count) constructor.
+		template <typename It, typename End,
+		          typename = enable_if_t<is_pointer<It>::value && is_same<remove_cv_t<remove_pointer_t<It>>, T>::value &&
+		                                 !is_convertible<End, size_type>::value && is_convertible<decltype(eastl::declval<End>() - eastl::declval<It>()), difference_type>::value>>
+		EA_CONSTEXPR basic_string_view(It first, End last) : mpBegin(first), mnCount(static_cast<size_type>(last - first)) {}
+
+	private:
+		template <typename R>
+		using range_data_t = decltype(eastl::data(eastl::declval<R&>()));
+
+		template <typename R>
+		using range_size_t = decltype(eastl::size(eastl::declval<R&>()));
+
+		template <typename R>
+		using view_conversion_t = decltype(eastl::declval<remove_cvref_t<R>&>().operator basic_string_view<T>());
+
+		template <typename R, typename = void>
+		struct is_view_range : public false_type {};
+
+		template <typename R>
+		struct is_view_range<R, void_t<range_data_t<R>, range_size_t<R>>>
+			: public integral_constant<bool, !is_same<remove_cvref_t<R>, basic_string_view>::value && is_pointer<range_data_t<R>>::value &&
+			                                 is_same<remove_cv_t<remove_pointer_t<range_data_t<R>>>, T>::value &&
+			                                 !is_convertible<R, const T*>::value && !is_detected<view_conversion_t, R>::value> {};
+
+	public:
+		// From a contiguous range of T, explicitly, as in C++23: not for a basic_string_view, a type that converts to
+		// const T*, or one with its own conversion to basic_string_view (such as basic_string).
+		template <typename R, typename = enable_if_t<is_view_range<R>::value>>
+		EA_CONSTEXPR explicit basic_string_view(R&& r) : mpBegin(eastl::data(r)), mnCount(static_cast<size_type>(eastl::size(r))) {}
+
 		basic_string_view& operator=(const basic_string_view& view) = default;
 
 		// 21.4.2.2, iterator support

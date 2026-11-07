@@ -502,6 +502,7 @@ namespace eastl
 		basic_string(const this_type& x, size_type position, size_type n = npos);
 		basic_string(const value_type* p, size_type n, const allocator_type& allocator = EASTL_BASIC_STRING_DEFAULT_ALLOCATOR);
 		EASTL_STRING_EXPLICIT basic_string(const value_type* p, const allocator_type& allocator = EASTL_BASIC_STRING_DEFAULT_ALLOCATOR);
+		basic_string(std::nullptr_t) = delete; // Like std (C++23): a null pointer isn't a string.
 		basic_string(size_type n, value_type c, const allocator_type& allocator = EASTL_BASIC_STRING_DEFAULT_ALLOCATOR);
 		basic_string(const this_type& x);
 	    basic_string(const this_type& x, const allocator_type& allocator);
@@ -538,6 +539,7 @@ namespace eastl
 		// Operator=
 		this_type& operator=(const this_type& x);
 		this_type& operator=(const value_type* p);
+		this_type& operator=(std::nullptr_t) = delete; // Like std (C++23).
 		this_type& operator=(value_type c);
 		this_type& operator=(std::initializer_list<value_type> ilist);
 		this_type& operator=(view_type v);
