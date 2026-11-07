@@ -464,9 +464,50 @@ void TestSpanSubViews(int& nErrorCount)
 	}
 }
 
+template <typename T>
+using as_writable_bytes_t = decltype(eastl::as_writable_bytes(eastl::declval<T>()));
+
+// The C++20 rules: explicit construction of a span of static extent, constructors from arrays of any element type,
+// and as_bytes / as_writable_bytes, like std.
+void TestSpanCpp20Rules(int& nErrorCount)
+{
+	using namespace eastl;
+
+	static_assert(!is_convertible<span<int>, span<int, 3>>::value && is_constructible<span<int, 3>, span<int>>::value, "span -> span of static extent is explicit");
+	static_assert(!is_convertible<vector<int>&, span<int, 3>>::value && is_constructible<span<int, 3>, vector<int>&>::value, "container -> span of static extent is explicit");
+	static_assert(is_convertible<array<int, 3>&, span<int, 3>>::value && !is_constructible<span<int, 3>, array<int, 4>&>::value, "array -> span");
+	static_assert(is_convertible<const array<int, 3>&, span<const int, 3>>::value && !is_constructible<span<int>, const array<int, 3>&>::value, "const array -> span");
+	static_assert(is_convertible<array<int, 3>&, span<const int>>::value && is_convertible<span<int>, span<const int>>::value, "span of const elements");
+	static_assert(!is_detected<as_writable_bytes_t, span<const int>>::value, "as_writable_bytes of const elements");
+
+	int a[4] = { 1, 2, 3, 4 };
+	span<int, 3> s1(a, 3);
+	span<int, 3> s2(a, a + 3);
+	span<int, 3> s3(span<int>(a, 3));
+	VERIFY((s1.size() == 3) && (s2.data() == a) && (s3[2] == 3));
+
+	auto first = s1.first<2>();
+	auto last = s1.last<2>();
+	auto sub = s1.subspan<1, 1>();
+	static_assert(decltype(first)::extent == 2 && decltype(last)::extent == 2 && decltype(sub)::extent == 1, "static subviews");
+	VERIFY((first[1] == 2) && (last[0] == 2) && (sub[0] == 2));
+
+	auto bytes = as_bytes(s1);
+	static_assert(decltype(bytes)::extent == 3 * sizeof(int) && is_same<decltype(bytes)::element_type, const std::byte>::value, "as_bytes");
+	VERIFY((bytes.size() == 3 * sizeof(int)) && (static_cast<const void*>(bytes.data()) == static_cast<const void*>(a)));
+
+	auto writable = as_writable_bytes(span<int>(a, 4));
+	static_assert(decltype(writable)::extent == dynamic_extent, "as_writable_bytes of a dynamic span");
+	for (size_t i = 0; i < sizeof(int); i++)
+		writable[i] = std::byte{0};
+	VERIFY((a[0] == 0) && (a[1] == 2));
+}
+
 int TestSpan()
 {
 	int nErrorCount = 0;
+
+	TestSpanCpp20Rules(nErrorCount);
 
 	TestSpanCtor(nErrorCount);
 	TestSpanSizeBytes(nErrorCount);

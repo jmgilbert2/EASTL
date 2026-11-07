@@ -168,6 +168,26 @@ static_assert(eastl::is_trivially_copy_assignable<CopyConstructCounted>::value, 
 static_assert(!eastl::is_trivially_copyable<CopyConstructCounted>::value, "CopyConstructCounted must not be trivially copyable");
 
 
+namespace PointerTraitsGroupJ
+{
+	template <typename T> using element_type_t = typename T::element_type;
+	template <typename T> using pointer_t = typename T::pointer;
+
+	struct NotAPointer {};
+
+	// A pointer class template without element_type or rebind members.
+	template <typename T, typename Tag = int>
+	struct TemplatePointer { T* p; };
+
+	// pointer_traits of the C++20 rules (LWG 3545, template rebind, void element types), like std.
+	static_assert(!eastl::is_detected<element_type_t, eastl::pointer_traits<NotAPointer>>::value && !eastl::is_detected<pointer_t, eastl::pointer_traits<NotAPointer>>::value, "pointer_traits of a non-pointer is empty");
+	static_assert(eastl::is_same<eastl::pointer_traits<TemplatePointer<long, char>>::element_type, long>::value, "element_type of a pointer template");
+	static_assert(eastl::is_same<eastl::pointer_traits<TemplatePointer<long, char>>::rebind<int>, TemplatePointer<int, char>>::value, "rebind of a pointer template");
+	static_assert(eastl::is_same<eastl::pointer_traits<void*>::element_type, void>::value && eastl::is_same<eastl::pointer_traits<const void*>::rebind<int>, int*>::value, "pointer_traits<void*>");
+	static_assert(eastl::is_same<eastl::pointer_traits<TemplatePointer<void>>::element_type, void>::value, "pointer_traits of a void pointer template");
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // TestMemory
 //
