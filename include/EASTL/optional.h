@@ -1002,17 +1002,29 @@ namespace eastl
     ///////////////////////////////////////////////////////////////////////////////
 	/// hash
 	///
-	template <typename T>
-	struct hash<eastl::optional<T>>
+	/// Enabled only when hash<remove_const_t<T>> is, like std (a disabled hash isn't default constructible).
+	EA_DISABLE_VC_WARNING(4623) // default constructor was implicitly defined as deleted: that is how a disabled hash is disabled.
+	namespace Internal
 	{
-		size_t operator()(const eastl::optional<T>& opt) const EA_NOEXCEPT
-	    {
-		    if (opt)
-			    return eastl::hash<T>()(*opt);
-		    else
-			    return 0;  // no value to generate a hash from
-	    }
-    };
+		template <typename T, bool Enabled = eastl::is_default_constructible<eastl::hash<eastl::remove_const_t<T>>>::value>
+		struct optional_hash : disabled_hash {};
+
+		template <typename T>
+		struct optional_hash<T, true>
+		{
+			size_t operator()(const eastl::optional<T>& opt) const EA_NOEXCEPT
+			{
+				if (opt)
+					return eastl::hash<eastl::remove_const_t<T>>()(*opt);
+				else
+					return 0;  // no value to generate a hash from
+			}
+		};
+	}
+
+	template <typename T>
+	struct hash<eastl::optional<T>> : Internal::optional_hash<T> {};
+	EA_RESTORE_VC_WARNING()
 
 
     ///////////////////////////////////////////////////////////////////////////////

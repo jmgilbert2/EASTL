@@ -189,8 +189,10 @@ namespace eastl
 	// 20.7.11, hash support
 	//
 	namespace internal {
+	EA_DISABLE_VC_WARNING(4623) // default constructor was implicitly defined as deleted: that is how a disabled hash is disabled.
 	template<class Variant, bool enabled>
-	struct variant_hash {};
+	struct variant_hash : eastl::Internal::disabled_hash {};
+	EA_RESTORE_VC_WARNING()
 
 	template<class Variant>
 	struct variant_hash<Variant, true>
@@ -228,9 +230,11 @@ namespace eastl
 	constexpr bool is_hasher_for_v = is_hasher_for<Hash, Key>::value;
 	} // namespace internal
 
+	EA_DISABLE_VC_WARNING(4623) // default constructor was implicitly defined as deleted: that is how a disabled hash is disabled.
 	template <class... Types>
 	struct hash<variant<Types...>>
 		: public internal::variant_hash<variant<Types...>, conjunction_v<internal::is_hasher_for<hash<remove_const_t<Types>>, Types>...>> {};
+	EA_RESTORE_VC_WARNING()
 
 
 	///////////////////////////////////////////////////////////////////////////
