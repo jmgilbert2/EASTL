@@ -858,6 +858,46 @@ static int Test_unique_ptr()
 			//	EATEST_VERIFY(newPtr.get() == nullptr);
 			//}
 		}
+	// A move-only deleter is moved, not copied: construction from an rvalue deleter, move construction, move
+	// assignment and swap.
+	{
+		struct MoveOnlyDeleter
+		{
+			int mId = 0;
+			MoveOnlyDeleter() = default;
+			explicit MoveOnlyDeleter(int id) : mId(id) {}
+			MoveOnlyDeleter(MoveOnlyDeleter&&) = default;
+			MoveOnlyDeleter& operator=(MoveOnlyDeleter&&) = default;
+			void operator()(int* p) const { delete p; }
+		};
+
+		unique_ptr<int, MoveOnlyDeleter> a(new int(1), MoveOnlyDeleter(7));
+		unique_ptr<int, MoveOnlyDeleter> b(eastl::move(a));
+		EATEST_VERIFY(!a && *b == 1 && b.get_deleter().mId == 7);
+
+		unique_ptr<int, MoveOnlyDeleter> c(new int(2), MoveOnlyDeleter(8));
+		c = eastl::move(b);
+		EATEST_VERIFY(!b && *c == 1 && c.get_deleter().mId == 7);
+
+		unique_ptr<int, MoveOnlyDeleter> d(new int(3), MoveOnlyDeleter(9));
+		c.swap(d);
+		EATEST_VERIFY(*c == 3 && c.get_deleter().mId == 9 && *d == 1 && d.get_deleter().mId == 7);
+
+		struct MoveOnlyArrayDeleter
+		{
+			int mId = 0;
+			MoveOnlyArrayDeleter() = default;
+			explicit MoveOnlyArrayDeleter(int id) : mId(id) {}
+			MoveOnlyArrayDeleter(MoveOnlyArrayDeleter&&) = default;
+			MoveOnlyArrayDeleter& operator=(MoveOnlyArrayDeleter&&) = default;
+			void operator()(int* p) const { delete[] p; }
+		};
+
+		unique_ptr<int[], MoveOnlyArrayDeleter> e(new int[2], MoveOnlyArrayDeleter(10));
+		unique_ptr<int[], MoveOnlyArrayDeleter> f(eastl::move(e));
+		EATEST_VERIFY(!e && f.get() != nullptr && f.get_deleter().mId == 10);
+	}
+
 	// A final empty deleter cannot be a base class, so it is stored as a member.
 	{
 		struct EmptyDeleter { void operator()(int* p) const { delete p; } };
