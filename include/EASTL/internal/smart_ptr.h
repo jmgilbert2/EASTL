@@ -127,6 +127,23 @@ namespace eastl
 																				eastl::is_array<U>::value && 
 																				(!eastl::is_pointer<U_pointer>::value || !is_pointer<T_pointer>::value || !Internal::is_derived<T, typename eastl::remove_extent<U>::type>::value)> {};
 
+
+		// unique_ptr's constructors that value-initialize the deleter (default, nullptr_t and pointer) participate
+		// only for a default constructible deleter that isn't a pointer, like std's.
+		template <typename Deleter>
+		struct is_unique_ptr_deleter_default_constructible
+			: public eastl::integral_constant<bool, eastl::is_default_constructible<Deleter>::value && !eastl::is_pointer<Deleter>::value> {};
+
+
+		// shared_ptr's constructors that take a deleter participate only if d(p) is well-formed and the deleter is
+		// move constructible, like std's.
+		template <typename Deleter, typename P, typename = void>
+		struct is_shared_ptr_deleter : public eastl::false_type {};
+
+		template <typename Deleter, typename P>
+		struct is_shared_ptr_deleter<Deleter, P, eastl::void_t<decltype(eastl::declval<Deleter&>()(eastl::declval<P&>()))>>
+			: public eastl::is_move_constructible<Deleter> {};
+
 	} // namespace Internal
 
 
