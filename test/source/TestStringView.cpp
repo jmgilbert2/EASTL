@@ -7,6 +7,7 @@
 #include <EASTL/numeric_limits.h>
 #include <EASTL/string.h>
 #include <EASTL/string_view.h>
+#include <EASTL/vector.h>
 
 // Verify char8_t support is present if the test build requested it.
 #if defined(EASTL_EXPECT_CHAR8T_SUPPORT) && !EA_CHAR8_UNIQUE
@@ -119,6 +120,29 @@ int TestStringView()
 		VERIFY(sw.size() == wcslen(pStr));
 	}
 
+	// The C++20/23 rules, like std: no string from nullptr (string_view(nullptr) stays an empty view, an EASTL
+	// extension tested in TestStringView.inl), the iterator-pair constructor and the explicit range constructor.
+	{
+		static_assert(!is_constructible<string, std::nullptr_t>::value && !is_constructible<wstring, std::nullptr_t>::value && !is_assignable<string&, std::nullptr_t>::value, "string(nullptr) is deleted");
+		static_assert(is_constructible<string_view, const char*, const char*>::value && is_constructible<string_view, char*, char*>::value && is_constructible<string_view, const char*, size_t>::value, "(It, End) and (s, count)");
+
+		const char* p = "abcdef";
+		string_view a(p, p + 3);
+		VERIFY(a == "abc");
+
+		static_assert(is_constructible<string_view, vector<char>&>::value && !is_convertible<vector<char>&, string_view>::value, "the range constructor is explicit");
+		static_assert(!is_constructible<string_view, vector<wchar_t>&>::value, "not for a range of another character type");
+		vector<char> v = { 'x', 'y' };
+		string_view b(v);
+		VERIFY((b.size() == 2) && (b[1] == 'y') && (b.data() == v.data()));
+
+		// Not for a type with its own conversion to string_view, or a character array, which converts to const char*.
+		string s("str");
+		string_view c = s;
+		char arr[] = "hi";
+		string_view d(arr);
+		VERIFY((c.data() == s.data()) && (d.size() == 2));
+	}
 
 	return nErrorCount;
 }
