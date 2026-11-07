@@ -496,6 +496,39 @@ int TestAny()
 		}
 	}
 
+	// Like std, the converting constructor and assignment don't participate for a non-copyable value type or an
+	// in_place_type_t.
+	{
+		struct NonCopyable
+		{
+			NonCopyable() = default;
+			NonCopyable(const NonCopyable&) = delete;
+			NonCopyable(NonCopyable&&) = default;
+		};
+
+		static_assert(!eastl::is_constructible<eastl::any, NonCopyable>::value, "non-copyable value");
+		static_assert(!eastl::is_constructible<eastl::any, NonCopyable&>::value, "non-copyable value");
+		static_assert(!eastl::is_assignable<eastl::any&, NonCopyable>::value, "non-copyable value");
+		static_assert(!eastl::is_convertible<eastl::in_place_type_t<int>, eastl::any>::value, "in_place_type_t isn't a value");
+		static_assert(eastl::is_constructible<eastl::any, eastl::in_place_type_t<int>, int>::value, "in-place construction");
+		static_assert(!eastl::is_constructible<eastl::any, eastl::in_place_type_t<NonCopyable>>::value, "non-copyable in-place type");
+		static_assert(!eastl::is_constructible<eastl::any, eastl::in_place_type_t<int>, int, int>::value, "int isn't constructible from (int, int)");
+
+		eastl::any a;
+		eastl::any b = 7;
+		a = b; // A non-const any lvalue copies, it isn't stored as a value.
+		VERIFY(any_cast<int>(a) == 7);
+
+		// The initializer_list in-place constructor also takes arguments after the list.
+		struct ListAndValue
+		{
+			int mSize, mValue;
+			ListAndValue(std::initializer_list<int> il, int value) : mSize((int)il.size()), mValue(value) {}
+		};
+		eastl::any c(eastl::in_place_type<ListAndValue>, { 1, 2, 3 }, 9);
+		VERIFY(any_cast<ListAndValue&>(c).mSize == 3 && any_cast<ListAndValue&>(c).mValue == 9);
+	}
+
 	return nErrorCount;
 }
 
