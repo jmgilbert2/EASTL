@@ -321,6 +321,45 @@ int TestIterator_iterMove()
 
 
 
+namespace IteratorGroupJ
+{
+	template <typename A, typename B> using equal_t = decltype(eastl::declval<A>() == eastl::declval<B>());
+	template <typename A, typename B> using less_t = decltype(eastl::declval<A>() < eastl::declval<B>());
+	template <typename A, typename B> using difference_t = decltype(eastl::declval<A>() - eastl::declval<B>());
+	template <typename T> using arrow_t = decltype(eastl::declval<T>().operator->());
+	template <typename T> using value_type_t = typename T::value_type;
+
+	struct Unrelated {};
+
+	// A forward iterator without a pointer member type.
+	struct ForwardIterNoPointer
+	{
+		using difference_type = ptrdiff_t; using value_type = int; using reference = int&;
+		using iterator_category = eastl::forward_iterator_tag;
+		int& operator*() const;
+	};
+
+	// A random access iterator that returns by value and has no operator->.
+	struct ProxyIterator
+	{
+		using difference_type = ptrdiff_t; using value_type = int; using pointer = void; using reference = int;
+		using iterator_category = eastl::random_access_iterator_tag;
+		int operator*() const;
+		ProxyIterator& operator--();
+	};
+
+	// A bidirectional iterator with operator->, which reverse_iterator must call.
+	struct ArrowIterator
+	{
+		using difference_type = ptrdiff_t; using value_type = int; using pointer = int*; using reference = int&;
+		using iterator_category = eastl::bidirectional_iterator_tag;
+		int* p;
+		int& operator*() const { return *p; }
+		int* operator->() const { return p; }
+		ArrowIterator& operator--() { --p; return *this; }
+	};
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // TestIterator
 //
@@ -665,6 +704,58 @@ int TestIterator()
 	{
 		// Regression test that ensure N3844 is working correctly.
 		static_assert(!eastl::is_detected<detect_iterator_traits_reference, int>::value, "detecting iterator_traits<int> should SFINAE gracefully.");
+	}
+
+	// The C++20 iterator_traits, reverse_iterator, move_iterator and move_sentinel rules, like std.
+	{
+		using namespace IteratorGroupJ;
+
+		static_assert(!eastl::is_detected<value_type_t, eastl::iterator_traits<void*>>::value && !eastl::is_detected<value_type_t, eastl::iterator_traits<const void*>>::value, "iterator_traits<void*> is empty");
+		static_assert(!eastl::is_detected<value_type_t, eastl::iterator_traits<void (*)()>>::value, "iterator_traits of a function pointer is empty");
+		static_assert(eastl::is_same<eastl::iterator_traits<volatile int*>::value_type, int>::value && eastl::is_same<eastl::iterator_traits<const int*>::reference, const int&>::value, "iterator_traits of a cv pointer");
+		static_assert(eastl::is_same<eastl::iterator_traits<ForwardIterNoPointer>::pointer, void>::value, "iterator_traits without a pointer member type");
+	#if !EASTL_STD_ITERATOR_CATEGORY_ENABLED || defined(EA_COMPILER_CPP20_ENABLED)
+		static_assert(eastl::is_same<eastl::iterator_traits<int*>::iterator_concept, eastl::contiguous_iterator_tag>::value, "iterator_traits<int*>::iterator_concept");
+	#endif
+
+		typedef eastl::reverse_iterator<int*> RI;
+		typedef eastl::reverse_iterator<const int*> CRI;
+		static_assert(!eastl::is_constructible<RI, CRI>::value && !eastl::is_assignable<RI&, CRI>::value && eastl::is_convertible<RI, CRI>::value, "reverse_iterator conversions");
+		static_assert(!eastl::is_detected<equal_t, RI, eastl::reverse_iterator<Unrelated*>>::value && !eastl::is_detected<less_t, RI, eastl::reverse_iterator<Unrelated*>>::value &&
+		              !eastl::is_detected<difference_t, RI, eastl::reverse_iterator<Unrelated*>>::value, "reverse_iterator comparisons of incomparable iterators");
+		static_assert(eastl::is_same<difference_t<RI, CRI>, ptrdiff_t>::value, "reverse_iterator difference");
+		static_assert(!eastl::is_detected<arrow_t, const eastl::reverse_iterator<ProxyIterator>&>::value, "reverse_iterator::operator-> needs a pointer or a base operator->");
+		static_assert(eastl::is_same<RI::iterator_concept, eastl::random_access_iterator_tag>::value && eastl::is_same<eastl::reverse_iterator<ArrowIterator>::iterator_concept, eastl::bidirectional_iterator_tag>::value, "reverse_iterator::iterator_concept");
+
+		typedef eastl::move_iterator<int*> MI;
+		typedef eastl::move_iterator<const int*> CMI;
+		static_assert(!eastl::is_constructible<MI, CMI>::value && !eastl::is_assignable<MI&, CMI>::value && eastl::is_convertible<MI, CMI>::value, "move_iterator conversions");
+		static_assert(!eastl::is_detected<equal_t, MI, eastl::move_iterator<Unrelated*>>::value && !eastl::is_detected<less_t, MI, eastl::move_iterator<Unrelated*>>::value, "move_iterator comparisons of incomparable iterators");
+		static_assert(eastl::is_same<MI::iterator_concept, eastl::random_access_iterator_tag>::value && eastl::is_same<eastl::move_iterator<ForwardIterNoPointer>::iterator_concept, eastl::forward_iterator_tag>::value, "move_iterator::iterator_concept");
+
+		int a[3] = { 1, 2, 3 };
+
+		RI ri(a + 3);
+		CRI cri(ri);
+		cri = RI(a + 2);
+		EATEST_VERIFY((cri.base() == a + 2) && (ri != cri) && (ri < cri) && (cri - ri == 1) && (*ri.operator->() == 3));
+		eastl::reverse_iterator<ArrowIterator> rai(ArrowIterator{a + 2});
+		EATEST_VERIFY(rai.operator->() == a + 1);
+
+		MI mi(a);
+		CMI cmi(mi);
+		cmi = MI(a + 1); // The converting assignment, which didn't compile before (it read a protected member of another specialization).
+		EATEST_VERIFY((cmi.base() == a + 1) && (cmi != mi) && (mi < cmi));
+
+		eastl::move_sentinel<const int*> sentinel(a + 3);
+		int sum = 0;
+		for (CMI it(a); it != sentinel; ++it)
+			sum += *it;
+		EATEST_VERIFY((sum == 6) && (sentinel - cmi == 2) && (cmi - sentinel == -2) && (CMI(a + 3) == sentinel));
+
+	#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+		EATEST_VERIFY(((ri <=> cri) < 0) && ((mi <=> cmi) < 0));
+	#endif
 	}
 
 	return nErrorCount;
