@@ -433,22 +433,21 @@ namespace eastl
 			m_handler = &storage_handler<DecayedValueType>::handler_func;
 		}
 
-		template <class T, class... Args>
-		explicit any(in_place_type_t<T>, Args&&... args) 
+		// Like std, the in-place constructors participate only for a decayed type that is copy constructible and
+		// constructible from the arguments.
+		template <class T, class... Args,
+		          typename = eastl::enable_if_t<eastl::is_copy_constructible<decay_t<T>>::value && eastl::is_constructible<decay_t<T>, Args...>::value>>
+		explicit any(in_place_type_t<T>, Args&&... args)
 		{
 			typedef storage_handler<decay_t<T>> StorageHandlerT;
-			static_assert(eastl::is_constructible<T, Args...>::value, "T must be constructible with Args...");
 
 			StorageHandlerT::construct_inplace(m_storage, eastl::forward<Args>(args)...);
 			m_handler = &StorageHandlerT::handler_func;
 		}
 
-		template <class T, class U, class... Args>
-		explicit any(in_place_type_t<T>,
-		             std::initializer_list<U> il,
-		             Args&&... args,
-		             typename eastl::enable_if<eastl::is_constructible<T, std::initializer_list<U>&, Args...>::value,
-		                                       void>::type* = 0)
+		template <class T, class U, class... Args,
+		          typename = eastl::enable_if_t<eastl::is_copy_constructible<decay_t<T>>::value && eastl::is_constructible<decay_t<T>, std::initializer_list<U>&, Args...>::value>>
+		explicit any(in_place_type_t<T>, std::initializer_list<U> il, Args&&... args)
 		{
 			typedef storage_handler<decay_t<T>> StorageHandlerT;
 
