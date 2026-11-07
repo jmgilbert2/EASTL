@@ -942,6 +942,48 @@ static int TestCompressedPair()
 	EATEST_VERIFY(sizeof(cp40) <= 4);
 	EATEST_VERIFY(sizeof(cp44) <= 8);
 
+	{
+		// Elements are moved from rvalues, so move-only elements can be stored and swapped, in every layout.
+		struct MoveOnly
+		{
+			int mValue;
+			explicit MoveOnly(int value) : mValue(value) {}
+			MoveOnly(MoveOnly&&) = default;
+			MoveOnly& operator=(MoveOnly&&) = default;
+		};
+		struct EmptyMoveOnly
+		{
+			EmptyMoveOnly() = default;
+			EmptyMoveOnly(EmptyMoveOnly&&) = default;
+			EmptyMoveOnly& operator=(EmptyMoveOnly&&) = default;
+		};
+		struct EmptyMoveOnly2
+		{
+			EmptyMoveOnly2() = default;
+			EmptyMoveOnly2(EmptyMoveOnly2&&) = default;
+			EmptyMoveOnly2& operator=(EmptyMoveOnly2&&) = default;
+		};
+
+		compressed_pair<int, MoveOnly> a(1, MoveOnly(2)), b(3, MoveOnly(4)); // neither element is a base
+		a.swap(b);
+		EATEST_VERIFY(a.first() == 3 && a.second().mValue == 4 && b.first() == 1 && b.second().mValue == 2);
+
+		compressed_pair<EmptyMoveOnly, MoveOnly> c(EmptyMoveOnly(), MoveOnly(5)), d(EmptyMoveOnly(), MoveOnly(6)); // first is a base
+		c.swap(d);
+		EATEST_VERIFY(c.second().mValue == 6 && d.second().mValue == 5);
+
+		compressed_pair<MoveOnly, EmptyMoveOnly> e(MoveOnly(7), EmptyMoveOnly()); // second is a base
+		EATEST_VERIFY(e.first().mValue == 7);
+
+		compressed_pair<EmptyMoveOnly, EmptyMoveOnly2> f{EmptyMoveOnly(), EmptyMoveOnly2()}; // both are bases
+		compressed_pair<EmptyMoveOnly, EmptyMoveOnly> g{EmptyMoveOnly(), EmptyMoveOnly()}; // the same empty type, stored once
+		EA_UNUSED(f); EA_UNUSED(g);
+
+		compressed_pair<MoveOnly, MoveOnly> h(MoveOnly(8), MoveOnly(9)), i(MoveOnly(10), MoveOnly(11)); // the same type
+		h.swap(i);
+		EATEST_VERIFY(h.first().mValue == 10 && h.second().mValue == 11 && i.first().mValue == 8 && i.second().mValue == 9);
+	}
+
 	return nErrorCount;
 }
 

@@ -62,6 +62,7 @@
 
 #include <EASTL/internal/config.h>
 #include <EASTL/type_traits.h>     
+#include <EASTL/internal/move_help.h>
 #include <EASTL/bonus/call_traits.h>     
 
 #if defined(EA_PRAGMA_ONCE_SUPPORTED)
@@ -108,9 +109,9 @@ namespace eastl
 	template <typename T>
 	inline void cp_swap(T& t1, T& t2)
 	{
-		T tTemp = t1;
-		t1 = t2;
-		t2 = tTemp;
+		T tTemp = eastl::move(t1);
+		t1 = eastl::move(t2);
+		t2 = eastl::move(tTemp);
 	}
 
 
@@ -132,6 +133,10 @@ namespace eastl
 
 		compressed_pair_imp(first_param_type x, second_param_type y)
 			: mFirst(x), mSecond(y) {}
+
+		template <typename U1, typename U2, typename = eastl::enable_if_t<eastl::is_constructible<T1, U1&&>::value && eastl::is_constructible<T2, U2&&>::value>>
+		compressed_pair_imp(U1&& x, U2&& y)
+			: mFirst(eastl::forward<U1>(x)), mSecond(eastl::forward<U2>(y)) {}
 
 		compressed_pair_imp(first_param_type x)
 			: mFirst(x) {}
@@ -176,6 +181,10 @@ namespace eastl
 		compressed_pair_imp(first_param_type x, second_param_type y)
 			: first_type(x), mSecond(y) {}
 
+		template <typename U1, typename U2, typename = eastl::enable_if_t<eastl::is_constructible<T1, U1&&>::value && eastl::is_constructible<T2, U2&&>::value>>
+		compressed_pair_imp(U1&& x, U2&& y)
+			: first_type(eastl::forward<U1>(x)), mSecond(eastl::forward<U2>(y)) {}
+
 		compressed_pair_imp(first_param_type x)
 			: first_type(x) {}
 
@@ -218,6 +227,10 @@ namespace eastl
 
 		compressed_pair_imp(first_param_type x, second_param_type y)
 			: second_type(y), mFirst(x) {}
+
+		template <typename U1, typename U2, typename = eastl::enable_if_t<eastl::is_constructible<T1, U1&&>::value && eastl::is_constructible<T2, U2&&>::value>>
+		compressed_pair_imp(U1&& x, U2&& y)
+			: second_type(eastl::forward<U2>(y)), mFirst(eastl::forward<U1>(x)) {}
 
 		compressed_pair_imp(first_param_type x)
 			: mFirst(x) {}
@@ -262,6 +275,10 @@ namespace eastl
 		compressed_pair_imp(first_param_type x, second_param_type y)
 			: first_type(x), second_type(y) {}
 
+		template <typename U1, typename U2, typename = eastl::enable_if_t<eastl::is_constructible<T1, U1&&>::value && eastl::is_constructible<T2, U2&&>::value>>
+		compressed_pair_imp(U1&& x, U2&& y)
+			: first_type(eastl::forward<U1>(x)), second_type(eastl::forward<U2>(y)) {}
+
 		compressed_pair_imp(first_param_type x)
 			: first_type(x) {}
 
@@ -301,6 +318,10 @@ namespace eastl
 		compressed_pair_imp(first_param_type x, second_param_type)
 			: first_type(x) {}
 
+		template <typename U1, typename U2, typename = eastl::enable_if_t<eastl::is_constructible<T1, U1&&>::value && eastl::is_constructible<T2, U2&&>::value>>
+		compressed_pair_imp(U1&& x, U2&&)
+			: first_type(eastl::forward<U1>(x)) {}
+
 		compressed_pair_imp(first_param_type x)
 			: first_type(x) {}
 
@@ -332,6 +353,10 @@ namespace eastl
 
 		compressed_pair_imp(first_param_type x, second_param_type y)
 			: mFirst(x), mSecond(y) {}
+
+		template <typename U1, typename U2, typename = eastl::enable_if_t<eastl::is_constructible<T1, U1&&>::value && eastl::is_constructible<T2, U2&&>::value>>
+		compressed_pair_imp(U1&& x, U2&& y)
+			: mFirst(eastl::forward<U1>(x)), mSecond(eastl::forward<U2>(y)) {}
 
 		compressed_pair_imp(first_param_type x)
 			: mFirst(x), mSecond(x) {}
@@ -385,6 +410,12 @@ namespace eastl
 
 		compressed_pair() : base() {}
 		compressed_pair(first_param_type x, second_param_type y) : base(x, y) {}
+
+		// Forwards the elements, so they are moved from rvalues instead of copied (a move-only element, such as a
+		// unique_ptr deleter, can be stored).
+		template <typename U1, typename U2, typename = eastl::enable_if_t<eastl::is_constructible<T1, U1&&>::value && eastl::is_constructible<T2, U2&&>::value>>
+		compressed_pair(U1&& x, U2&& y) : base(eastl::forward<U1>(x), eastl::forward<U2>(y)) {}
+
 		explicit compressed_pair(first_param_type x) : base(x) {}
 		explicit compressed_pair(second_param_type y) : base(y) {}
 
@@ -429,6 +460,10 @@ namespace eastl
 
 		compressed_pair() : base() {}
 		compressed_pair(first_param_type x, second_param_type y) : base(x, y) {}
+
+		template <typename U1, typename U2, typename = eastl::enable_if_t<eastl::is_constructible<T, U1&&>::value && eastl::is_constructible<T, U2&&>::value>>
+		compressed_pair(U1&& x, U2&& y) : base(eastl::forward<U1>(x), eastl::forward<U2>(y)) {}
+
 		explicit compressed_pair(first_param_type x) : base(x) {}
 
 		first_reference       first()       { return base::first(); }
