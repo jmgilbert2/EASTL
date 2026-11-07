@@ -276,11 +276,32 @@ namespace eastl
 	// 
 	// https://en.cppreference.com/w/cpp/types/is_convertible
 	//
-	// template<typename From, typename To>
-	// struct is_explicitly_convertible
-	//     : public is_constructible<To, From> {};
+	// is_convertible<From, To>, and the conversion can't throw. Like std, true for void to void.
 	///////////////////////////////////////////////////////////////////////
-	// TODO(rparolin):  implement type-trait
+
+	namespace internal
+	{
+		template <typename To>
+		void is_nothrow_convertible_test(To) EA_NOEXCEPT;
+
+		template <typename From, typename To, bool = is_convertible<From, To>::value, bool = is_void<To>::value>
+		struct is_nothrow_convertible_impl : public false_type {};
+
+		template <typename From, typename To>
+		struct is_nothrow_convertible_impl<From, To, true, true> : public true_type {};
+
+		template <typename From, typename To>
+		struct is_nothrow_convertible_impl<From, To, true, false>
+			: public integral_constant<bool, EA_NOEXCEPT_EXPR(internal::is_nothrow_convertible_test<To>(eastl::declval<From>()))> {};
+	}
+
+	template <typename From, typename To>
+	struct is_nothrow_convertible : public internal::is_nothrow_convertible_impl<From, To> {};
+
+	#if EASTL_VARIABLE_TEMPLATES_ENABLED
+		template <typename From, typename To>
+		EA_CONSTEXPR bool is_nothrow_convertible_v = is_nothrow_convertible<From, To>::value;
+	#endif
 
 
 
@@ -658,6 +679,160 @@ namespace eastl
 		template <typename... T>
 		using common_type_t = typename common_type<T...>::type;
 		#define EASTL_COMMON_TYPE_T(...) common_type_t<__VA_ARGS__>
+	#endif
+
+
+	///////////////////////////////////////////////////////////////////////
+	// basic_common_reference, common_reference
+	//
+	// The C++20 common reference type of a set of types, as the standard specifies it ([meta.trans.other]),
+	// including C++23's requirement that both references convert to the simple common reference (P2655).
+	// Users may specialize basic_common_reference for their own types, as in std.
+	///////////////////////////////////////////////////////////////////////
+
+	template <typename T, typename U, template <typename> class TQual, template <typename> class UQual>
+	struct basic_common_reference {};
+
+	template <typename... T>
+	struct common_reference;
+
+	template <typename... T>
+	using common_reference_t = typename common_reference<T...>::type;
+
+	namespace internal
+	{
+		// COPYCV(From, To): To with the cv-qualifiers of From.
+		template <typename From, typename To> struct copy_cv                         { typedef To type; };
+		template <typename From, typename To> struct copy_cv<const From, To>          { typedef const To type; };
+		template <typename From, typename To> struct copy_cv<volatile From, To>       { typedef volatile To type; };
+		template <typename From, typename To> struct copy_cv<const volatile From, To> { typedef const volatile To type; };
+
+		// XREF(A): applies the cv and reference qualifiers of A to its argument.
+		template <typename A> struct xref      { template <typename U> using apply = typename copy_cv<A, U>::type; };
+		template <typename A> struct xref<A&>  { template <typename U> using apply = typename copy_cv<A, U>::type&; };
+		template <typename A> struct xref<A&&> { template <typename U> using apply = typename copy_cv<A, U>::type&&; };
+
+		// COND-RES(X, Y)
+		template <typename X, typename Y>
+		using cond_res_t = decltype(false ? eastl::declval<X (&)()>()() : eastl::declval<Y (&)()>()());
+
+		// COMMON-REF(X&, Y&): COND-RES(COPYCV(X, Y)&, COPYCV(Y, X)&) when that is a reference type.
+		template <typename X, typename Y, typename = void>
+		struct common_ref_lvalues {};
+
+		template <typename X, typename Y>
+		struct common_ref_lvalues<X, Y, enable_if_t<is_reference<cond_res_t<typename copy_cv<X, Y>::type&, typename copy_cv<Y, X>::type&>>::value>>
+			{ typedef cond_res_t<typename copy_cv<X, Y>::type&, typename copy_cv<Y, X>::type&> type; };
+
+		// COMMON-REF(X&&, Y&&): remove_reference_t<COMMON-REF(X&, Y&)>&& when both convert to it.
+		template <typename X, typename Y, typename = void>
+		struct common_ref_rvalues {};
+
+		template <typename X, typename Y>
+		struct common_ref_rvalues<X, Y, enable_if_t<is_convertible<X&&, remove_reference_t<typename common_ref_lvalues<X, Y>::type>&&>::value &&
+		                                            is_convertible<Y&&, remove_reference_t<typename common_ref_lvalues<X, Y>::type>&&>::value>>
+			{ typedef remove_reference_t<typename common_ref_lvalues<X, Y>::type>&& type; };
+
+		// COMMON-REF(X&&, Y&): COMMON-REF(const X&, Y&) when X&& converts to it.
+		template <typename X, typename Y, typename = void>
+		struct common_ref_rvalue_lvalue {};
+
+		template <typename X, typename Y>
+		struct common_ref_rvalue_lvalue<X, Y, enable_if_t<is_convertible<X&&, typename common_ref_lvalues<const X, Y>::type>::value>>
+			{ typedef typename common_ref_lvalues<const X, Y>::type type; };
+
+		template <typename A, typename B, typename = void>
+		struct common_ref {};
+
+		template <typename X, typename Y>
+		struct common_ref<X&, Y&, void_t<typename common_ref_lvalues<X, Y>::type>> : public common_ref_lvalues<X, Y> {};
+
+		template <typename X, typename Y>
+		struct common_ref<X&&, Y&&, void_t<typename common_ref_rvalues<X, Y>::type>> : public common_ref_rvalues<X, Y> {};
+
+		template <typename X, typename Y>
+		struct common_ref<X&&, Y&, void_t<typename common_ref_rvalue_lvalue<X, Y>::type>> : public common_ref_rvalue_lvalue<X, Y> {};
+
+		template <typename X, typename Y>
+		struct common_ref<X&, Y&&, void_t<typename common_ref_rvalue_lvalue<Y, X>::type>> : public common_ref_rvalue_lvalue<Y, X> {};
+
+		// common_reference<T1, T2>, in the standard's order: the simple common reference of two references, then
+		// basic_common_reference, then COND-RES, then common_type.
+		template <typename T1, typename T2, typename = void>
+		struct common_reference_4 {};
+
+		template <typename T1, typename T2>
+		struct common_reference_4<T1, T2, void_t<typename common_type<T1, T2>::type>> { typedef typename common_type<T1, T2>::type type; };
+
+		template <typename T1, typename T2, typename = void>
+		struct common_reference_3 : public common_reference_4<T1, T2> {};
+
+		template <typename T1, typename T2>
+		struct common_reference_3<T1, T2, void_t<cond_res_t<T1, T2>>> { typedef cond_res_t<T1, T2> type; };
+
+		template <typename T1, typename T2>
+		using basic_common_reference_t = typename basic_common_reference<remove_cvref_t<T1>, remove_cvref_t<T2>, xref<T1>::template apply, xref<T2>::template apply>::type;
+
+		template <typename T1, typename T2, typename = void>
+		struct common_reference_2 : public common_reference_3<T1, T2> {};
+
+		template <typename T1, typename T2>
+		struct common_reference_2<T1, T2, void_t<basic_common_reference_t<T1, T2>>> { typedef basic_common_reference_t<T1, T2> type; };
+
+		template <typename T1, typename T2, typename = void>
+		struct common_reference_1 : public common_reference_2<T1, T2> {};
+
+		template <typename T1, typename T2>
+		struct common_reference_1<T1, T2, enable_if_t<is_convertible<add_pointer_t<T1>, add_pointer_t<typename common_ref<T1, T2>::type>>::value &&
+		                                              is_convertible<add_pointer_t<T2>, add_pointer_t<typename common_ref<T1, T2>::type>>::value>>
+			{ typedef typename common_ref<T1, T2>::type type; };
+
+		template <typename Void, typename T1, typename T2, typename... Rest>
+		struct common_reference_n {};
+
+		template <typename T1, typename T2, typename... Rest>
+		struct common_reference_n<void_t<typename common_reference<T1, T2>::type>, T1, T2, Rest...>
+			: public common_reference<typename common_reference<T1, T2>::type, Rest...> {};
+	}
+
+	template <>
+	struct common_reference<> {};
+
+	template <typename T>
+	struct common_reference<T> { typedef T type; };
+
+	template <typename T1, typename T2>
+	struct common_reference<T1, T2> : public internal::common_reference_1<T1, T2> {};
+
+	template <typename T1, typename T2, typename T3, typename... Rest>
+	struct common_reference<T1, T2, T3, Rest...> : public internal::common_reference_n<void, T1, T2, T3, Rest...> {};
+
+
+	///////////////////////////////////////////////////////////////////////
+	// unwrap_reference, unwrap_ref_decay
+	//
+	// unwrap_reference<reference_wrapper<T>>::type is T&, otherwise T; unwrap_ref_decay applies it to decay_t<T>.
+	// As in C++20.
+	///////////////////////////////////////////////////////////////////////
+
+	template <typename T>
+	class reference_wrapper;
+
+	template <typename T>
+	struct unwrap_reference { typedef T type; };
+
+	template <typename T>
+	struct unwrap_reference<reference_wrapper<T>> { typedef T& type; };
+
+	template <typename T>
+	struct unwrap_ref_decay : public unwrap_reference<typename decay<T>::type> {};
+
+	#if !defined(EA_COMPILER_NO_TEMPLATE_ALIASES)
+		template <typename T>
+		using unwrap_reference_t = typename unwrap_reference<T>::type;
+
+		template <typename T>
+		using unwrap_ref_decay_t = typename unwrap_ref_decay<T>::type;
 	#endif
 
 	///////////////////////////////////////////////////////////////////////

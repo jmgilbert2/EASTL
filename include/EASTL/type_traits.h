@@ -877,6 +877,45 @@ namespace eastl
 
 	} // namespace detail
 
+	///////////////////////////////////////////////////////////////////////
+	// is_scoped_enum
+	//
+	// is_scoped_enum<T>::value is true if T is a scoped enumeration (enum class or enum struct), as in C++23.
+	// Defined here because it needs both underlying_type and is_convertible.
+	///////////////////////////////////////////////////////////////////////
+
+	namespace internal
+	{
+		template <typename T, bool = is_enum<T>::value>
+		struct is_scoped_enum_impl : public false_type {};
+
+		template <typename T>
+		struct is_scoped_enum_impl<T, true> : public integral_constant<bool, !is_convertible<T, typename underlying_type<T>::type>::value> {};
+	}
+
+	template <typename T>
+	struct is_scoped_enum : public internal::is_scoped_enum_impl<T> {};
+
+	#if EASTL_VARIABLE_TEMPLATES_ENABLED
+		template <typename T>
+		EA_CONSTEXPR bool is_scoped_enum_v = is_scoped_enum<T>::value;
+	#endif
+
+	///
+	/// is_constant_evaluated
+	///
+	/// Detects whether the function call occurs within a constant-evaluated context.
+	///
+	/// See: https://en.cppreference.com/w/cpp/types/is_constant_evaluated
+	///
+	#if defined(EA_COMPILER_CPP20_ENABLED)
+		[[nodiscard]] constexpr bool is_constant_evaluated() noexcept
+		{
+			// MSVC, Clang, and GCC all use the same builtin name
+			return __builtin_is_constant_evaluated();
+		}
+	#endif
+
 } // namespace eastl
 
 

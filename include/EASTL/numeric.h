@@ -236,23 +236,7 @@ namespace eastl
 }
 
 
-///
-/// is_constant_evaluated
-///
-/// Detects whether the function call occurs within a constant-evaluated context.
-///
-/// See: https://en.cppreference.com/w/cpp/types/is_constant_evaluated
-/// 
-#if defined(EA_COMPILER_CPP20_ENABLED)
-namespace eastl
-{
-	[[nodiscard]] constexpr bool is_constant_evaluated() noexcept
-	{
-		// MSVC, Clang, and GCC all use the same builtin name
-		return __builtin_is_constant_evaluated();
-	}
-}
-#endif
+// is_constant_evaluated is in <EASTL/type_traits.h>, as std::is_constant_evaluated is in <type_traits>.
 
 ///
 /// isnan

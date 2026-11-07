@@ -12,6 +12,7 @@
 #include <EASTL/internal/type_detected.h>
 #include <EASTL/internal/type_void_t.h>
 #include <EASTL/internal/memory_base.h>
+#include <EASTL/compare.h> // <compare> for the iterator adaptors' operator<=>, when three-way comparison is available.
 #include <EASTL/initializer_list.h>
 
 #include <stddef.h>
@@ -91,7 +92,14 @@ namespace eastl
 	// struct iterator_traits
 	namespace internal
 	{
-		// Helper to make iterator_traits SFINAE friendly as N3844 requires.
+		// Helper to make iterator_traits SFINAE friendly as N3844 requires. As in C++20, an iterator with the other
+		// four member types but no pointer member has iterator traits, with pointer = void.
+		template <typename Iterator, class = void>
+		struct iterator_traits_pointer { typedef void type; };
+
+		template <typename Iterator>
+		struct iterator_traits_pointer<Iterator, void_t<typename Iterator::pointer>> { typedef typename Iterator::pointer type; };
+
 		template <typename Iterator, class = void>
 		struct default_iterator_traits {};
 
@@ -102,41 +110,49 @@ namespace eastl
 				typename Iterator::iterator_category,
 				typename Iterator::value_type,
 				typename Iterator::difference_type,
-				typename Iterator::pointer,
 				typename Iterator::reference
 			>
 		>
 		{
-			typedef typename Iterator::iterator_category iterator_category;
-			typedef typename Iterator::value_type        value_type;
-			typedef typename Iterator::difference_type   difference_type;
-			typedef typename Iterator::pointer           pointer;
-			typedef typename Iterator::reference         reference;
+			typedef typename Iterator::iterator_category                iterator_category;
+			typedef typename Iterator::value_type                       value_type;
+			typedef typename Iterator::difference_type                  difference_type;
+			typedef typename iterator_traits_pointer<Iterator>::type    pointer;
+			typedef typename Iterator::reference                        reference;
 		};
+
+		// As in C++20, only pointers to object types have iterator traits (iterator_traits<void*> has no members),
+		// and the value type is cv-unqualified.
+		template <typename T, bool = eastl::is_object<T>::value>
+		struct pointer_iterator_traits {};
+
+		template <typename T>
+		struct pointer_iterator_traits<T, true>
+		{
+			typedef eastl::random_access_iterator_tag iterator_category;
+		#if !EASTL_STD_ITERATOR_CATEGORY_ENABLED || defined(EA_COMPILER_CPP20_ENABLED) // Where contiguous_iterator_tag exists.
+			typedef eastl::contiguous_iterator_tag    iterator_concept;
+		#endif
+			typedef typename eastl::remove_cv<T>::type value_type;
+			typedef ptrdiff_t                         difference_type;
+			typedef T*                                pointer;
+			typedef T&                                reference;
+		};
+
+		template <typename T>
+		using arrow_operator_t = decltype(eastl::declval<T>().operator->());
+
+		// bool, when the comparison Result converts to bool: the constraint of the iterator adaptors' comparison
+		// operators, as in C++20, so that they don't participate for base iterators that can't be compared.
+		template <typename Result>
+		using iterator_comparison_t = eastl::enable_if_t<eastl::is_convertible<Result, bool>::value, bool>;
 	}
-	
+
 	template <typename Iterator>
 	struct iterator_traits : internal::default_iterator_traits<Iterator> {};
-	
-	template <typename T>
-	struct iterator_traits<T*>
-	{
-		typedef eastl::random_access_iterator_tag iterator_category;     // To consider: Change this to contiguous_iterator_tag for the case that
-		typedef T                                        value_type;            //              EASTL_ITC_NS is "eastl" instead of "std".
-		typedef ptrdiff_t                                difference_type;
-		typedef T*                                       pointer;
-		typedef T&                                       reference;
-	};
 
 	template <typename T>
-	struct iterator_traits<const T*>
-	{
-		typedef eastl::random_access_iterator_tag iterator_category;
-		typedef T                                        value_type;
-		typedef ptrdiff_t                                difference_type;
-		typedef const T*                                 pointer;
-		typedef const T&                                 reference;
-	};
+	struct iterator_traits<T*> : internal::pointer_iterator_traits<T> {};
 
 
 	/// iter_move
@@ -285,6 +301,9 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		typedef typename eastl::iterator_traits<Iterator>::difference_type		difference_type;
 		typedef typename eastl::iterator_traits<Iterator>::pointer				pointer;
 		typedef typename eastl::iterator_traits<Iterator>::reference			reference;
+		// As in C++20: random access for a random access iterator, else bidirectional.
+		typedef typename eastl::conditional<eastl::is_base_of<eastl::random_access_iterator_tag, iterator_category>::value,
+		                                    eastl::random_access_iterator_tag, eastl::bidirectional_iterator_tag>::type iterator_concept;
 
 	protected:
 		Iterator mIterator;
@@ -296,11 +315,13 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		EA_CPP14_CONSTEXPR explicit reverse_iterator(iterator_type i)
 			: mIterator(i) { }
 
-		template <typename U>
+		// Like std, the converting constructor and assignment participate only if the base iterator converts.
+		template <typename U, typename = eastl::enable_if_t<!eastl::is_same<U, Iterator>::value && eastl::is_convertible<const U&, Iterator>::value>>
 		EA_CPP14_CONSTEXPR reverse_iterator(const reverse_iterator<U>& ri)
 			: mIterator(ri.base()) { }
 
-		template <typename U>
+		template <typename U, typename = eastl::enable_if_t<!eastl::is_same<U, Iterator>::value && eastl::is_convertible<const U&, Iterator>::value &&
+		                                                    eastl::is_assignable<Iterator&, const U&>::value>>
 		EA_CPP14_CONSTEXPR reverse_iterator<Iterator>& operator=(const reverse_iterator<U>& ri)
 			{ mIterator = ri.base(); return *this; }
 
@@ -313,8 +334,21 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 			return *--i;
 		}
 
+		// Like std, only for a pointer or a base iterator with operator->, which is used.
+		template <typename I = Iterator, eastl::enable_if_t<eastl::is_pointer<I>::value, int> = 0>
 		EA_CPP14_CONSTEXPR pointer operator->() const
-			{ return &(operator*()); }
+		{
+			iterator_type i(mIterator);
+			return --i;
+		}
+
+		template <typename I = Iterator, eastl::enable_if_t<!eastl::is_pointer<I>::value && eastl::is_detected<internal::arrow_operator_t, const I&>::value, int> = 0>
+		EA_CPP14_CONSTEXPR pointer operator->() const
+		{
+			iterator_type i(mIterator);
+			--i;
+			return i.operator->();
+		}
 
 		// Moves through the base iterator's iter_move, like std::reverse_iterator.
 		friend EA_CPP14_CONSTEXPR decltype(auto) iter_move(const reverse_iterator& ri)
@@ -393,45 +427,56 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	// want to support relops then we need to also make versions of each of below with
 	// a single template parameter to placate std::relops. But relops is hardly used due to
 	// the troubles it causes and so we are avoiding support here until somebody complains about it.
+	// Like std, each comparison participates only if the comparison of the base iterators it makes does.
 	template <typename Iterator1, typename Iterator2>
-	EA_CPP14_CONSTEXPR inline bool
+	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() == eastl::declval<const Iterator2&>())>
 	operator==(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
 		{ return a.base() == b.base(); }
 
 
 	template <typename Iterator1, typename Iterator2>
-	EA_CPP14_CONSTEXPR inline bool
+	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() > eastl::declval<const Iterator2&>())>
 	operator<(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
 		{ return a.base() > b.base(); }
 
 
 	template <typename Iterator1, typename Iterator2>
-	EA_CPP14_CONSTEXPR inline bool
+	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() != eastl::declval<const Iterator2&>())>
 	operator!=(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
 		{ return a.base() != b.base(); }
 
 
 	template <typename Iterator1, typename Iterator2>
-	EA_CPP14_CONSTEXPR inline bool
+	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() < eastl::declval<const Iterator2&>())>
 	operator>(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
 		{ return a.base() < b.base(); }
 
 
 	template <typename Iterator1, typename Iterator2>
-	EA_CPP14_CONSTEXPR inline bool
+	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() >= eastl::declval<const Iterator2&>())>
 	operator<=(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
 		{ return a.base() >= b.base(); }
 
 
 	template <typename Iterator1, typename Iterator2>
-	EA_CPP14_CONSTEXPR inline bool
+	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() <= eastl::declval<const Iterator2&>())>
 	operator>=(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
 		{ return a.base() <= b.base(); }
 
 
+	#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+	template <typename Iterator1, std::three_way_comparable_with<Iterator1> Iterator2>
+	EA_CONSTEXPR inline std::compare_three_way_result_t<Iterator1, Iterator2>
+	operator<=>(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
+		{ return b.base() <=> a.base(); }
+	#endif
+
+
+	// Like std, the difference type is the base iterators' difference (b.base() - a.base()), and the operator
+	// participates only if that difference is well-formed.
 	template <typename Iterator1, typename Iterator2>
-	EA_CPP14_CONSTEXPR inline typename reverse_iterator<Iterator1>::difference_type
-	operator-(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
+	EA_CPP14_CONSTEXPR inline auto
+	operator-(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b) -> decltype(b.base() - a.base())
 		{ return b.base() - a.base(); }
 
 
@@ -495,6 +540,11 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		typedef Iterator                                pointer;
 		// Dereferences through iter_move, like std::move_iterator since C++20.
 		using reference = decltype(iter_move(eastl::declval<const Iterator&>()));
+		// As in C++20: the strongest of random access, bidirectional, forward and input that the base iterator has.
+		typedef typename eastl::conditional<eastl::is_base_of<eastl::random_access_iterator_tag, iterator_category>::value, eastl::random_access_iterator_tag,
+		        typename eastl::conditional<eastl::is_base_of<eastl::bidirectional_iterator_tag, iterator_category>::value, eastl::bidirectional_iterator_tag,
+		        typename eastl::conditional<eastl::is_base_of<eastl::forward_iterator_tag, iterator_category>::value, eastl::forward_iterator_tag,
+		                                    eastl::input_iterator_tag>::type>::type>::type iterator_concept;
 
 	protected:
 		iterator_type mIterator;
@@ -508,16 +558,18 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		explicit move_iterator(iterator_type mi)
 		  : mIterator(mi) { }
 
-		template<typename U>
+		// Like std, the converting constructor and assignment participate only if the base iterator converts.
+		template <typename U, typename = eastl::enable_if_t<!eastl::is_same<U, Iterator>::value && eastl::is_convertible<const U&, Iterator>::value>>
 		move_iterator(const move_iterator<U>& mi)
 		  : mIterator(mi.base())
 		{
 		}
 
-		template <typename U>
+		template <typename U, typename = eastl::enable_if_t<!eastl::is_same<U, Iterator>::value && eastl::is_convertible<const U&, Iterator>::value &&
+		                                                    eastl::is_assignable<Iterator&, const U&>::value>>
 		move_iterator& operator=(const move_iterator<U>& mi)
 		{
-			mIterator = mi.mIterator;
+			mIterator = mi.base();
 			return *this;
 		}
 
@@ -589,45 +641,116 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	EASTL_INTERNAL_RESTORE_DEPRECATED()
 	};
 
+	// Like std, each comparison participates only if the comparison of the base iterators it makes does.
 	template<typename Iterator1, typename Iterator2>
-	inline bool
+	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() == eastl::declval<const Iterator2&>())>
 	operator==(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
 		{ return a.base() == b.base(); }
 
 
 	template<typename Iterator1, typename Iterator2>
-	inline bool
+	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() == eastl::declval<const Iterator2&>())>
 	operator!=(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
 		{ return !(a == b); }
 
 
 	template<typename Iterator1, typename Iterator2>
-	inline bool
+	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() < eastl::declval<const Iterator2&>())>
 	operator<(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
 		{ return a.base() < b.base(); }
 
 
 	template<typename Iterator1, typename Iterator2>
-	inline bool
+	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator2&>() < eastl::declval<const Iterator1&>())>
 	operator<=(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
 		{ return !(b < a); }
 
 
 	template<typename Iterator1, typename Iterator2>
-	inline bool
+	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator2&>() < eastl::declval<const Iterator1&>())>
 	operator>(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
 		{ return b < a; }
 
 
 	template<typename Iterator1, typename Iterator2>
-	inline bool
+	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() < eastl::declval<const Iterator2&>())>
 	operator>=(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
 		{ return !(a < b); }
+
+
+	#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+	template <typename Iterator1, std::three_way_comparable_with<Iterator1> Iterator2>
+	inline std::compare_three_way_result_t<Iterator1, Iterator2>
+	operator<=>(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
+		{ return a.base() <=> b.base(); }
+	#endif
 
 
 	template<typename Iterator1, typename Iterator2>
 	inline auto
 	operator-(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b) -> decltype(a.base() - b.base())
+		{ return a.base() - b.base(); }
+
+
+	/// move_sentinel
+	///
+	/// The sentinel adaptor that goes with move_iterator, as in C++20: a move_iterator<I> compares equal to a
+	/// move_sentinel<S> when its base iterator compares equal to the base sentinel, and their difference is the
+	/// difference of the bases.
+	///
+	template <typename Sentinel>
+	class move_sentinel
+	{
+	public:
+		EA_CONSTEXPR move_sentinel()
+		  : mSentinel() {}
+
+		EA_CONSTEXPR explicit move_sentinel(Sentinel s)
+		  : mSentinel(eastl::move(s)) {}
+
+		template <typename S2, typename = eastl::enable_if_t<eastl::is_convertible<const S2&, Sentinel>::value>>
+		EA_CONSTEXPR move_sentinel(const move_sentinel<S2>& s)
+		  : mSentinel(s.base()) {}
+
+		template <typename S2, typename = eastl::enable_if_t<eastl::is_assignable<Sentinel&, const S2&>::value>>
+		EA_CPP14_CONSTEXPR move_sentinel& operator=(const move_sentinel<S2>& s)
+			{ mSentinel = s.base(); return *this; }
+
+		EA_CONSTEXPR Sentinel base() const
+			{ return mSentinel; }
+
+	private:
+		Sentinel mSentinel;
+	};
+
+	template <typename Iterator, typename Sentinel>
+	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>())>
+	operator==(const move_iterator<Iterator>& a, const move_sentinel<Sentinel>& b)
+		{ return a.base() == b.base(); }
+
+	#if !defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON) // C++20 rewrites the other three from operator==.
+	template <typename Iterator, typename Sentinel>
+	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>())>
+	operator==(const move_sentinel<Sentinel>& b, const move_iterator<Iterator>& a)
+		{ return a.base() == b.base(); }
+
+	template <typename Iterator, typename Sentinel>
+	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>())>
+	operator!=(const move_iterator<Iterator>& a, const move_sentinel<Sentinel>& b)
+		{ return !(a.base() == b.base()); }
+
+	template <typename Iterator, typename Sentinel>
+	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>())>
+	operator!=(const move_sentinel<Sentinel>& b, const move_iterator<Iterator>& a)
+		{ return !(a.base() == b.base()); }
+	#endif
+
+	template <typename Iterator, typename Sentinel>
+	inline auto operator-(const move_sentinel<Sentinel>& b, const move_iterator<Iterator>& a) -> decltype(b.base() - a.base())
+		{ return b.base() - a.base(); }
+
+	template <typename Iterator, typename Sentinel>
+	inline auto operator-(const move_iterator<Iterator>& a, const move_sentinel<Sentinel>& b) -> decltype(a.base() - b.base())
 		{ return a.base() - b.base(); }
 
 

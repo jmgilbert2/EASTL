@@ -1131,11 +1131,10 @@ namespace eastl
 			static const bool value = sizeof(test<Pointer>(0)) == sizeof(eastl::yes_type);
 		};
 
+		// Pointer::element_type, else T for a pointer class template Pointer<T, Args...>, else none: pointer_traits
+		// then has no members, as in C++20 (LWG 3545).
 		template <typename Pointer, bool = has_element_type<Pointer>::value>
-		struct pointer_element_type
-		{
-			using type = Pointer;
-		};
+		struct pointer_element_type {};
 
 		template <typename Pointer>
 		struct pointer_element_type<Pointer, true>
@@ -1166,40 +1165,56 @@ namespace eastl
 			{ typedef ptrdiff_t type; };
 
 
-		// pointer_rebind
-		// The following isn't correct, as it is unilaterally requiring that Pointer typedef its
-		// own rebind. We can fix this if needed to make it optional (in which case it would return
-		// its own type), but we don't currently use rebind in EASTL (as we have a different allocator
-		// system than the C++ Standard Library has) and this is currently moot.
+		// pointer_rebind: Pointer::rebind<U>, else Pointer<U, Args...> for a pointer class template Pointer<T, Args...>,
+		// as the standard specifies.
 		template <typename Pointer, typename U>
-		struct pointer_rebind
+		struct pointer_rebind_template {};
+
+		template <template <typename, typename...> class Pointer, typename T, typename... Args, typename U>
+		struct pointer_rebind_template<Pointer<T, Args...>, U>
+			{ typedef Pointer<U, Args...> type; };
+
+		template <typename Pointer, typename U, typename = void>
+		struct pointer_rebind : public pointer_rebind_template<Pointer, U> {};
+
+		template <typename Pointer, typename U>
+		struct pointer_rebind<Pointer, U, void_t<typename Pointer::template rebind<U>>>
+			{ typedef typename Pointer::template rebind<U> type; };
+
+
+		// pointer_to's parameter: element_type&, or a placeholder when element_type is (possibly cv-qualified) void,
+		// for which 20.6.3.2 leaves the type unspecified (void& would make pointer_traits ill-formed).
+		template <typename ElementType>
+		using pointer_to_param_t = typename eastl::conditional<eastl::is_void<ElementType>::value, char, ElementType>::type&;
+
+
+		template <typename Pointer, typename = void>
+		struct pointer_traits_base {};
+
+		template <typename Pointer>
+		struct pointer_traits_base<Pointer, void_t<typename pointer_element_type<Pointer>::type>>
 		{
-			typedef typename Pointer::template rebind<U> type;
+			typedef Pointer                                         pointer;
+			typedef typename pointer_element_type<Pointer>::type    element_type;
+			typedef typename pointer_difference_type<Pointer>::type difference_type;
+
+			#if defined(EA_COMPILER_NO_TEMPLATE_ALIASES)
+				template <typename U>
+				struct rebind { typedef typename pointer_rebind<Pointer, U>::type other; };
+			#else
+				template <typename U>
+				using rebind = typename pointer_rebind<Pointer, U>::type;
+			#endif
+
+			static pointer pointer_to(pointer_to_param_t<element_type> r)
+				{ return Pointer::pointer_to(r); } // The C++11 Standard requires that Pointer provides a static pointer_to function.
 		};
-
-
 	} // namespace Internal
 
 
+	// Like std (C++20, LWG 3545), pointer_traits<Pointer> has no members when its element type can't be determined.
 	template <typename Pointer>
-	struct pointer_traits
-	{
-		typedef Pointer                                                   pointer;
-		typedef typename Internal::pointer_element_type<pointer>::type    element_type;
-		typedef typename Internal::pointer_difference_type<pointer>::type difference_type;
-
-		#if defined(EA_COMPILER_NO_TEMPLATE_ALIASES)
-			template <typename U>
-			struct rebind { typedef typename Internal::pointer_rebind<pointer, U>::type other; };
-		#else
-			template <typename U>
-			using rebind = typename Internal::pointer_rebind<pointer, U>::type;
-		#endif
-
-	public:
-		static pointer pointer_to(typename eastl::conditional<eastl::is_void<element_type>::value, void, element_type>::type& r) // 20.6.3.2: if element_type is (possibly cv-qualified) void, the type of r is unspecified; otherwise, it is T&.
-			{ return pointer::pointer_to(r); } // The C++11 Standard requires that Pointer provides a static pointer_to function.
-	};
+	struct pointer_traits : public Internal::pointer_traits_base<Pointer> {};
 
 
 	template <typename T>
@@ -1218,7 +1233,7 @@ namespace eastl
 		#endif
 
 	public:
-		static pointer pointer_to(typename eastl::conditional<eastl::is_void<element_type>::value, void, element_type>::type& r) EA_NOEXCEPT
+		static pointer pointer_to(Internal::pointer_to_param_t<element_type> r) EA_NOEXCEPT
 			{ return eastl::addressof(r); } // 20.6.3.2: if element_type is (possibly cv-qualified) void, the type of r is unspecified; otherwise, it is T&.
 	};
 
