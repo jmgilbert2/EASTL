@@ -37,9 +37,6 @@
 #include <EASTL/type_traits.h>
 #include <limits.h>                 // C limits.h header
 #include <float.h>
-#if defined(_CPPLIB_VER)            // Dinkumware.
-	#include <ymath.h>
-#endif
 
 #if defined(EA_PRAGMA_ONCE_SUPPORTED)
 	#pragma once // Some compilers (e.g. VC++) benefit significantly from using this. We've measured 3-4% build speed improvements in apps as a result.
@@ -1303,7 +1300,7 @@ namespace eastl
 			static constexpr value_type denorm_min() 
 				{ return __FLT_DENORM_MIN__; }
 
-		#elif defined(_CPPLIB_VER) // If using the Dinkumware Standard library...
+		#elif defined(EA_COMPILER_MSVC) // cl, with the same builtins as MSVC STL
 			static constexpr value_type min()
 				{ return FLT_MIN; }
 
@@ -1319,31 +1316,17 @@ namespace eastl
 			static constexpr value_type round_error() 
 				{ return 0.5f; }
 
-			#if defined(_MSVC_STL_UPDATE) && _MSVC_STL_UPDATE >= 202206L // If using a recent version of MSVC's STL...
-				static constexpr value_type infinity()
-					{ return __builtin_huge_valf(); }
+			static constexpr value_type infinity()
+				{ return __builtin_huge_valf(); }
 
-				static constexpr value_type quiet_NaN()
-					{ return __builtin_nanf("0"); }
+			static constexpr value_type quiet_NaN()
+				{ return __builtin_nanf("0"); }
 
-				static constexpr value_type signaling_NaN()
-					{ return __builtin_nansf("1"); }
+			static constexpr value_type signaling_NaN()
+				{ return __builtin_nansf("1"); }
 
-				static constexpr value_type denorm_min()
-					{ return FLT_TRUE_MIN; }
-			#else
-				static constexpr value_type infinity() 
-					{ return _CSTD _FInf._Float; }
-
-				static constexpr value_type quiet_NaN() 
-					{ return _CSTD _FNan._Float; }
-
-				static constexpr value_type signaling_NaN()
-					{ return _CSTD _FSnan._Float; } 
-
-				static constexpr value_type denorm_min() 
-					{ return _CSTD _FDenorm._Float; }
-			#endif
+			static constexpr value_type denorm_min()
+				{ return FLT_TRUE_MIN; }
 		#endif
 	};
 
@@ -1407,7 +1390,7 @@ namespace eastl
 			static constexpr value_type denorm_min() 
 				{ return __DBL_DENORM_MIN__; }
 
-		#elif defined(_CPPLIB_VER) // If using the Dinkumware Standard library...
+		#elif defined(EA_COMPILER_MSVC) // cl, with the same builtins as MSVC STL
 			static constexpr value_type min()
 				{ return DBL_MIN; }
 
@@ -1423,31 +1406,17 @@ namespace eastl
 			static constexpr value_type round_error() 
 				{ return 0.5f; }
 
-			#if defined(_MSVC_STL_UPDATE) && _MSVC_STL_UPDATE >= 202206L // If using a recent version of MSVC's STL...
-				static constexpr value_type infinity()
-					{ return __builtin_huge_val(); }
+			static constexpr value_type infinity()
+				{ return __builtin_huge_val(); }
 
-				static constexpr value_type quiet_NaN()
-					{ return __builtin_nan("0"); }
+			static constexpr value_type quiet_NaN()
+				{ return __builtin_nan("0"); }
 
-				static constexpr value_type signaling_NaN()
-					{ return __builtin_nans("1"); }
+			static constexpr value_type signaling_NaN()
+				{ return __builtin_nans("1"); }
 
-				static constexpr value_type denorm_min()
-					{ return DBL_TRUE_MIN; }
-			#else
-				static constexpr value_type infinity() 
-					{ return _CSTD _Inf._Double; }
-
-				static constexpr value_type quiet_NaN() 
-					{ return _CSTD _Nan._Double; }
-
-				static constexpr value_type signaling_NaN()
-					{ return _CSTD _Snan._Double; } 
-
-				static constexpr value_type denorm_min() 
-					{ return _CSTD _Denorm._Double; }
-			#endif
+			static constexpr value_type denorm_min()
+				{ return DBL_TRUE_MIN; }
 		#endif
 	};
 
@@ -1511,7 +1480,7 @@ namespace eastl
 			static constexpr value_type denorm_min() 
 				{ return __LDBL_DENORM_MIN__; }
 
-		#elif defined(_CPPLIB_VER) // If using the Dinkumware Standard library...
+		#elif defined(EA_COMPILER_MSVC) // cl, with the same builtins as MSVC STL
 			static constexpr value_type min()
 				{ return LDBL_MIN; }
 
@@ -1527,31 +1496,17 @@ namespace eastl
 			static constexpr value_type round_error() 
 				{ return 0.5f; }
 
-			#if defined(_MSVC_STL_UPDATE) && _MSVC_STL_UPDATE >= 202206L // If using a recent version of MSVC's STL...
-				static constexpr value_type infinity()
-					{ return __builtin_huge_val(); }
+			static constexpr value_type infinity()
+				{ return __builtin_huge_val(); }
 
-				static constexpr value_type quiet_NaN()
-					{ return __builtin_nan("0"); }
+			static constexpr value_type quiet_NaN()
+				{ return __builtin_nan("0"); }
 
-				static constexpr value_type signaling_NaN()
-					{ return __builtin_nans("1"); }
+			static constexpr value_type signaling_NaN()
+				{ return __builtin_nans("1"); }
 
-				static constexpr value_type denorm_min()
-					{ return LDBL_TRUE_MIN; }
-			#else
-				static constexpr value_type infinity() 
-					{ return _CSTD _LInf._Long_double; }
-
-				static constexpr value_type quiet_NaN() 
-					{ return _CSTD _LNan._Long_double; }
-
-				static constexpr value_type signaling_NaN()
-					{ return _CSTD _LSnan._Long_double; } 
-
-				static constexpr value_type denorm_min() 
-					{ return _CSTD _LDenorm._Long_double; }
-			#endif
+			static constexpr value_type denorm_min()
+				{ return LDBL_TRUE_MIN; }
 		#endif
 	};
 
