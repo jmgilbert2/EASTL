@@ -105,6 +105,7 @@ int VerifyBitsetConversionThrows(const bitset<N, WordType>& bs, UInt(*convert)(c
 	int nErrorCount = 0;
 
 #if EASTL_EXCEPTIONS_ENABLED
+	EA_UNUSED(truncatedValue);
 	try {
 		convert(bs);
 		EATEST_VERIFY(false);

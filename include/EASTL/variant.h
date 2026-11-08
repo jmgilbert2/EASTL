@@ -221,6 +221,8 @@ namespace eastl
 		template <class... Types>
 		using variant_storage = variant_storage_impl<(is_trivially_destructible_v<Types> && ...), Types...>;
 
+		EA_DISABLE_VC_WARNING(4702) // unreachable code: the code after constructing an alternative whose constructor always throws
+
 		template <class First, class... Rest>
 		class variant_storage_impl<true, First, Rest...>
 		{
@@ -298,6 +300,8 @@ namespace eastl
 			EA_CONSTEXPR First&& get() && EA_NOEXCEPT { return eastl::move(mHead); }
 			EA_CONSTEXPR const First&& get() const&& EA_NOEXCEPT { return eastl::move(mHead); }
 		};
+
+		EA_RESTORE_VC_WARNING() // 4702
 
 		// Alternative I of a variant_storage, with the storage's value category.
 		template <size_t I, class Storage>
@@ -548,12 +552,14 @@ namespace eastl
 			}
 
 			// pre: no active alternative (valueless, or destroyed)
+			EA_DISABLE_VC_WARNING(4702) // unreachable code: the code after constructing an alternative whose constructor always throws
 			template <size_t I, class... Args>
 			EA_CPP20_CONSTEXPR void construct_valueless(Args&&... args)
 			{
 				internal::variant_construct_storage(mStorage, integral_constant<size_t, I>{}, eastl::forward<Args>(args)...);
 				mIndex = static_cast<index_t>(I);
 			}
+			EA_RESTORE_VC_WARNING()
 
 			// The special member functions used by EnableVariantOptionalSpecialMemberFunctions when they aren't trivial.
 			EA_CPP20_CONSTEXPR void ConstructFrom(const variant_base& other)
@@ -1017,6 +1023,7 @@ namespace eastl
 		// std::is_constructible_v<T_I, Args...> is true. The behavior is undefined if I is not less than
 		// sizeof...(Types).
 		//
+		EA_DISABLE_VC_WARNING(4702) // unreachable code: the code after constructing an alternative whose constructor always throws
 		template <size_t I,
 		          class... Args,
 		          typename T = meta::get_type_at_t<I, Types...>,
@@ -1046,6 +1053,7 @@ namespace eastl
 			this->template construct_valueless<I>(il, eastl::forward<Args>(args)...);
 			return internal::variant_raw_get<I>(this->mStorage);
 		}
+		EA_RESTORE_VC_WARNING() // 4702
 
 
 		///////////////////////////////////////////////////////////////////////////
@@ -1112,6 +1120,7 @@ namespace eastl
 				{
 					internal::variant_raw_visit(other.index(), other.mStorage, [this, &other, thisRef](auto otherRef)
 					{
+						(void)thisRef; // unused when both variants are valueless
 						constexpr size_t ThisIndex = decltype(thisRef)::index;
 						constexpr size_t OtherIndex = decltype(otherRef)::index;
 
