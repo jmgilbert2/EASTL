@@ -549,8 +549,11 @@ int TestVector()
 					  (TestObject::sTOMoveCtorCount == 1));
 
 		toVectorC.insert(toVectorC.begin(), TestObject(3, 4, 5));
+		// With exceptions enabled, the reallocation copies the existing element unless its move can't throw
+		// (move_if_noexcept, like std::vector), and TestObject's move constructor isn't noexcept.
+		const int existingElementMoves = (!EASTL_EXCEPTIONS_ENABLED || eastl::is_nothrow_move_constructible_v<TestObject>) ? 1 : 0;
 		EATEST_VERIFY((toVectorC.size() == 2) && (toVectorC.front().mX == (3 + 4 + 5)) &&
-					  (TestObject::sTOMoveCtorCount == 3));  // 3 because the original count of 1, plus the existing
+					  (TestObject::sTOMoveCtorCount == 2 + existingElementMoves));  // 3 because the original count of 1, plus the existing
 															 // vector element will be moved, plus the one being
 															 // emplaced.
 	}
