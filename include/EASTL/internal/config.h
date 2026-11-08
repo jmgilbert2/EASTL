@@ -739,10 +739,9 @@ namespace eastl
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_RTTI_ENABLED
-	// The VC++ default Standard Library (Dinkumware) disables major parts of RTTI
-	// (e.g. type_info) if exceptions are disabled, even if RTTI itself is enabled.
-	// _HAS_EXCEPTIONS is defined by Dinkumware to 0 or 1 (disabled or enabled).
-	#if defined(EA_COMPILER_NO_RTTI) || (defined(_MSC_VER) && defined(EA_HAVE_DINKUMWARE_CPP_LIBRARY) && !(defined(_HAS_EXCEPTIONS) && _HAS_EXCEPTIONS))
+	// Follows EABase. (MSVC STL keeps type_info, typeid and dynamic_cast with _HAS_EXCEPTIONS=0; only the
+	// old Dinkumware library disabled parts of RTTI without exceptions.)
+	#if defined(EA_COMPILER_NO_RTTI)
 		#define EASTL_RTTI_ENABLED 0
 	#else
 		#define EASTL_RTTI_ENABLED 1
@@ -755,18 +754,23 @@ namespace eastl
 ///////////////////////////////////////////////////////////////////////////////
 // EASTL_EXCEPTIONS_ENABLED
 //
-// Defined as 0 or 1. Default is to follow what the compiler settings are.
-// The user can predefine EASTL_EXCEPTIONS_ENABLED to 0 or 1; however, if the
-// compiler is set to disable exceptions then EASTL_EXCEPTIONS_ENABLED is
-// forced to a value of 0 regardless of the user predefine.
-//
-// Note that we do not enable EASTL exceptions by default if the compiler
-// has exceptions enabled. To enable EASTL_EXCEPTIONS_ENABLED you need to
-// manually set it to 1.
+// Defined as 0 or 1. Default is to follow what the compiler settings are: 1,
+// unless EABase defines EA_COMPILER_NO_EXCEPTIONS (exception handling disabled,
+// or MSVC STL's _HAS_EXCEPTIONS defined to 0).
+// The user can predefine EASTL_EXCEPTIONS_ENABLED to 0 to keep EASTL from
+// throwing while the compiler has exceptions enabled; a predefined 1 is forced
+// to 0 when the compiler has exceptions disabled.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#if !defined(EASTL_EXCEPTIONS_ENABLED) || ((EASTL_EXCEPTIONS_ENABLED == 1) && defined(EA_COMPILER_NO_EXCEPTIONS))
+#if !defined(EASTL_EXCEPTIONS_ENABLED)
+	#if defined(EA_COMPILER_NO_EXCEPTIONS)
+		#define EASTL_EXCEPTIONS_ENABLED 0
+	#else
+		#define EASTL_EXCEPTIONS_ENABLED 1
+	#endif
+#elif EASTL_EXCEPTIONS_ENABLED && defined(EA_COMPILER_NO_EXCEPTIONS)
+	#undef EASTL_EXCEPTIONS_ENABLED
 	#define EASTL_EXCEPTIONS_ENABLED 0
 #endif
 
