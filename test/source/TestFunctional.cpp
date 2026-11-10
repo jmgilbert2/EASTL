@@ -14,6 +14,89 @@
 #include <EASTL/type_traits.h>
 #include <EAStdC/EAString.h>
 
+// The exception specifications of the function objects, hash, reference_wrapper, mem_fn and not_fn follow the standard
+// (the conditional ones as MSVC's STL strengthens them).
+namespace NoexceptFunctionalTest
+{
+	template <bool Nothrow>
+	struct Operand
+	{
+		friend Operand operator+(const Operand&, const Operand&) EA_NOEXCEPT_IF(Nothrow);
+		friend Operand operator-(const Operand&, const Operand&) EA_NOEXCEPT_IF(Nothrow);
+		friend Operand operator*(const Operand&, const Operand&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator==(const Operand&, const Operand&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator!=(const Operand&, const Operand&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator<(const Operand&, const Operand&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator>(const Operand&, const Operand&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator<=(const Operand&, const Operand&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator>=(const Operand&, const Operand&) EA_NOEXCEPT_IF(Nothrow);
+	};
+	typedef Operand<true>  NothrowOperand;
+	typedef Operand<false> ThrowingOperand;
+
+	struct NothrowCallable { bool operator()(int) const EA_NOEXCEPT; bool operator()(int) EA_NOEXCEPT; int member; bool func(int) EA_NOEXCEPT; bool cfunc(int) const EA_NOEXCEPT; };
+	struct ThrowingCallable { bool operator()(int) const; bool operator()(int); int member; bool func(int); bool cfunc(int) const; };
+	enum UnscopedEnum { UnscopedEnumValue };
+	enum class ScopedEnum { Value };
+
+	#define EASTL_TEST_NOEXCEPT_COMPARE(Fn, T, Expected) \
+		static_assert(noexcept(eastl::declval<const eastl::Fn<T>&>()(eastl::declval<const T&>(), eastl::declval<const T&>())) == Expected, #Fn "<" #T ">::operator() exception specification"); \
+		static_assert(noexcept(eastl::declval<const eastl::Fn<>&>()(eastl::declval<const T&>(), eastl::declval<const T&>())) == Expected, #Fn "<void>::operator() exception specification");
+	#define EASTL_TEST_NOEXCEPT_COMPARE_ALL(T, Expected) \
+		EASTL_TEST_NOEXCEPT_COMPARE(equal_to, T, Expected) EASTL_TEST_NOEXCEPT_COMPARE(not_equal_to, T, Expected) EASTL_TEST_NOEXCEPT_COMPARE(less, T, Expected) \
+		EASTL_TEST_NOEXCEPT_COMPARE(greater, T, Expected) EASTL_TEST_NOEXCEPT_COMPARE(less_equal, T, Expected) EASTL_TEST_NOEXCEPT_COMPARE(greater_equal, T, Expected)
+	EASTL_TEST_NOEXCEPT_COMPARE_ALL(int, true)
+	EASTL_TEST_NOEXCEPT_COMPARE_ALL(NothrowOperand, true)
+	EASTL_TEST_NOEXCEPT_COMPARE_ALL(ThrowingOperand, false)
+	#undef EASTL_TEST_NOEXCEPT_COMPARE_ALL
+	#undef EASTL_TEST_NOEXCEPT_COMPARE
+
+	// Only the transparent plus, minus and multiplies are conditionally noexcept in the standard.
+	#define EASTL_TEST_NOEXCEPT_ARITHMETIC(Fn, T, Expected) \
+		static_assert(noexcept(eastl::declval<const eastl::Fn<>&>()(eastl::declval<const T&>(), eastl::declval<const T&>())) == Expected, #Fn "<void>::operator() exception specification");
+	EASTL_TEST_NOEXCEPT_ARITHMETIC(plus, int, true)             EASTL_TEST_NOEXCEPT_ARITHMETIC(minus, int, true)             EASTL_TEST_NOEXCEPT_ARITHMETIC(multiplies, int, true)
+	EASTL_TEST_NOEXCEPT_ARITHMETIC(plus, NothrowOperand, true)  EASTL_TEST_NOEXCEPT_ARITHMETIC(minus, NothrowOperand, true)  EASTL_TEST_NOEXCEPT_ARITHMETIC(multiplies, NothrowOperand, true)
+	EASTL_TEST_NOEXCEPT_ARITHMETIC(plus, ThrowingOperand, false) EASTL_TEST_NOEXCEPT_ARITHMETIC(minus, ThrowingOperand, false) EASTL_TEST_NOEXCEPT_ARITHMETIC(multiplies, ThrowingOperand, false)
+	#undef EASTL_TEST_NOEXCEPT_ARITHMETIC
+
+	#define EASTL_TEST_NOEXCEPT_HASH(T) \
+		static_assert(noexcept(eastl::declval<const eastl::hash<T>&>()(eastl::declval<T>())), "hash<" #T ">::operator() is noexcept");
+	EASTL_TEST_NOEXCEPT_HASH(bool) EASTL_TEST_NOEXCEPT_HASH(char) EASTL_TEST_NOEXCEPT_HASH(signed char) EASTL_TEST_NOEXCEPT_HASH(unsigned char)
+	EASTL_TEST_NOEXCEPT_HASH(char16_t) EASTL_TEST_NOEXCEPT_HASH(char32_t) EASTL_TEST_NOEXCEPT_HASH(wchar_t)
+	EASTL_TEST_NOEXCEPT_HASH(short) EASTL_TEST_NOEXCEPT_HASH(unsigned short) EASTL_TEST_NOEXCEPT_HASH(int) EASTL_TEST_NOEXCEPT_HASH(unsigned int)
+	EASTL_TEST_NOEXCEPT_HASH(long) EASTL_TEST_NOEXCEPT_HASH(unsigned long) EASTL_TEST_NOEXCEPT_HASH(long long) EASTL_TEST_NOEXCEPT_HASH(unsigned long long)
+	EASTL_TEST_NOEXCEPT_HASH(float) EASTL_TEST_NOEXCEPT_HASH(double) EASTL_TEST_NOEXCEPT_HASH(long double)
+	EASTL_TEST_NOEXCEPT_HASH(int*) EASTL_TEST_NOEXCEPT_HASH(const char*) EASTL_TEST_NOEXCEPT_HASH(std::nullptr_t)
+	EASTL_TEST_NOEXCEPT_HASH(UnscopedEnum) EASTL_TEST_NOEXCEPT_HASH(ScopedEnum)
+	#if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
+		EASTL_TEST_NOEXCEPT_HASH(char8_t)
+	#endif
+	static_assert(noexcept(eastl::declval<const eastl::hash<char*>&>()(eastl::declval<const char*>())), "hash<char*>::operator() is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::hash<const char16_t*>&>()(eastl::declval<const char16_t*>())), "hash<const char16_t*>::operator() is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::hash<const char32_t*>&>()(eastl::declval<const char32_t*>())), "hash<const char32_t*>::operator() is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::hash<const wchar_t*>&>()(eastl::declval<const wchar_t*>())), "hash<const wchar_t*>::operator() is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::string_hash<eastl::string>&>()(eastl::declval<const eastl::string&>())), "string_hash::operator() is noexcept");
+	#undef EASTL_TEST_NOEXCEPT_HASH
+
+	// reference_wrapper::operator(), mem_fn and not_fn.
+	static_assert(noexcept(eastl::declval<eastl::reference_wrapper<NothrowCallable>&>()(1)), "reference_wrapper<NothrowCallable>::operator() is noexcept");
+	static_assert(!noexcept(eastl::declval<eastl::reference_wrapper<ThrowingCallable>&>()(1)), "reference_wrapper<ThrowingCallable>::operator() may throw");
+
+	static_assert(noexcept(eastl::mem_fn(&NothrowCallable::member)), "mem_fn(data member) is noexcept");
+	static_assert(noexcept(eastl::mem_fn(&NothrowCallable::func)), "mem_fn(member function) is noexcept");
+	static_assert(noexcept(eastl::mem_fn(&NothrowCallable::cfunc)), "mem_fn(const member function) is noexcept");
+	static_assert(noexcept(eastl::mem_fn(&ThrowingCallable::func)), "mem_fn of a member function that may throw is noexcept");
+	static_assert(noexcept(eastl::declval<decltype(eastl::mem_fn(&NothrowCallable::func))&>()(eastl::declval<NothrowCallable&>(), 1)), "mem_fn_impl::operator() of a noexcept member function is noexcept");
+	static_assert(!noexcept(eastl::declval<decltype(eastl::mem_fn(&ThrowingCallable::func))&>()(eastl::declval<ThrowingCallable&>(), 1)), "mem_fn_impl::operator() of a member function that may throw may throw");
+
+	static_assert(noexcept(eastl::not_fn(eastl::declval<NothrowCallable&>())), "not_fn is noexcept when the callable is nothrow copy constructible");
+	static_assert(noexcept(eastl::declval<decltype(eastl::not_fn(eastl::declval<NothrowCallable&>()))&>()(1)), "not_fn_ret::operator() & of a noexcept callable is noexcept");
+	static_assert(noexcept(eastl::declval<const decltype(eastl::not_fn(eastl::declval<NothrowCallable&>()))&>()(1)), "not_fn_ret::operator() const& of a noexcept callable is noexcept");
+	static_assert(noexcept(eastl::declval<decltype(eastl::not_fn(eastl::declval<NothrowCallable&>()))>()(1)), "not_fn_ret::operator() && of a noexcept callable is noexcept");
+	static_assert(noexcept(eastl::declval<const decltype(eastl::not_fn(eastl::declval<NothrowCallable&>()))>()(1)), "not_fn_ret::operator() const&& of a noexcept callable is noexcept");
+	static_assert(!noexcept(eastl::declval<decltype(eastl::not_fn(eastl::declval<ThrowingCallable&>()))&>()(1)), "not_fn_ret::operator() of a callable that may throw may throw");
+}
+
 EA_DISABLE_ALL_VC_WARNINGS()
 #include <functional>
 EA_RESTORE_ALL_VC_WARNINGS()

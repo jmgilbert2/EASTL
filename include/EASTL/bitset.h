@@ -223,31 +223,31 @@ namespace eastl
 		word_type mWord[NW];
 
 	public:
-		void operator&=(const this_type& x);
-		void operator|=(const this_type& x);
-		void operator^=(const this_type& x);
+		void operator&=(const this_type& x) EA_NOEXCEPT;
+		void operator|=(const this_type& x) EA_NOEXCEPT;
+		void operator^=(const this_type& x) EA_NOEXCEPT;
 
-		void operator<<=(size_type n);
-		void operator>>=(size_type n);
+		void operator<<=(size_type n) EA_NOEXCEPT;
+		void operator>>=(size_type n) EA_NOEXCEPT;
 
-		void flip();
-		void set();
+		void flip() EA_NOEXCEPT;
+		void set() EA_NOEXCEPT;
 		void set(size_type i, bool value);
-		void reset();
+		void reset() EA_NOEXCEPT;
 
-		bool operator==(const this_type& x) const;
+		bool operator==(const this_type& x) const EA_NOEXCEPT;
 
-		bool      any() const;
-		size_type count() const;
+		bool      any() const EA_NOEXCEPT;
+		size_type count() const EA_NOEXCEPT;
 
-		word_type& DoGetWord(size_type i);
-		word_type  DoGetWord(size_type i) const;
+		word_type& DoGetWord(size_type i) EA_NOEXCEPT;
+		word_type  DoGetWord(size_type i) const EA_NOEXCEPT;
 
-		size_type DoFindFirst() const;
-		size_type DoFindNext(size_type last_find) const;
+		size_type DoFindFirst() const EA_NOEXCEPT;
+		size_type DoFindNext(size_type last_find) const EA_NOEXCEPT;
 
-		size_type DoFindLast() const;                       // Returns NW * kBitsPerWord (the bit count) if no bits are set.
-		size_type DoFindPrev(size_type last_find) const;    // Returns NW * kBitsPerWord (the bit count) if no bits are set.
+		size_type DoFindLast() const EA_NOEXCEPT;                       // Returns NW * kBitsPerWord (the bit count) if no bits are set.
+		size_type DoFindPrev(size_type last_find) const EA_NOEXCEPT;    // Returns NW * kBitsPerWord (the bit count) if no bits are set.
 
 	}; // class BitsetBase
 
@@ -278,31 +278,31 @@ namespace eastl
 		word_type mWord[1]; // Defined as an array of 1 so that bitset can treat this BitsetBase like others.
 
 	public:
-		void operator&=(const this_type& x);
-		void operator|=(const this_type& x);
-		void operator^=(const this_type& x);
+		void operator&=(const this_type& x) EA_NOEXCEPT;
+		void operator|=(const this_type& x) EA_NOEXCEPT;
+		void operator^=(const this_type& x) EA_NOEXCEPT;
 
-		void operator<<=(size_type n);
-		void operator>>=(size_type n);
+		void operator<<=(size_type n) EA_NOEXCEPT;
+		void operator>>=(size_type n) EA_NOEXCEPT;
 
-		void flip();
-		void set();
+		void flip() EA_NOEXCEPT;
+		void set() EA_NOEXCEPT;
 		void set(size_type i, bool value);
-		void reset();
+		void reset() EA_NOEXCEPT;
 
-		bool operator==(const this_type& x) const;
+		bool operator==(const this_type& x) const EA_NOEXCEPT;
 
-		bool      any() const;
-		size_type count() const;
+		bool      any() const EA_NOEXCEPT;
+		size_type count() const EA_NOEXCEPT;
 
-		word_type& DoGetWord(size_type);
-		word_type  DoGetWord(size_type) const;
+		word_type& DoGetWord(size_type) EA_NOEXCEPT;
+		word_type  DoGetWord(size_type) const EA_NOEXCEPT;
 
-		size_type DoFindFirst() const;
-		size_type DoFindNext(size_type last_find) const;
+		size_type DoFindFirst() const EA_NOEXCEPT;
+		size_type DoFindNext(size_type last_find) const EA_NOEXCEPT;
 
-		size_type DoFindLast() const;                       // Returns 1 * kBitsPerWord (the bit count) if no bits are set.
-		size_type DoFindPrev(size_type last_find) const;    // Returns 1 * kBitsPerWord (the bit count) if no bits are set.
+		size_type DoFindLast() const EA_NOEXCEPT;                       // Returns 1 * kBitsPerWord (the bit count) if no bits are set.
+		size_type DoFindPrev(size_type last_find) const EA_NOEXCEPT;    // Returns 1 * kBitsPerWord (the bit count) if no bits are set.
 
 	}; // BitsetBase<1, WordType>
 
@@ -334,31 +334,31 @@ namespace eastl
 		word_type mWord[2];
 
 	public:
-		void operator&=(const this_type& x);
-		void operator|=(const this_type& x);
-		void operator^=(const this_type& x);
+		void operator&=(const this_type& x) EA_NOEXCEPT;
+		void operator|=(const this_type& x) EA_NOEXCEPT;
+		void operator^=(const this_type& x) EA_NOEXCEPT;
 
-		void operator<<=(size_type n);
-		void operator>>=(size_type n);
+		void operator<<=(size_type n) EA_NOEXCEPT;
+		void operator>>=(size_type n) EA_NOEXCEPT;
 
-		void flip();
-		void set();
+		void flip() EA_NOEXCEPT;
+		void set() EA_NOEXCEPT;
 		void set(size_type i, bool value);
-		void reset();
+		void reset() EA_NOEXCEPT;
 
-		bool operator==(const this_type& x) const;
+		bool operator==(const this_type& x) const EA_NOEXCEPT;
 
-		bool      any() const;
-		size_type count() const;
+		bool      any() const EA_NOEXCEPT;
+		size_type count() const EA_NOEXCEPT;
 
-		word_type& DoGetWord(size_type);
-		word_type  DoGetWord(size_type) const;
+		word_type& DoGetWord(size_type) EA_NOEXCEPT;
+		word_type  DoGetWord(size_type) const EA_NOEXCEPT;
 
-		size_type DoFindFirst() const;
-		size_type DoFindNext(size_type last_find) const;
+		size_type DoFindFirst() const EA_NOEXCEPT;
+		size_type DoFindNext(size_type last_find) const EA_NOEXCEPT;
 
-		size_type DoFindLast() const;                       // Returns 2 * kBitsPerWord (the bit count) if no bits are set.
-		size_type DoFindPrev(size_type last_find) const;    // Returns 2 * kBitsPerWord (the bit count) if no bits are set.
+		size_type DoFindLast() const EA_NOEXCEPT;                       // Returns 2 * kBitsPerWord (the bit count) if no bits are set.
+		size_type DoFindPrev(size_type last_find) const EA_NOEXCEPT;    // Returns 2 * kBitsPerWord (the bit count) if no bits are set.
 
 	}; // BitsetBase<2, WordType>
 
@@ -433,55 +433,55 @@ namespace eastl
 			reference(){} // The C++ standard specifies that this is private.
 	
 		public:
-			reference(const bitset& x, size_type i);
+			reference(const bitset& x, size_type i) EA_NOEXCEPT;
 
-			reference& operator=(bool value);
-			reference& operator=(const reference& x);
+			reference& operator=(bool value) EA_NOEXCEPT;
+			reference& operator=(const reference& x) EA_NOEXCEPT;
 
-			bool operator~() const;
-			operator bool() const // Defined inline because CodeWarrior fails to be able to compile it outside.
+			bool operator~() const EA_NOEXCEPT;
+			operator bool() const EA_NOEXCEPT // Defined inline because CodeWarrior fails to be able to compile it outside.
 			   { return (*mpBitWord & (static_cast<word_type>(1) << (mnBitIndex & kBitsPerWordMask))) != 0; }
 
-			reference& flip();
+			reference& flip() EA_NOEXCEPT;
 		};
 
 	public:
 		friend class reference;
 
-		bitset();
+		bitset() EA_NOEXCEPT;
 
 #if EA_IS_ENABLED(EASTL_DEPRECATIONS_FOR_2024_SEPT)
 		// note: this constructor will only copy the minimum of N or unsigned long long's size least significant bits.
-		bitset(unsigned long long value);
+		bitset(unsigned long long value) EA_NOEXCEPT;
 #else
-		bitset(uint32_t value);
+		bitset(uint32_t value) EA_NOEXCEPT;
 #endif
 
 		// We don't define copy constructor and operator= because 
 		// the compiler-generated versions will suffice.
 
-		this_type& operator&=(const this_type& x);
-		this_type& operator|=(const this_type& x);
-		this_type& operator^=(const this_type& x);
+		this_type& operator&=(const this_type& x) EA_NOEXCEPT;
+		this_type& operator|=(const this_type& x) EA_NOEXCEPT;
+		this_type& operator^=(const this_type& x) EA_NOEXCEPT;
 
-		this_type& operator<<=(size_type n);
-		this_type& operator>>=(size_type n);
+		this_type& operator<<=(size_type n) EA_NOEXCEPT;
+		this_type& operator>>=(size_type n) EA_NOEXCEPT;
 
-		this_type& set();
+		this_type& set() EA_NOEXCEPT;
 		this_type& set(size_type i, bool value = true);
 
-		this_type& reset();
+		this_type& reset() EA_NOEXCEPT;
 		this_type& reset(size_type i);
 			
-		this_type& flip();
+		this_type& flip() EA_NOEXCEPT;
 		this_type& flip(size_type i);
-		this_type  operator~() const;
+		this_type  operator~() const EA_NOEXCEPT;
 
-		reference operator[](size_type i);
-		bool      operator[](size_type i) const;
+		reference operator[](size_type i) EA_NOEXCEPT;
+		bool      operator[](size_type i) const EA_NOEXCEPT;
 
-		const word_type* data() const;
-		word_type*       data();
+		const word_type* data() const EA_NOEXCEPT;
+		word_type*       data() EA_NOEXCEPT;
 
 		// Deprecated: use the bitset(unsigned long long) constructor instead.
 		// this was a workaround for when our constructor was defined as bitset(uint32_t) and could cause a narrowing conversion.
@@ -498,18 +498,18 @@ namespace eastl
 		/// Different from the standard:
 		/// Does *NOT* assert that the bitset can be represented as the target integer type (has bits set outside the target type).
 		/// However, if exceptions are enabled, it does throw an exception if the bitset cannot be represented as the target integer type.
-		unsigned long to_ulong()  const;
-		uint32_t      to_uint32() const;
-		uint64_t      to_uint64() const;
+		unsigned long to_ulong()  const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(unsigned long)) + 1);
+		uint32_t      to_uint32() const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(uint32_t)) + 1);
+		uint64_t      to_uint64() const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(uint64_t)) + 1);
 
 		/// to_xxx_assert_convertible()
 		///
 		/// Equivalent to the standard library's to_ulong() / to_ullong().
 		/// Asserts / throws an exception if the bitset cannot be represented as the target integer type.
-		uint32_t			to_uint32_assert_convertible() const { return detail::to_unsigned_integral<uint32_t, true>(*this); }
-		uint64_t			to_uint64_assert_convertible() const { return detail::to_unsigned_integral<uint64_t, true>(*this); }
-		unsigned long		to_ulong_assert_convertible()  const { return detail::to_unsigned_integral<unsigned long, true>(*this); }
-		unsigned long long	to_ullong_assert_convertible() const { return detail::to_unsigned_integral<unsigned long long, true>(*this); }
+		uint32_t			to_uint32_assert_convertible() const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(uint32_t)) + 1) { return detail::to_unsigned_integral<uint32_t, true>(*this); }
+		uint64_t			to_uint64_assert_convertible() const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(uint64_t)) + 1) { return detail::to_unsigned_integral<uint64_t, true>(*this); }
+		unsigned long		to_ulong_assert_convertible()  const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(unsigned long)) + 1) { return detail::to_unsigned_integral<unsigned long, true>(*this); }
+		unsigned long long	to_ullong_assert_convertible() const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(unsigned long long)) + 1) { return detail::to_unsigned_integral<unsigned long long, true>(*this); }
 
 		/// to_xxx_no_assert_convertible()
 		///
@@ -518,10 +518,10 @@ namespace eastl
 		/// Different from the standard:
 		/// Does *NOT* assert that the bitset can be represented as the target integer type (has bits set outside the target type).
 		/// However, if exceptions are enabled, it does throw an exception if the bitset cannot be represented as the target integer type.
-		uint32_t			to_uint32_no_assert_convertible() const { return detail::to_unsigned_integral<uint32_t, false>(*this); }
-		uint64_t			to_uint64_no_assert_convertible() const { return detail::to_unsigned_integral<uint64_t, false>(*this); }
-		unsigned long		to_ulong_no_assert_convertible()  const { return detail::to_unsigned_integral<unsigned long, false>(*this); }
-		unsigned long long	to_ullong_no_assert_convertible() const { return detail::to_unsigned_integral<unsigned long long, false>(*this); }
+		uint32_t			to_uint32_no_assert_convertible() const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(uint32_t)) + 1) { return detail::to_unsigned_integral<uint32_t, false>(*this); }
+		uint64_t			to_uint64_no_assert_convertible() const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(uint64_t)) + 1) { return detail::to_unsigned_integral<uint64_t, false>(*this); }
+		unsigned long		to_ulong_no_assert_convertible()  const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(unsigned long)) + 1) { return detail::to_unsigned_integral<unsigned long, false>(*this); }
+		unsigned long long	to_ullong_no_assert_convertible() const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(unsigned long long)) + 1) { return detail::to_unsigned_integral<unsigned long long, false>(*this); }
 
 		/// as_uint<UInt>() / as_xxx()
 		/// 
@@ -541,32 +541,32 @@ namespace eastl
 		eastl::enable_if_t<NumBits <= (CHAR_BIT * sizeof(unsigned long long)), unsigned long long>	as_ullong() const noexcept { return to_ullong_assert_convertible(); }
 
 	  //size_type count() const;            // We inherit this from the base class.
-		size_type size() const;
+		size_type size() const EA_NOEXCEPT;
 
-		bool operator==(const this_type& x) const;
+		bool operator==(const this_type& x) const EA_NOEXCEPT;
 #if !defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
-		bool operator!=(const this_type& x) const;
+		bool operator!=(const this_type& x) const EA_NOEXCEPT;
 #endif
 
 		bool test(size_type i) const;
 	  //bool any() const;                   // We inherit this from the base class.
-		bool all() const;
-		bool none() const;
+		bool all() const EA_NOEXCEPT;
+		bool none() const EA_NOEXCEPT;
 
-		this_type operator<<(size_type n) const;
-		this_type operator>>(size_type n) const;
+		this_type operator<<(size_type n) const EA_NOEXCEPT;
+		this_type operator>>(size_type n) const EA_NOEXCEPT;
 
 		// Finds the index of the first "on" bit, returns kSize if none are set.
-		size_type find_first() const;
+		size_type find_first() const EA_NOEXCEPT;
 
 		// Finds the index of the next "on" bit after last_find, returns kSize if none are set.
-		size_type find_next(size_type last_find) const;
+		size_type find_next(size_type last_find) const EA_NOEXCEPT;
 
 		// Finds the index of the last "on" bit, returns kSize if none are set.
-		size_type find_last() const;
+		size_type find_last() const EA_NOEXCEPT;
 
 		// Finds the index of the last "on" bit before last_find, returns kSize if none are set.
-		size_type find_prev(size_type last_find) const;
+		size_type find_prev(size_type last_find) const EA_NOEXCEPT;
 
 	}; // bitset
 
@@ -882,7 +882,7 @@ namespace eastl
 
 
 	template <size_t NW, typename WordType>
-	inline void BitsetBase<NW, WordType>::operator&=(const this_type& x)
+	inline void BitsetBase<NW, WordType>::operator&=(const this_type& x) EA_NOEXCEPT
 	{
 		for(size_t i = 0; i < NW; i++)
 			mWord[i] &= x.mWord[i];
@@ -890,7 +890,7 @@ namespace eastl
 
 
 	template <size_t NW, typename WordType>
-	inline void BitsetBase<NW, WordType>::operator|=(const this_type& x)
+	inline void BitsetBase<NW, WordType>::operator|=(const this_type& x) EA_NOEXCEPT
 	{
 		for(size_t i = 0; i < NW; i++)
 			mWord[i] |= x.mWord[i];
@@ -898,7 +898,7 @@ namespace eastl
 
 
 	template <size_t NW, typename WordType>
-	inline void BitsetBase<NW, WordType>::operator^=(const this_type& x)
+	inline void BitsetBase<NW, WordType>::operator^=(const this_type& x) EA_NOEXCEPT
 	{
 		for(size_t i = 0; i < NW; i++)
 			mWord[i] ^= x.mWord[i];
@@ -906,7 +906,7 @@ namespace eastl
 
 
 	template <size_t NW, typename WordType>
-	inline void BitsetBase<NW, WordType>::operator<<=(size_type n)
+	inline void BitsetBase<NW, WordType>::operator<<=(size_type n) EA_NOEXCEPT
 	{
 		const size_type nWordShift = (size_type)(n >> kBitsPerWordShift);
 
@@ -928,7 +928,7 @@ namespace eastl
 
 
 	template <size_t NW, typename WordType>
-	inline void BitsetBase<NW, WordType>::operator>>=(size_type n)
+	inline void BitsetBase<NW, WordType>::operator>>=(size_type n) EA_NOEXCEPT
 	{
 		const size_type nWordShift = (size_type)(n >> kBitsPerWordShift);
 
@@ -948,7 +948,7 @@ namespace eastl
 
 
 	template <size_t NW, typename WordType>
-	inline void BitsetBase<NW, WordType>::flip()
+	inline void BitsetBase<NW, WordType>::flip() EA_NOEXCEPT
 	{
 		for(size_t i = 0; i < NW; i++)
 			mWord[i] = ~mWord[i];
@@ -957,7 +957,7 @@ namespace eastl
 
 
 	template <size_t NW, typename WordType>
-	inline void BitsetBase<NW, WordType>::set()
+	inline void BitsetBase<NW, WordType>::set() EA_NOEXCEPT
 	{
 		for(size_t i = 0; i < NW; i++)
 			mWord[i] = static_cast<word_type>(~static_cast<word_type>(0));
@@ -981,7 +981,7 @@ namespace eastl
 
 
 	template <size_t NW, typename WordType>
-	inline void BitsetBase<NW, WordType>::reset()
+	inline void BitsetBase<NW, WordType>::reset() EA_NOEXCEPT
 	{
 		if(NW > 16) // This is a constant expression and should be optimized away.
 		{
@@ -997,7 +997,7 @@ namespace eastl
 
 
 	template <size_t NW, typename WordType>
-	inline bool BitsetBase<NW, WordType>::operator==(const this_type& x) const
+	inline bool BitsetBase<NW, WordType>::operator==(const this_type& x) const EA_NOEXCEPT
 	{
 		for(size_t i = 0; i < NW; i++)
 		{
@@ -1009,7 +1009,7 @@ namespace eastl
 
 
 	template <size_t NW, typename WordType>
-	inline bool BitsetBase<NW, WordType>::any() const
+	inline bool BitsetBase<NW, WordType>::any() const EA_NOEXCEPT
 	{
 		for(size_t i = 0; i < NW; i++)
 		{
@@ -1022,7 +1022,7 @@ namespace eastl
 
 	template <size_t NW, typename WordType>
 	inline typename BitsetBase<NW, WordType>::size_type
-	BitsetBase<NW, WordType>::count() const
+	BitsetBase<NW, WordType>::count() const EA_NOEXCEPT
 	{
 		size_type n = 0;
 		for(size_t i = 0; i < NW; i++)
@@ -1033,7 +1033,7 @@ namespace eastl
 
 	template <size_t NW, typename WordType>
 	inline typename BitsetBase<NW, WordType>::word_type&
-	BitsetBase<NW, WordType>::DoGetWord(size_type i)
+	BitsetBase<NW, WordType>::DoGetWord(size_type i) EA_NOEXCEPT
 	{
 		return mWord[i >> kBitsPerWordShift];
 	}
@@ -1041,7 +1041,7 @@ namespace eastl
 
 	template <size_t NW, typename WordType>
 	inline typename BitsetBase<NW, WordType>::word_type
-	BitsetBase<NW, WordType>::DoGetWord(size_type i) const
+	BitsetBase<NW, WordType>::DoGetWord(size_type i) const EA_NOEXCEPT
 	{
 		return mWord[i >> kBitsPerWordShift];
 	}
@@ -1049,7 +1049,7 @@ namespace eastl
 
 	template <size_t NW, typename WordType>
 	inline typename BitsetBase<NW, WordType>::size_type 
-	BitsetBase<NW, WordType>::DoFindFirst() const
+	BitsetBase<NW, WordType>::DoFindFirst() const EA_NOEXCEPT
 	{
 		for(size_type word_index = 0; word_index < NW; ++word_index)
 		{
@@ -1069,7 +1069,7 @@ EA_DISABLE_GCC_WARNING(-Warray-bounds)
 
 	template <size_t NW, typename WordType>
 	inline typename BitsetBase<NW, WordType>::size_type 
-	BitsetBase<NW, WordType>::DoFindNext(size_type last_find) const
+	BitsetBase<NW, WordType>::DoFindNext(size_type last_find) const EA_NOEXCEPT
 	{
 		// Start looking from the next bit.
 		++last_find;
@@ -1109,7 +1109,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t NW, typename WordType>
 	inline typename BitsetBase<NW, WordType>::size_type 
-	BitsetBase<NW, WordType>::DoFindLast() const
+	BitsetBase<NW, WordType>::DoFindLast() const EA_NOEXCEPT
 	{
 		for(size_type word_index = (size_type)NW; word_index > 0; --word_index)
 		{
@@ -1125,7 +1125,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t NW, typename WordType>
 	inline typename BitsetBase<NW, WordType>::size_type 
-	BitsetBase<NW, WordType>::DoFindPrev(size_type last_find) const
+	BitsetBase<NW, WordType>::DoFindPrev(size_type last_find) const EA_NOEXCEPT
 	{
 		if(last_find > 0)
 		{
@@ -1166,28 +1166,28 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<1, WordType>::operator&=(const this_type& x)
+	inline void BitsetBase<1, WordType>::operator&=(const this_type& x) EA_NOEXCEPT
 	{
 		mWord[0] &= x.mWord[0];
 	}
 
 
 	template <typename WordType>
-	inline void BitsetBase<1, WordType>::operator|=(const this_type& x)
+	inline void BitsetBase<1, WordType>::operator|=(const this_type& x) EA_NOEXCEPT
 	{
 		mWord[0] |= x.mWord[0];
 	}
 
 
 	template <typename WordType>
-	inline void BitsetBase<1, WordType>::operator^=(const this_type& x)
+	inline void BitsetBase<1, WordType>::operator^=(const this_type& x) EA_NOEXCEPT
 	{
 		mWord[0] ^= x.mWord[0];
 	}
 
 
 	template <typename WordType>
-	inline void BitsetBase<1, WordType>::operator<<=(size_type n)
+	inline void BitsetBase<1, WordType>::operator<<=(size_type n) EA_NOEXCEPT
 	{
 		mWord[0] <<= n;
 		// We let the parent class turn off any upper bits.
@@ -1195,14 +1195,14 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<1, WordType>::operator>>=(size_type n)
+	inline void BitsetBase<1, WordType>::operator>>=(size_type n) EA_NOEXCEPT
 	{
 		mWord[0] >>= n;
 	}
 
 
 	template <typename WordType>
-	inline void BitsetBase<1, WordType>::flip()
+	inline void BitsetBase<1, WordType>::flip() EA_NOEXCEPT
 	{
 		mWord[0] = ~mWord[0];
 		// We let the parent class turn off any upper bits.
@@ -1210,7 +1210,7 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<1, WordType>::set()
+	inline void BitsetBase<1, WordType>::set() EA_NOEXCEPT
 	{
 		mWord[0] = static_cast<word_type>(~static_cast<word_type>(0));
 		// We let the parent class turn off any upper bits.
@@ -1228,21 +1228,21 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<1, WordType>::reset()
+	inline void BitsetBase<1, WordType>::reset() EA_NOEXCEPT
 	{
 		mWord[0] = 0;
 	}
 
 
 	template <typename WordType>
-	inline bool BitsetBase<1, WordType>::operator==(const this_type& x) const
+	inline bool BitsetBase<1, WordType>::operator==(const this_type& x) const EA_NOEXCEPT
 	{
 		return mWord[0] == x.mWord[0];
 	}
 
 
 	template <typename WordType>
-	inline bool BitsetBase<1, WordType>::any() const
+	inline bool BitsetBase<1, WordType>::any() const EA_NOEXCEPT
 	{
 		return mWord[0] != 0;
 	}
@@ -1250,7 +1250,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<1, WordType>::size_type
-	BitsetBase<1, WordType>::count() const
+	BitsetBase<1, WordType>::count() const EA_NOEXCEPT
 	{
 		return popcount(mWord[0]);
 	}
@@ -1258,7 +1258,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<1, WordType>::word_type&
-	BitsetBase<1, WordType>::DoGetWord(size_type)
+	BitsetBase<1, WordType>::DoGetWord(size_type) EA_NOEXCEPT
 	{
 		return mWord[0];
 	}
@@ -1266,7 +1266,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<1, WordType>::word_type
-	BitsetBase<1, WordType>::DoGetWord(size_type) const
+	BitsetBase<1, WordType>::DoGetWord(size_type) const EA_NOEXCEPT
 	{
 		return mWord[0];
 	}
@@ -1274,7 +1274,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<1, WordType>::size_type
-	BitsetBase<1, WordType>::DoFindFirst() const
+	BitsetBase<1, WordType>::DoFindFirst() const EA_NOEXCEPT
 	{
 		return GetFirstBit(mWord[0]);
 	}
@@ -1282,7 +1282,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<1, WordType>::size_type 
-	BitsetBase<1, WordType>::DoFindNext(size_type last_find) const
+	BitsetBase<1, WordType>::DoFindNext(size_type last_find) const EA_NOEXCEPT
 	{
 		if(++last_find < kBitsPerWord)
 		{
@@ -1298,7 +1298,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<1, WordType>::size_type 
-	BitsetBase<1, WordType>::DoFindLast() const
+	BitsetBase<1, WordType>::DoFindLast() const EA_NOEXCEPT
 	{
 		return GetLastBit(mWord[0]);
 	}
@@ -1306,7 +1306,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<1, WordType>::size_type 
-	BitsetBase<1, WordType>::DoFindPrev(size_type last_find) const
+	BitsetBase<1, WordType>::DoFindPrev(size_type last_find) const EA_NOEXCEPT
 	{
 		if(last_find > 0)
 		{
@@ -1328,7 +1328,7 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<2, WordType>::operator&=(const this_type& x)
+	inline void BitsetBase<2, WordType>::operator&=(const this_type& x) EA_NOEXCEPT
 	{
 		mWord[0] &= x.mWord[0];
 		mWord[1] &= x.mWord[1];
@@ -1336,7 +1336,7 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<2, WordType>::operator|=(const this_type& x)
+	inline void BitsetBase<2, WordType>::operator|=(const this_type& x) EA_NOEXCEPT
 	{
 		mWord[0] |= x.mWord[0];
 		mWord[1] |= x.mWord[1];
@@ -1344,7 +1344,7 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<2, WordType>::operator^=(const this_type& x)
+	inline void BitsetBase<2, WordType>::operator^=(const this_type& x) EA_NOEXCEPT
 	{
 		mWord[0] ^= x.mWord[0];
 		mWord[1] ^= x.mWord[1];
@@ -1352,7 +1352,7 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<2, WordType>::operator<<=(size_type n)
+	inline void BitsetBase<2, WordType>::operator<<=(size_type n) EA_NOEXCEPT
 	{
 		if(n) // to avoid a shift by kBitsPerWord, which is undefined
 		{
@@ -1371,7 +1371,7 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<2, WordType>::operator>>=(size_type n)
+	inline void BitsetBase<2, WordType>::operator>>=(size_type n) EA_NOEXCEPT
 	{
 		if(n) // to avoid a shift by kBitsPerWord, which is undefined
 		{
@@ -1389,7 +1389,7 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<2, WordType>::flip()
+	inline void BitsetBase<2, WordType>::flip() EA_NOEXCEPT
 	{
 		mWord[0] = ~mWord[0];
 		mWord[1] = ~mWord[1];
@@ -1398,7 +1398,7 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<2, WordType>::set()
+	inline void BitsetBase<2, WordType>::set() EA_NOEXCEPT
 	{
 		EA_DISABLE_VC_WARNING(4245); // '=': conversion from 'int' to 'unsigned short', signed/unsigned mismatch 
 		// https://learn.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-4-c4245?view=msvc-170
@@ -1421,7 +1421,7 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline void BitsetBase<2, WordType>::reset()
+	inline void BitsetBase<2, WordType>::reset() EA_NOEXCEPT
 	{
 		mWord[0] = 0;
 		mWord[1] = 0;
@@ -1429,14 +1429,14 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <typename WordType>
-	inline bool BitsetBase<2, WordType>::operator==(const this_type& x) const
+	inline bool BitsetBase<2, WordType>::operator==(const this_type& x) const EA_NOEXCEPT
 	{
 		return (mWord[0] == x.mWord[0]) && (mWord[1] == x.mWord[1]);
 	}
 
 
 	template <typename WordType>
-	inline bool BitsetBase<2, WordType>::any() const
+	inline bool BitsetBase<2, WordType>::any() const EA_NOEXCEPT
 	{
 		// Or with two branches: { return (mWord[0] != 0) || (mWord[1] != 0); }
 		return (mWord[0] | mWord[1]) != 0; 
@@ -1444,7 +1444,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<2, WordType>::size_type
-	BitsetBase<2, WordType>::count() const
+	BitsetBase<2, WordType>::count() const EA_NOEXCEPT
 	{
 		return popcount(mWord[0]) + popcount(mWord[1]);
 	}
@@ -1452,7 +1452,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<2, WordType>::word_type&
-	BitsetBase<2, WordType>::DoGetWord(size_type i)
+	BitsetBase<2, WordType>::DoGetWord(size_type i) EA_NOEXCEPT
 	{
 		return mWord[i >> kBitsPerWordShift];
 	}
@@ -1460,7 +1460,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<2, WordType>::word_type
-	BitsetBase<2, WordType>::DoGetWord(size_type i) const
+	BitsetBase<2, WordType>::DoGetWord(size_type i) const EA_NOEXCEPT
 	{
 		return mWord[i >> kBitsPerWordShift];
 	}
@@ -1468,7 +1468,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<2, WordType>::size_type 
-	BitsetBase<2, WordType>::DoFindFirst() const
+	BitsetBase<2, WordType>::DoFindFirst() const EA_NOEXCEPT
 	{
 		size_type fbiw = GetFirstBit(mWord[0]);
 
@@ -1486,7 +1486,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<2, WordType>::size_type 
-	BitsetBase<2, WordType>::DoFindNext(size_type last_find) const
+	BitsetBase<2, WordType>::DoFindNext(size_type last_find) const EA_NOEXCEPT
 	{
 		// If the last find was in the first word, we must check it and then possibly the second.
 		if(++last_find < (size_type)kBitsPerWord)
@@ -1525,7 +1525,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<2, WordType>::size_type 
-	BitsetBase<2, WordType>::DoFindLast() const
+	BitsetBase<2, WordType>::DoFindLast() const EA_NOEXCEPT
 	{
 		size_type lbiw = GetLastBit(mWord[1]);
 
@@ -1543,7 +1543,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <typename WordType>
 	inline typename BitsetBase<2, WordType>::size_type 
-	BitsetBase<2, WordType>::DoFindPrev(size_type last_find) const
+	BitsetBase<2, WordType>::DoFindPrev(size_type last_find) const EA_NOEXCEPT
 	{
 		// If the last find was in the second word, we must check it and then possibly the first.
 		if(last_find > (size_type)kBitsPerWord)
@@ -1586,7 +1586,7 @@ EA_RESTORE_GCC_WARNING()
 	///////////////////////////////////////////////////////////////////////////
 
 	template <size_t N, typename WordType>
-	inline bitset<N, WordType>::reference::reference(const bitset& x, size_type i)
+	inline bitset<N, WordType>::reference::reference(const bitset& x, size_type i) EA_NOEXCEPT
 		: mpBitWord(&const_cast<bitset&>(x).DoGetWord(i)),
 		  mnBitIndex(i & kBitsPerWordMask)
 	{   // We have an issue here because the above is casting away the const-ness of the source bitset.
@@ -1596,7 +1596,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::reference&
-	bitset<N, WordType>::reference::operator=(bool value)
+	bitset<N, WordType>::reference::operator=(bool value) EA_NOEXCEPT
 	{
 		if(value)
 			*mpBitWord |=  (static_cast<word_type>(1) << (mnBitIndex & kBitsPerWordMask));
@@ -1608,7 +1608,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::reference&
-	bitset<N, WordType>::reference::operator=(const reference& x)
+	bitset<N, WordType>::reference::operator=(const reference& x) EA_NOEXCEPT
 	{
 		if(*x.mpBitWord & (static_cast<word_type>(1) << (x.mnBitIndex & kBitsPerWordMask)))
 			*mpBitWord |=  (static_cast<word_type>(1) << (mnBitIndex & kBitsPerWordMask));
@@ -1619,7 +1619,7 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <size_t N, typename WordType>
-	inline bool bitset<N, WordType>::reference::operator~() const
+	inline bool bitset<N, WordType>::reference::operator~() const EA_NOEXCEPT
 	{
 		return (*mpBitWord & (static_cast<word_type>(1) << (mnBitIndex & kBitsPerWordMask))) == 0;
 	}
@@ -1635,7 +1635,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::reference&
-	bitset<N, WordType>::reference::flip()
+	bitset<N, WordType>::reference::flip() EA_NOEXCEPT
 	{
 		*mpBitWord ^= static_cast<word_type>(1) << (mnBitIndex & kBitsPerWordMask);
 		return *this;
@@ -1649,7 +1649,7 @@ EA_RESTORE_GCC_WARNING()
 	///////////////////////////////////////////////////////////////////////////
 
 	template <size_t N, typename WordType>
-	inline bitset<N, WordType>::bitset()
+	inline bitset<N, WordType>::bitset() EA_NOEXCEPT
 	{
 		reset();
 	}
@@ -1657,13 +1657,13 @@ EA_RESTORE_GCC_WARNING()
 	EA_DISABLE_VC_WARNING(6313)
 #if EA_IS_ENABLED(EASTL_DEPRECATIONS_FOR_2024_SEPT)
 	template <size_t N, typename WordType>
-	inline bitset<N, WordType>::bitset(unsigned long long value)
+	inline bitset<N, WordType>::bitset(unsigned long long value) EA_NOEXCEPT
 	{
 		detail::from_unsigned_integral(*this, value);
 	}
 #else
 	template <size_t N, typename WordType>
-	inline bitset<N, WordType>::bitset(uint32_t value)
+	inline bitset<N, WordType>::bitset(uint32_t value) EA_NOEXCEPT
 	{
 		detail::from_unsigned_integral(*this, value);
 	}
@@ -1673,7 +1673,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::this_type&
-	bitset<N, WordType>::operator&=(const this_type& x)
+	bitset<N, WordType>::operator&=(const this_type& x) EA_NOEXCEPT
 	{
 		base_type::operator&=(x);
 		return *this;
@@ -1682,7 +1682,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::this_type&
-	bitset<N, WordType>::operator|=(const this_type& x)
+	bitset<N, WordType>::operator|=(const this_type& x) EA_NOEXCEPT
 	{
 		base_type::operator|=(x);
 		return *this;
@@ -1691,7 +1691,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::this_type&
-	bitset<N, WordType>::operator^=(const this_type& x)
+	bitset<N, WordType>::operator^=(const this_type& x) EA_NOEXCEPT
 	{
 		base_type::operator^=(x);
 		return *this;
@@ -1700,7 +1700,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::this_type&
-	bitset<N, WordType>::operator<<=(size_type n)
+	bitset<N, WordType>::operator<<=(size_type n) EA_NOEXCEPT
 	{
 		if(EASTL_LIKELY((intptr_t)n < (intptr_t)N))
 		{
@@ -1718,7 +1718,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::this_type&
-	bitset<N, WordType>::operator>>=(size_type n)
+	bitset<N, WordType>::operator>>=(size_type n) EA_NOEXCEPT
 	{
 		if(EASTL_LIKELY(n < N))
 			base_type::operator>>=(n);
@@ -1730,7 +1730,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::this_type&
-	bitset<N, WordType>::set()
+	bitset<N, WordType>::set() EA_NOEXCEPT
 	{
 		base_type::set(); // This sets all bits.
 		if((N & kBitsPerWordMask) || (N == 0)) // If there are any high bits to clear... (If we didn't have this check, then the code below would do the wrong thing when N == 32.
@@ -1763,7 +1763,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::this_type&
-	bitset<N, WordType>::reset()
+	bitset<N, WordType>::reset() EA_NOEXCEPT
 	{
 		base_type::reset();
 		return *this;
@@ -1794,7 +1794,7 @@ EA_RESTORE_GCC_WARNING()
 		
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::this_type&
-	bitset<N, WordType>::flip()
+	bitset<N, WordType>::flip() EA_NOEXCEPT
 	{
 		EA_DISABLE_VC_WARNING(6313)
 		base_type::flip();
@@ -1828,7 +1828,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::this_type
-	bitset<N, WordType>::operator~() const
+	bitset<N, WordType>::operator~() const EA_NOEXCEPT
 	{
 		return this_type(*this).flip();
 	}
@@ -1836,7 +1836,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::reference
-	bitset<N, WordType>::operator[](size_type i)
+	bitset<N, WordType>::operator[](size_type i) EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(!(i < N)))
@@ -1848,7 +1848,7 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <size_t N, typename WordType>
-	inline bool bitset<N, WordType>::operator[](size_type i) const
+	inline bool bitset<N, WordType>::operator[](size_type i) const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(!(i < N)))
@@ -1860,14 +1860,14 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <size_t N, typename WordType>
-	inline const typename bitset<N, WordType>::word_type* bitset<N, WordType>::data() const
+	inline const typename bitset<N, WordType>::word_type* bitset<N, WordType>::data() const EA_NOEXCEPT
 	{
 		return base_type::mWord;
 	}
 
 
 	template <size_t N, typename WordType>
-	inline typename bitset<N, WordType>::word_type* bitset<N, WordType>::data()
+	inline typename bitset<N, WordType>::word_type* bitset<N, WordType>::data() EA_NOEXCEPT
 	{
 		return base_type::mWord;
 	}
@@ -1888,21 +1888,21 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <size_t N, typename WordType>
-	inline unsigned long bitset<N, WordType>::to_ulong() const
+	inline unsigned long bitset<N, WordType>::to_ulong() const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(unsigned long)) + 1)
 	{
 		return detail::to_unsigned_integral<unsigned long, false>(*this);
 	}
 
 
 	template <size_t N, typename WordType>
-	inline uint32_t bitset<N, WordType>::to_uint32() const
+	inline uint32_t bitset<N, WordType>::to_uint32() const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(uint32_t)) + 1)
 	{
 		return detail::to_unsigned_integral<uint32_t, false>(*this);
 	}
 
 
 	template <size_t N, typename WordType>
-	inline uint64_t bitset<N, WordType>::to_uint64() const
+	inline uint64_t bitset<N, WordType>::to_uint64() const EA_NOEXCEPT_IF(N < (CHAR_BIT * sizeof(uint64_t)) + 1)
 	{
 		return detail::to_unsigned_integral<uint64_t, false>(*this);
 	}
@@ -1918,21 +1918,21 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::size_type
-	bitset<N, WordType>::size() const
+	bitset<N, WordType>::size() const EA_NOEXCEPT
 	{
 		return (size_type)N;
 	}
 
 
 	template <size_t N, typename WordType>
-	inline bool bitset<N, WordType>::operator==(const this_type& x) const
+	inline bool bitset<N, WordType>::operator==(const this_type& x) const EA_NOEXCEPT
 	{
 		return base_type::operator==(x);
 	}
 
 #if !defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	template <size_t N, typename WordType>
-	inline bool bitset<N, WordType>::operator!=(const this_type& x) const
+	inline bool bitset<N, WordType>::operator!=(const this_type& x) const EA_NOEXCEPT
 	{
 		return !base_type::operator==(x);
 	}
@@ -1964,14 +1964,14 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <size_t N, typename WordType>
-	inline bool bitset<N, WordType>::all() const
+	inline bool bitset<N, WordType>::all() const EA_NOEXCEPT
 	{
 		return count() == size();
 	}
 
 
 	template <size_t N, typename WordType>
-	inline bool bitset<N, WordType>::none() const
+	inline bool bitset<N, WordType>::none() const EA_NOEXCEPT
 	{
 		return !base_type::any();
 	}
@@ -1979,7 +1979,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::this_type
-	bitset<N, WordType>::operator<<(size_type n) const
+	bitset<N, WordType>::operator<<(size_type n) const EA_NOEXCEPT
 	{
 		return this_type(*this).operator<<=(n);
 	}
@@ -1987,7 +1987,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::this_type
-	bitset<N, WordType>::operator>>(size_type n) const
+	bitset<N, WordType>::operator>>(size_type n) const EA_NOEXCEPT
 	{
 		return this_type(*this).operator>>=(n);
 	}
@@ -1995,7 +1995,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::size_type
-	bitset<N, WordType>::find_first() const
+	bitset<N, WordType>::find_first() const EA_NOEXCEPT
 	{
 		const size_type i = base_type::DoFindFirst();
 
@@ -2009,7 +2009,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::size_type
-	bitset<N, WordType>::find_next(size_type last_find) const
+	bitset<N, WordType>::find_next(size_type last_find) const EA_NOEXCEPT
 	{
 		const size_type i = base_type::DoFindNext(last_find);
 
@@ -2023,7 +2023,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::size_type
-	bitset<N, WordType>::find_last() const
+	bitset<N, WordType>::find_last() const EA_NOEXCEPT
 	{
 		const size_type i = base_type::DoFindLast();
 
@@ -2037,7 +2037,7 @@ EA_RESTORE_GCC_WARNING()
 
 	template <size_t N, typename WordType>
 	inline typename bitset<N, WordType>::size_type
-	bitset<N, WordType>::find_prev(size_type last_find) const
+	bitset<N, WordType>::find_prev(size_type last_find) const EA_NOEXCEPT
 	{
 		const size_type i = base_type::DoFindPrev(last_find);
 
@@ -2055,7 +2055,7 @@ EA_RESTORE_GCC_WARNING()
 	///////////////////////////////////////////////////////////////////////////
 
 	template <size_t N, typename WordType>
-	inline bitset<N, WordType> operator&(const bitset<N, WordType>& a, const bitset<N, WordType>& b)
+	inline bitset<N, WordType> operator&(const bitset<N, WordType>& a, const bitset<N, WordType>& b) EA_NOEXCEPT
 	{
 		// We get betting inlining when we don't declare temporary variables.
 		return bitset<N, WordType>(a).operator&=(b);
@@ -2063,14 +2063,14 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <size_t N, typename WordType>
-	inline bitset<N, WordType> operator|(const bitset<N, WordType>& a, const bitset<N, WordType>& b)
+	inline bitset<N, WordType> operator|(const bitset<N, WordType>& a, const bitset<N, WordType>& b) EA_NOEXCEPT
 	{
 		return bitset<N, WordType>(a).operator|=(b);
 	}
 
 
 	template <size_t N, typename WordType>
-	inline bitset<N, WordType> operator^(const bitset<N, WordType>& a, const bitset<N, WordType>& b)
+	inline bitset<N, WordType> operator^(const bitset<N, WordType>& a, const bitset<N, WordType>& b) EA_NOEXCEPT
 	{
 		return bitset<N, WordType>(a).operator^=(b);
 	}

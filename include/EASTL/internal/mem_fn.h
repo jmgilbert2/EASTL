@@ -43,11 +43,11 @@ namespace eastl
 		type func;
 
 	public:
-		EASTL_FORCE_INLINE mem_fn_impl(type _func) : func(_func) {}
+		EASTL_FORCE_INLINE mem_fn_impl(type _func) EA_NOEXCEPT : func(_func) {}
 
 #if EASTL_VARIADIC_TEMPLATES_ENABLED
 	    template <class... ArgTypes>
-	    typename invoke_result<type, ArgTypes...>::type operator()(ArgTypes&&... args) const
+	    typename invoke_result<type, ArgTypes...>::type operator()(ArgTypes&&... args) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(invoke(func, eastl::forward<ArgTypes>(args)...)))
 	    {
 		    return invoke(func, eastl::forward<ArgTypes>(args)...);
 	    }
@@ -80,71 +80,71 @@ namespace eastl
 	// mem_fn -> mem_fn_impl adapters
 	//
 	template <class R, class T>
-	EASTL_FORCE_INLINE mem_fn_impl<R T::*> mem_fn(R T::*pm)
+	EASTL_FORCE_INLINE mem_fn_impl<R T::*> mem_fn(R T::*pm) EA_NOEXCEPT
 	{ return mem_fn_impl<R T::*>(pm); }
 
 	template <class R, class T>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)()> mem_fn(R (T::*pm)())
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)()> mem_fn(R (T::*pm)()) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)()>(pm); }
 
 	template <class R, class T, class A0>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0)> mem_fn(R (T::*pm)(A0))
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0)> mem_fn(R (T::*pm)(A0)) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0)>(pm); } 
 
 	template <class R, class T, class A0, class A1>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1)> mem_fn(R (T::*pm)(A0, A1))
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1)> mem_fn(R (T::*pm)(A0, A1)) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0, A1)>(pm); }
 
 	template <class R, class T, class A0, class A1, class A2>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1, A2)> mem_fn(R (T::*pm)(A0, A1, A2))
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1, A2)> mem_fn(R (T::*pm)(A0, A1, A2)) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0, A1, A2)>(pm); }
 
 	template <class R, class T>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)() const> mem_fn(R (T::*pm)() const)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)() const> mem_fn(R (T::*pm)() const) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)() const>(pm); }
 
 	template <class R, class T, class A0>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0) const> mem_fn(R (T::*pm)(A0) const)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0) const> mem_fn(R (T::*pm)(A0) const) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0) const>(pm); }
 
 	template <class R, class T, class A0, class A1>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1) const> mem_fn(R (T::*pm)(A0, A1) const)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1) const> mem_fn(R (T::*pm)(A0, A1) const) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0, A1) const>(pm); }
 
 	template <class R, class T, class A0, class A1, class A2>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1, A2) const> mem_fn(R (T::*pm)(A0, A1, A2) const)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1, A2) const> mem_fn(R (T::*pm)(A0, A1, A2) const) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0, A1, A2) const>(pm); }
 
 	template <class R, class T>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)() volatile> mem_fn(R (T::*pm)() volatile)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)() volatile> mem_fn(R (T::*pm)() volatile) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)() volatile>(pm); }
 
 	template <class R, class T, class A0>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0) volatile> mem_fn(R (T::*pm)(A0) volatile)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0) volatile> mem_fn(R (T::*pm)(A0) volatile) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0) volatile>(pm); }
 
 	template <class R, class T, class A0, class A1>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1) volatile> mem_fn(R (T::*pm)(A0, A1) volatile)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1) volatile> mem_fn(R (T::*pm)(A0, A1) volatile) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0, A1) volatile>(pm); }
 
 	template <class R, class T, class A0, class A1, class A2>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1, A2) volatile> mem_fn(R (T::*pm)(A0, A1, A2) volatile)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1, A2) volatile> mem_fn(R (T::*pm)(A0, A1, A2) volatile) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0, A1, A2) volatile>(pm); }
 
 	template <class R, class T>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)() const volatile> mem_fn(R (T::*pm)() const volatile)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)() const volatile> mem_fn(R (T::*pm)() const volatile) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)() const volatile>(pm); }
 
 	template <class R, class T, class A0>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0) const volatile> mem_fn(R (T::*pm)(A0) const volatile)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0) const volatile> mem_fn(R (T::*pm)(A0) const volatile) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0) const volatile>(pm); }
 
 	template <class R, class T, class A0, class A1>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1) const volatile> mem_fn(R (T::*pm)(A0, A1) const volatile)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1) const volatile> mem_fn(R (T::*pm)(A0, A1) const volatile) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0, A1) const volatile>(pm); }
 
 	template <class R, class T, class A0, class A1, class A2>
-	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1, A2) const volatile> mem_fn(R (T::*pm)(A0, A1, A2) const volatile)
+	EASTL_FORCE_INLINE mem_fn_impl<R (T::*)(A0, A1, A2) const volatile> mem_fn(R (T::*pm)(A0, A1, A2) const volatile) EA_NOEXCEPT
 	{ return mem_fn_impl<R (T::*)(A0, A1, A2) const volatile>(pm); }
 
 } // namespace eastl

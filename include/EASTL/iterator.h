@@ -309,26 +309,26 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		Iterator mIterator;
 
 	public:
-		EA_CPP14_CONSTEXPR reverse_iterator()      // It's important that we construct mIterator, because if Iterator
+		EA_CPP14_CONSTEXPR reverse_iterator() EA_NOEXCEPT_IF(eastl::is_nothrow_default_constructible<Iterator>::value) // It's important that we construct mIterator, because if Iterator
 			: mIterator() { }					   // is a pointer, there's a difference between doing it and not.
 
-		EA_CPP14_CONSTEXPR explicit reverse_iterator(iterator_type i)
+		EA_CPP14_CONSTEXPR explicit reverse_iterator(iterator_type i) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<Iterator>::value)
 			: mIterator(i) { }
 
 		// Like std, the converting constructor and assignment participate only if the base iterator converts.
 		template <typename U, typename = eastl::enable_if_t<!eastl::is_same<U, Iterator>::value && eastl::is_convertible<const U&, Iterator>::value>>
-		EA_CPP14_CONSTEXPR reverse_iterator(const reverse_iterator<U>& ri)
+		EA_CPP14_CONSTEXPR reverse_iterator(const reverse_iterator<U>& ri) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible<Iterator, const U&>::value))
 			: mIterator(ri.base()) { }
 
 		template <typename U, typename = eastl::enable_if_t<!eastl::is_same<U, Iterator>::value && eastl::is_convertible<const U&, Iterator>::value &&
 		                                                    eastl::is_assignable<Iterator&, const U&>::value>>
-		EA_CPP14_CONSTEXPR reverse_iterator<Iterator>& operator=(const reverse_iterator<U>& ri)
+		EA_CPP14_CONSTEXPR reverse_iterator<Iterator>& operator=(const reverse_iterator<U>& ri) EA_NOEXCEPT_IF((eastl::is_nothrow_assignable<Iterator&, const U&>::value))
 			{ mIterator = ri.base(); return *this; }
 
-		EA_CPP14_CONSTEXPR iterator_type base() const
+		EA_CPP14_CONSTEXPR iterator_type base() const EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible<Iterator>::value)
 			{ return mIterator; }
 
-		EA_CPP14_CONSTEXPR reference operator*() const
+		EA_CPP14_CONSTEXPR reference operator*() const EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible<Iterator>::value && EA_NOEXCEPT_EXPR(*--eastl::declval<Iterator&>()))
 		{
 			iterator_type i(mIterator);
 			return *--i;
@@ -336,7 +336,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 
 		// Like std, only for a pointer or a base iterator with operator->, which is used.
 		template <typename I = Iterator, eastl::enable_if_t<eastl::is_pointer<I>::value, int> = 0>
-		EA_CPP14_CONSTEXPR pointer operator->() const
+		EA_CPP14_CONSTEXPR pointer operator->() const EA_NOEXCEPT
 		{
 			iterator_type i(mIterator);
 			return --i;
@@ -344,6 +344,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 
 		template <typename I = Iterator, eastl::enable_if_t<!eastl::is_pointer<I>::value && eastl::is_detected<internal::arrow_operator_t, const I&>::value, int> = 0>
 		EA_CPP14_CONSTEXPR pointer operator->() const
+			EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible<I>::value && EA_NOEXCEPT_EXPR(--eastl::declval<I&>()) && EA_NOEXCEPT_EXPR(eastl::declval<I&>().operator->()))
 		{
 			iterator_type i(mIterator);
 			--i;
@@ -358,36 +359,36 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 			return iter_move(--i);
 		}
 
-		EA_CPP14_CONSTEXPR reverse_iterator& operator++()
+		EA_CPP14_CONSTEXPR reverse_iterator& operator++() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(--mIterator))
 			{ --mIterator; return *this; }
 
-		EA_CPP14_CONSTEXPR reverse_iterator operator++(int)
+		EA_CPP14_CONSTEXPR reverse_iterator operator++(int) EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible<Iterator>::value && EA_NOEXCEPT_EXPR(--mIterator))
 		{
 			reverse_iterator ri(*this);
 			--mIterator;
 			return ri;
 		}
 
-		EA_CPP14_CONSTEXPR reverse_iterator& operator--()
+		EA_CPP14_CONSTEXPR reverse_iterator& operator--() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(++mIterator))
 			{ ++mIterator; return *this; }
 
-		EA_CPP14_CONSTEXPR reverse_iterator operator--(int)
+		EA_CPP14_CONSTEXPR reverse_iterator operator--(int) EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible<Iterator>::value && EA_NOEXCEPT_EXPR(++mIterator))
 		{
 			reverse_iterator ri(*this);
 			++mIterator;
 			return ri;
 		}
 
-		EA_CPP14_CONSTEXPR reverse_iterator operator+(difference_type n) const
+		EA_CPP14_CONSTEXPR reverse_iterator operator+(difference_type n) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(reverse_iterator(mIterator - n)))
 			{ return reverse_iterator(mIterator - n); }
 
-		EA_CPP14_CONSTEXPR reverse_iterator& operator+=(difference_type n)
+		EA_CPP14_CONSTEXPR reverse_iterator& operator+=(difference_type n) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(mIterator -= n))
 			{ mIterator -= n; return *this; }
 
-		EA_CPP14_CONSTEXPR reverse_iterator operator-(difference_type n) const
+		EA_CPP14_CONSTEXPR reverse_iterator operator-(difference_type n) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(reverse_iterator(mIterator + n)))
 			{ return reverse_iterator(mIterator + n); }
 
-		EA_CPP14_CONSTEXPR reverse_iterator& operator-=(difference_type n)
+		EA_CPP14_CONSTEXPR reverse_iterator& operator-=(difference_type n) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(mIterator += n))
 			{ mIterator += n; return *this; }
 
 		// http://cplusplus.github.io/LWG/lwg-defects.html#386,
@@ -395,7 +396,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		// random_access_iterator operator[] is merely required to return something convertible to reference.
 		// reverse_iterator operator[] can't necessarily know what to return as the underlying iterator
 		// operator[] may return something other than reference.
-		EA_CPP14_CONSTEXPR reference operator[](difference_type n) const
+		EA_CPP14_CONSTEXPR reference operator[](difference_type n) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(mIterator[-n - 1]))
 			{ return mIterator[-n - 1]; }
 
 		
@@ -431,36 +432,42 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	template <typename Iterator1, typename Iterator2>
 	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() == eastl::declval<const Iterator2&>())>
 	operator==(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator1&>() == eastl::declval<const Iterator2&>()))
 		{ return a.base() == b.base(); }
 
 
 	template <typename Iterator1, typename Iterator2>
 	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() > eastl::declval<const Iterator2&>())>
 	operator<(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator1&>() > eastl::declval<const Iterator2&>()))
 		{ return a.base() > b.base(); }
 
 
 	template <typename Iterator1, typename Iterator2>
 	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() != eastl::declval<const Iterator2&>())>
 	operator!=(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator1&>() != eastl::declval<const Iterator2&>()))
 		{ return a.base() != b.base(); }
 
 
 	template <typename Iterator1, typename Iterator2>
 	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() < eastl::declval<const Iterator2&>())>
 	operator>(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator1&>() < eastl::declval<const Iterator2&>()))
 		{ return a.base() < b.base(); }
 
 
 	template <typename Iterator1, typename Iterator2>
 	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() >= eastl::declval<const Iterator2&>())>
 	operator<=(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator1&>() >= eastl::declval<const Iterator2&>()))
 		{ return a.base() >= b.base(); }
 
 
 	template <typename Iterator1, typename Iterator2>
 	EA_CPP14_CONSTEXPR inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() <= eastl::declval<const Iterator2&>())>
 	operator>=(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator1&>() <= eastl::declval<const Iterator2&>()))
 		{ return a.base() <= b.base(); }
 
 
@@ -468,6 +475,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	template <typename Iterator1, std::three_way_comparable_with<Iterator1> Iterator2>
 	EA_CONSTEXPR inline std::compare_three_way_result_t<Iterator1, Iterator2>
 	operator<=>(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator2&>() <=> eastl::declval<const Iterator1&>()))
 		{ return b.base() <=> a.base(); }
 	#endif
 
@@ -476,13 +484,15 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	// participates only if that difference is well-formed.
 	template <typename Iterator1, typename Iterator2>
 	EA_CPP14_CONSTEXPR inline auto
-	operator-(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b) -> decltype(b.base() - a.base())
+	operator-(const reverse_iterator<Iterator1>& a, const reverse_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator2&>() - eastl::declval<const Iterator1&>())) -> decltype(b.base() - a.base())
 		{ return b.base() - a.base(); }
 
 
 	template <typename Iterator>
 	EA_CPP14_CONSTEXPR inline reverse_iterator<Iterator>
 	operator+(typename reverse_iterator<Iterator>::difference_type n, const reverse_iterator<Iterator>& a)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a + n))
 		{ return reverse_iterator<Iterator>(a.base() - n); }
 
 
@@ -550,76 +560,78 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		iterator_type mIterator;
 
 	public:
-		move_iterator()
+		move_iterator() EA_NOEXCEPT_IF(eastl::is_nothrow_default_constructible<Iterator>::value)
 		  : mIterator()
 		{
 		}
 
-		explicit move_iterator(iterator_type mi)
+		explicit move_iterator(iterator_type mi) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<Iterator>::value)
 		  : mIterator(mi) { }
 
 		// Like std, the converting constructor and assignment participate only if the base iterator converts.
 		template <typename U, typename = eastl::enable_if_t<!eastl::is_same<U, Iterator>::value && eastl::is_convertible<const U&, Iterator>::value>>
-		move_iterator(const move_iterator<U>& mi)
+		move_iterator(const move_iterator<U>& mi) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible<Iterator, const U&>::value))
 		  : mIterator(mi.base())
 		{
 		}
 
 		template <typename U, typename = eastl::enable_if_t<!eastl::is_same<U, Iterator>::value && eastl::is_convertible<const U&, Iterator>::value &&
 		                                                    eastl::is_assignable<Iterator&, const U&>::value>>
-		move_iterator& operator=(const move_iterator<U>& mi)
+		move_iterator& operator=(const move_iterator<U>& mi) EA_NOEXCEPT_IF((eastl::is_nothrow_assignable<Iterator&, const U&>::value))
 		{
 			mIterator = mi.base();
 			return *this;
 		}
 
-		iterator_type base() const
+		// Unconditionally noexcept: C++20's std::move_iterator::base() returns a const reference, noexcept.
+		iterator_type base() const EA_NOEXCEPT
 			{ return mIterator; }
 
-		reference operator*() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(iter_move(eastl::declval<const Iterator&>()))) { return iter_move(mIterator); }
+		// iter_move takes the iterator by value: a throwing copy doesn't make the dereference potentially throwing, as std's.
+		reference operator*() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(iter_move(eastl::declval<const Iterator&>())) || EA_NOEXCEPT_EXPR(*eastl::declval<const Iterator&>())) { return iter_move(mIterator); }
 
-		pointer operator->() const
+		pointer operator->() const EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible<Iterator>::value)
 			{ return mIterator; }
 
-		move_iterator& operator++()
+		move_iterator& operator++() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(++mIterator))
 		{
 			++mIterator;
 			return *this;
 		}
 
-		move_iterator operator++(int)
+		move_iterator operator++(int) EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible<Iterator>::value && EA_NOEXCEPT_EXPR(++mIterator))
 		{
 			move_iterator tempMoveIterator = *this;
 			++mIterator;
 			return tempMoveIterator;
 		}
 
-		move_iterator& operator--()
+		move_iterator& operator--() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(--mIterator))
 		{
 			--mIterator;
 			return *this;
 		}
 
-		move_iterator operator--(int)
+		move_iterator operator--(int) EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible<Iterator>::value && EA_NOEXCEPT_EXPR(--mIterator))
 		{
 			move_iterator tempMoveIterator = *this;
 			--mIterator;
 			return tempMoveIterator;
 		}
 
-		move_iterator operator+(difference_type n) const
+		move_iterator operator+(difference_type n) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(move_iterator(mIterator + n)))
 			{ return move_iterator(mIterator + n); }
 
-		move_iterator& operator+=(difference_type n)
+		move_iterator& operator+=(difference_type n) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(mIterator += n))
 		{
 			mIterator += n;
 			return *this;
 		}
 
-		move_iterator operator-(difference_type n) const
+		move_iterator operator-(difference_type n) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(move_iterator(mIterator - n)))
 			{ return move_iterator(mIterator - n); }
 
-		move_iterator& operator-=(difference_type n)
+		move_iterator& operator-=(difference_type n) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(mIterator -= n))
 		{
 			mIterator -= n;
 			return *this;
@@ -645,36 +657,42 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	template<typename Iterator1, typename Iterator2>
 	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() == eastl::declval<const Iterator2&>())>
 	operator==(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator1&>() == eastl::declval<const Iterator2&>()))
 		{ return a.base() == b.base(); }
 
 
 	template<typename Iterator1, typename Iterator2>
 	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() == eastl::declval<const Iterator2&>())>
 	operator!=(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a == b))
 		{ return !(a == b); }
 
 
 	template<typename Iterator1, typename Iterator2>
 	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() < eastl::declval<const Iterator2&>())>
 	operator<(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator1&>() < eastl::declval<const Iterator2&>()))
 		{ return a.base() < b.base(); }
 
 
 	template<typename Iterator1, typename Iterator2>
 	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator2&>() < eastl::declval<const Iterator1&>())>
 	operator<=(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(b < a))
 		{ return !(b < a); }
 
 
 	template<typename Iterator1, typename Iterator2>
 	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator2&>() < eastl::declval<const Iterator1&>())>
 	operator>(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(b < a))
 		{ return b < a; }
 
 
 	template<typename Iterator1, typename Iterator2>
 	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator1&>() < eastl::declval<const Iterator2&>())>
 	operator>=(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a < b))
 		{ return !(a < b); }
 
 
@@ -682,13 +700,15 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	template <typename Iterator1, std::three_way_comparable_with<Iterator1> Iterator2>
 	inline std::compare_three_way_result_t<Iterator1, Iterator2>
 	operator<=>(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator1&>() <=> eastl::declval<const Iterator2&>()))
 		{ return a.base() <=> b.base(); }
 	#endif
 
 
 	template<typename Iterator1, typename Iterator2>
 	inline auto
-	operator-(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b) -> decltype(a.base() - b.base())
+	operator-(const move_iterator<Iterator1>& a, const move_iterator<Iterator2>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator1&>() - eastl::declval<const Iterator2&>())) -> decltype(a.base() - b.base())
 		{ return a.base() - b.base(); }
 
 
@@ -702,21 +722,21 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	class move_sentinel
 	{
 	public:
-		EA_CONSTEXPR move_sentinel()
+		EA_CONSTEXPR move_sentinel() EA_NOEXCEPT_IF(eastl::is_nothrow_default_constructible<Sentinel>::value)
 		  : mSentinel() {}
 
-		EA_CONSTEXPR explicit move_sentinel(Sentinel s)
+		EA_CONSTEXPR explicit move_sentinel(Sentinel s) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<Sentinel>::value)
 		  : mSentinel(eastl::move(s)) {}
 
 		template <typename S2, typename = eastl::enable_if_t<eastl::is_convertible<const S2&, Sentinel>::value>>
-		EA_CONSTEXPR move_sentinel(const move_sentinel<S2>& s)
+		EA_CONSTEXPR move_sentinel(const move_sentinel<S2>& s) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible<Sentinel, const S2&>::value))
 		  : mSentinel(s.base()) {}
 
 		template <typename S2, typename = eastl::enable_if_t<eastl::is_assignable<Sentinel&, const S2&>::value>>
-		EA_CPP14_CONSTEXPR move_sentinel& operator=(const move_sentinel<S2>& s)
+		EA_CPP14_CONSTEXPR move_sentinel& operator=(const move_sentinel<S2>& s) EA_NOEXCEPT_IF((eastl::is_nothrow_assignable<Sentinel&, const S2&>::value))
 			{ mSentinel = s.base(); return *this; }
 
-		EA_CONSTEXPR Sentinel base() const
+		EA_CONSTEXPR Sentinel base() const EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible<Sentinel>::value)
 			{ return mSentinel; }
 
 	private:
@@ -726,42 +746,49 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	template <typename Iterator, typename Sentinel>
 	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>())>
 	operator==(const move_iterator<Iterator>& a, const move_sentinel<Sentinel>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>()))
 		{ return a.base() == b.base(); }
 
 	#if !defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON) // C++20 rewrites the other three from operator==.
 	template <typename Iterator, typename Sentinel>
 	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>())>
 	operator==(const move_sentinel<Sentinel>& b, const move_iterator<Iterator>& a)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>()))
 		{ return a.base() == b.base(); }
 
 	template <typename Iterator, typename Sentinel>
 	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>())>
 	operator!=(const move_iterator<Iterator>& a, const move_sentinel<Sentinel>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>()))
 		{ return !(a.base() == b.base()); }
 
 	template <typename Iterator, typename Sentinel>
 	inline internal::iterator_comparison_t<decltype(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>())>
 	operator!=(const move_sentinel<Sentinel>& b, const move_iterator<Iterator>& a)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator&>() == eastl::declval<const Sentinel&>()))
 		{ return !(a.base() == b.base()); }
 	#endif
 
 	template <typename Iterator, typename Sentinel>
-	inline auto operator-(const move_sentinel<Sentinel>& b, const move_iterator<Iterator>& a) -> decltype(b.base() - a.base())
+	inline auto operator-(const move_sentinel<Sentinel>& b, const move_iterator<Iterator>& a)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Sentinel&>() - eastl::declval<const Iterator&>())) -> decltype(b.base() - a.base())
 		{ return b.base() - a.base(); }
 
 	template <typename Iterator, typename Sentinel>
-	inline auto operator-(const move_iterator<Iterator>& a, const move_sentinel<Sentinel>& b) -> decltype(a.base() - b.base())
+	inline auto operator-(const move_iterator<Iterator>& a, const move_sentinel<Sentinel>& b)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::declval<const Iterator&>() - eastl::declval<const Sentinel&>())) -> decltype(a.base() - b.base())
 		{ return a.base() - b.base(); }
 
 
 	template<typename Iterator>
 	inline move_iterator<Iterator>
 	operator+(typename move_iterator<Iterator>::difference_type n, const move_iterator<Iterator>& a)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a + n))
 		{ return a + n; }
 
 
 	template<typename Iterator>
-	inline move_iterator<Iterator> make_move_iterator(Iterator i)
+	inline move_iterator<Iterator> make_move_iterator(Iterator i) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<Iterator>::value)
 		{ return move_iterator<Iterator>(i); }
 
 
@@ -848,7 +875,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		Container* container;
 
 	public:
-		explicit back_insert_iterator(Container& x)
+		explicit back_insert_iterator(Container& x) EA_NOEXCEPT
 			: container(eastl::addressof(x)) { }
 
 		back_insert_iterator(const back_insert_iterator&) = default;
@@ -860,13 +887,13 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		back_insert_iterator& operator=(typename Container::value_type&& value)
 			{ container->push_back(eastl::move(value)); return *this; }
 
-		back_insert_iterator& operator*()
+		back_insert_iterator& operator*() EA_NOEXCEPT
 			{ return *this; }
 
-		back_insert_iterator& operator++()
+		back_insert_iterator& operator++() EA_NOEXCEPT
 			{ return *this; } // This is by design.
 
-		back_insert_iterator operator++(int)
+		back_insert_iterator operator++(int) EA_NOEXCEPT
 			{ return *this; } // This is by design.
 	};
 
@@ -877,7 +904,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	///
 	template <typename Container>
 	inline back_insert_iterator<Container>
-	back_inserter(Container& x)
+	back_inserter(Container& x) EA_NOEXCEPT
 		{ return back_insert_iterator<Container>(x); }
 
 
@@ -1202,11 +1229,11 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	// http://en.cppreference.com/w/cpp/iterator/data
 	//
 	template <class Container>
-	EA_CPP14_CONSTEXPR auto data(Container& c) -> decltype(c.data())
+	EA_CPP14_CONSTEXPR auto data(Container& c) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.data())) -> decltype(c.data())
 		{ return c.data(); }
 
 	template <class Container>
-	EA_CPP14_CONSTEXPR auto data(const Container& c) -> decltype(c.data())
+	EA_CPP14_CONSTEXPR auto data(const Container& c) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.data())) -> decltype(c.data())
 		{ return c.data(); }
 
 	template <class T, size_t N>
@@ -1223,7 +1250,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	// http://en.cppreference.com/w/cpp/iterator/size
 	//
 	template <class C>
-	EA_CPP14_CONSTEXPR auto size(const C& c) -> decltype(c.size())
+	EA_CPP14_CONSTEXPR auto size(const C& c) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.size())) -> decltype(c.size())
 		{ return c.size(); }
 
 	template <class T, size_t N>
@@ -1240,7 +1267,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		{ return N; }
 
 	template <class C>
-	EA_CPP14_CONSTEXPR auto ssize(const C& c)
+	EA_CPP14_CONSTEXPR auto ssize(const C& c) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.size()))
 	    -> eastl::common_type_t<ptrdiff_t, eastl::make_signed_t<decltype(c.size())>>
 	{
 		using R = eastl::common_type_t<ptrdiff_t, eastl::make_signed_t<decltype(c.size())>>;
@@ -1253,7 +1280,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	// http://en.cppreference.com/w/cpp/iterator/empty
 	//
 	template <class Container>
-	EA_CPP14_CONSTEXPR auto empty(const Container& c) -> decltype(c.empty())
+	EA_CPP14_CONSTEXPR auto empty(const Container& c) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.empty())) -> decltype(c.empty())
 		{ return c.empty(); }
 
 	template <class T, size_t N>
@@ -1289,13 +1316,13 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 
 	#if EASTL_BEGIN_END_ENABLED
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto begin(Container& container) -> decltype(container.begin())
+		EA_CPP14_CONSTEXPR inline auto begin(Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(container.begin())) -> decltype(container.begin())
 		{
 			return container.begin();
 		}
 
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto begin(const Container& container) -> decltype(container.begin())
+		EA_CPP14_CONSTEXPR inline auto begin(const Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(container.begin())) -> decltype(container.begin())
 		{
 			return container.begin();
 		}
@@ -1307,19 +1334,19 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		}
 
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto cbegin(const Container& container) -> decltype(eastl::begin(container))
+		EA_CPP14_CONSTEXPR inline auto cbegin(const Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::begin(container))) -> decltype(eastl::begin(container))
 		{
 			return eastl::begin(container);
 		}
 
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto end(Container& container) -> decltype(container.end())
+		EA_CPP14_CONSTEXPR inline auto end(Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(container.end())) -> decltype(container.end())
 		{
 			return container.end();
 		}
 
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto end(const Container& container) -> decltype(container.end())
+		EA_CPP14_CONSTEXPR inline auto end(const Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(container.end())) -> decltype(container.end())
 		{
 			return container.end();
 		}
@@ -1331,74 +1358,74 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		}
 
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto cend(const Container& container) -> decltype(eastl::end(container))
+		EA_CPP14_CONSTEXPR inline auto cend(const Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::end(container))) -> decltype(eastl::end(container))
 		{
 			return eastl::end(container);
 		}
 
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto rbegin(Container& container) -> decltype(container.rbegin())
+		EA_CPP14_CONSTEXPR inline auto rbegin(Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(container.rbegin())) -> decltype(container.rbegin())
 		{
 			return container.rbegin();
 		}
 
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto rbegin(const Container& container) -> decltype(container.rbegin())
+		EA_CPP14_CONSTEXPR inline auto rbegin(const Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(container.rbegin())) -> decltype(container.rbegin())
 		{
 			return container.rbegin();
 		}
 
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto rend(Container& container) -> decltype(container.rend())
+		EA_CPP14_CONSTEXPR inline auto rend(Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(container.rend())) -> decltype(container.rend())
 		{
 			return container.rend();
 		}
 
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto rend(const Container& container) -> decltype(container.rend())
+		EA_CPP14_CONSTEXPR inline auto rend(const Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(container.rend())) -> decltype(container.rend())
 		{
 			return container.rend();
 		}
 
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto crbegin(const Container& container) -> decltype(eastl::rbegin(container))
+		EA_CPP14_CONSTEXPR inline auto crbegin(const Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::rbegin(container))) -> decltype(eastl::rbegin(container))
 		{
 			return container.rbegin();
 		}
 
 		template <typename Container>
-		EA_CPP14_CONSTEXPR inline auto crend(const Container& container) -> decltype(eastl::rend(container))
+		EA_CPP14_CONSTEXPR inline auto crend(const Container& container) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::rend(container))) -> decltype(eastl::rend(container))
 		{
 			return container.rend();
 		}
 
 
 		template <typename T, size_t arraySize>
-		EA_CPP14_CONSTEXPR inline reverse_iterator<T*> rbegin(T (&arrayObject)[arraySize])
+		EA_CPP14_CONSTEXPR inline reverse_iterator<T*> rbegin(T (&arrayObject)[arraySize]) EA_NOEXCEPT
 		{
 			return reverse_iterator<T*>(arrayObject + arraySize);
 		}
 
 		template <typename T, size_t arraySize>
-		EA_CPP14_CONSTEXPR inline reverse_iterator<T*> rend(T (&arrayObject)[arraySize])
+		EA_CPP14_CONSTEXPR inline reverse_iterator<T*> rend(T (&arrayObject)[arraySize]) EA_NOEXCEPT
 		{
 			return reverse_iterator<T*>(arrayObject);
 		}
 
 		template <typename E>
-		EA_CPP14_CONSTEXPR inline reverse_iterator<const E*> rbegin(std::initializer_list<E> ilist)
+		EA_CPP14_CONSTEXPR inline reverse_iterator<const E*> rbegin(std::initializer_list<E> ilist) EA_NOEXCEPT
 		{
 			return eastl::reverse_iterator<const E*>(ilist.end());
 		}
 
 		template <typename E>
-		EA_CPP14_CONSTEXPR inline reverse_iterator<const E*> rend(std::initializer_list<E> ilist)
+		EA_CPP14_CONSTEXPR inline reverse_iterator<const E*> rend(std::initializer_list<E> ilist) EA_NOEXCEPT
 		{
 			return eastl::reverse_iterator<const E*>(ilist.begin());
 		}
 
 		template <typename Iterator>
-		EA_CPP14_CONSTEXPR reverse_iterator<Iterator> make_reverse_iterator(Iterator i)
+		EA_CPP14_CONSTEXPR reverse_iterator<Iterator> make_reverse_iterator(Iterator i) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<Iterator>::value)
 			{ return reverse_iterator<Iterator>(i); }
 
 	#endif // EASTL_BEGIN_END_ENABLED

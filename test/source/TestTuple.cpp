@@ -16,6 +16,90 @@ EA_DISABLE_VC_WARNING(4623 4625 4413 4510)
 // elements that can't be swapped as const.
 template class eastl::tuple<int, float>;
 
+// The exception specifications of tuple, get, apply and make_from_tuple follow the standard (the conditional ones as
+// MSVC's STL strengthens them).
+namespace NoexceptTupleTest
+{
+	// Everything noexcept, and constructible from an int.
+	struct Nothrow
+	{
+		Nothrow() EA_NOEXCEPT; Nothrow(int) EA_NOEXCEPT; Nothrow(const Nothrow&) EA_NOEXCEPT; Nothrow(Nothrow&&) EA_NOEXCEPT;
+		Nothrow& operator=(int) EA_NOEXCEPT; Nothrow& operator=(const Nothrow&) EA_NOEXCEPT; Nothrow& operator=(Nothrow&&) EA_NOEXCEPT;
+	};
+
+	// Everything may throw, and constructible from an int.
+	struct Throwing
+	{
+		Throwing(); Throwing(int); Throwing(const Throwing&); Throwing(Throwing&&) EA_NOEXCEPT_IF(false);
+		Throwing& operator=(int); Throwing& operator=(const Throwing&); Throwing& operator=(Throwing&&) EA_NOEXCEPT_IF(false);
+	};
+
+	struct NothrowFunctor { int operator()(int, int) const EA_NOEXCEPT; };
+	struct ThrowingFunctor { int operator()(int, int) const; };
+	struct NothrowMaker { NothrowMaker(int, int) EA_NOEXCEPT; };
+	struct ThrowingMaker { ThrowingMaker(int, int); };
+
+	typedef eastl::tuple<Nothrow, Nothrow>     NothrowTuple;
+	typedef eastl::tuple<Throwing, Throwing>   ThrowingTuple;
+	typedef eastl::tuple<Nothrow, Throwing>    MixedTuple;
+	typedef eastl::tuple<int, int>             IntTuple;
+
+	// Constructors.
+	static_assert(noexcept(eastl::tuple<>()), "tuple<>() is noexcept");
+	static_assert(noexcept(NothrowTuple()), "tuple() is noexcept when the elements' default constructors are");
+	static_assert(!noexcept(ThrowingTuple()), "tuple() may throw when the elements' default constructors may");
+	static_assert(!noexcept(MixedTuple()), "tuple() may throw when one element's default constructor may");
+	static_assert(noexcept(NothrowTuple(eastl::declval<const Nothrow&>(), eastl::declval<const Nothrow&>())), "tuple(const T&...) is noexcept when the copies are");
+	static_assert(!noexcept(ThrowingTuple(eastl::declval<const Throwing&>(), eastl::declval<const Throwing&>())), "tuple(const T&...) may throw when the copies may");
+	static_assert(noexcept(NothrowTuple(eastl::declval<Nothrow>(), eastl::declval<Nothrow>())), "tuple(U&&...) is noexcept when the constructions are");
+	static_assert(noexcept(NothrowTuple(1, 2)), "tuple(U&&...) is noexcept when the constructions from the arguments are");
+	static_assert(!noexcept(ThrowingTuple(1, 2)), "tuple(U&&...) may throw when the constructions from the arguments may");
+	static_assert(!noexcept(MixedTuple(1, 2)), "tuple(U&&...) may throw when one construction from the arguments may");
+	static_assert(noexcept(NothrowTuple(eastl::declval<const IntTuple&>())), "tuple(const tuple<U...>&) is noexcept when the constructions are");
+	static_assert(!noexcept(ThrowingTuple(eastl::declval<const IntTuple&>())), "tuple(const tuple<U...>&) may throw when the constructions may");
+	static_assert(noexcept(NothrowTuple(eastl::declval<IntTuple>())), "tuple(tuple<U...>&&) is noexcept when the constructions are");
+	static_assert(!noexcept(ThrowingTuple(eastl::declval<IntTuple>())), "tuple(tuple<U...>&&) may throw when the constructions may");
+	static_assert(noexcept(NothrowTuple(eastl::declval<const eastl::pair<int, int>&>())), "tuple(const pair<U1, U2>&) is noexcept when the constructions are");
+	static_assert(!noexcept(ThrowingTuple(eastl::declval<const eastl::pair<int, int>&>())), "tuple(const pair<U1, U2>&) may throw when the constructions may");
+
+	// Assignment.
+	static_assert(noexcept(eastl::declval<NothrowTuple&>() = eastl::declval<const NothrowTuple&>()), "tuple copy assignment is noexcept when the elements' are");
+	static_assert(!noexcept(eastl::declval<ThrowingTuple&>() = eastl::declval<const ThrowingTuple&>()), "tuple copy assignment may throw when the elements' may");
+	static_assert(noexcept(eastl::declval<NothrowTuple&>() = eastl::declval<const IntTuple&>()), "tuple::operator=(const tuple<U...>&) is noexcept when the assignments are");
+	static_assert(!noexcept(eastl::declval<ThrowingTuple&>() = eastl::declval<const IntTuple&>()), "tuple::operator=(const tuple<U...>&) may throw when the assignments may");
+	static_assert(noexcept(eastl::declval<NothrowTuple&>() = eastl::declval<IntTuple>()), "tuple::operator=(tuple<U...>&&) is noexcept when the assignments are");
+	static_assert(!noexcept(eastl::declval<MixedTuple&>() = eastl::declval<IntTuple>()), "tuple::operator=(tuple<U...>&&) may throw when one assignment may");
+	static_assert(noexcept(eastl::declval<NothrowTuple&>() = eastl::declval<const eastl::pair<int, int>&>()), "tuple::operator=(const pair<U1, U2>&) is noexcept when the assignments are");
+	static_assert(!noexcept(eastl::declval<ThrowingTuple&>() = eastl::declval<const eastl::pair<int, int>&>()), "tuple::operator=(const pair<U1, U2>&) may throw when the assignments may");
+
+	// swap.
+	static_assert(noexcept(eastl::declval<eastl::tuple<>&>().swap(eastl::declval<eastl::tuple<>&>())), "tuple<>::swap is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::tuple<>&>().swap(eastl::declval<const eastl::tuple<>&>())), "tuple<>::swap const is noexcept");
+	static_assert(noexcept(eastl::declval<NothrowTuple&>().swap(eastl::declval<NothrowTuple&>())), "tuple::swap is noexcept when the elements' swaps are");
+	static_assert(noexcept(eastl::swap(eastl::declval<NothrowTuple&>(), eastl::declval<NothrowTuple&>())), "swap(tuple&, tuple&) is noexcept when the elements' swaps are");
+	static_assert(!noexcept(eastl::declval<ThrowingTuple&>().swap(eastl::declval<ThrowingTuple&>())), "tuple::swap may throw when the elements' swaps may");
+	static_assert(!noexcept(eastl::swap(eastl::declval<ThrowingTuple&>(), eastl::declval<ThrowingTuple&>())), "swap(tuple&, tuple&) may throw when the elements' swaps may");
+	static_assert(!noexcept(eastl::declval<MixedTuple&>().swap(eastl::declval<MixedTuple&>())), "tuple::swap may throw when one element's swap may");
+	static_assert(noexcept(eastl::declval<const eastl::tuple<int&, int&>&>().swap(eastl::declval<const eastl::tuple<int&, int&>&>())), "tuple::swap const is noexcept for references to ints");
+	static_assert(noexcept(eastl::swap(eastl::declval<const eastl::tuple<int&, int&>&>(), eastl::declval<const eastl::tuple<int&, int&>&>())), "swap(const tuple&, const tuple&) is noexcept for references to ints");
+
+	// get.
+	static_assert(noexcept(eastl::get<0>(eastl::declval<ThrowingTuple&>())), "get<I>(tuple&) is noexcept");
+	static_assert(noexcept(eastl::get<1>(eastl::declval<const ThrowingTuple&>())), "get<I>(const tuple&) is noexcept");
+	static_assert(noexcept(eastl::get<0>(eastl::declval<ThrowingTuple>())), "get<I>(tuple&&) is noexcept");
+	static_assert(noexcept(eastl::get<1>(eastl::declval<const ThrowingTuple>())), "get<I>(const tuple&&) is noexcept");
+	static_assert(noexcept(eastl::get<Nothrow>(eastl::declval<MixedTuple&>())), "get<T>(tuple&) is noexcept");
+	static_assert(noexcept(eastl::get<Nothrow>(eastl::declval<const MixedTuple&>())), "get<T>(const tuple&) is noexcept");
+	static_assert(noexcept(eastl::get<Nothrow>(eastl::declval<MixedTuple>())), "get<T>(tuple&&) is noexcept");
+	static_assert(noexcept(eastl::get<Nothrow>(eastl::declval<const MixedTuple>())), "get<T>(const tuple&&) is noexcept");
+
+	// apply and make_from_tuple.
+	static_assert(noexcept(eastl::apply(NothrowFunctor(), eastl::declval<const IntTuple&>())), "apply is noexcept when the call is");
+	static_assert(!noexcept(eastl::apply(ThrowingFunctor(), eastl::declval<const IntTuple&>())), "apply may throw when the call may");
+	static_assert(noexcept(eastl::make_from_tuple<NothrowMaker>(eastl::declval<const IntTuple&>())), "make_from_tuple is noexcept when the construction is");
+	static_assert(!noexcept(eastl::make_from_tuple<ThrowingMaker>(eastl::declval<const IntTuple&>())), "make_from_tuple may throw when the construction may");
+}
+
 namespace TestTupleInternal
 {
 

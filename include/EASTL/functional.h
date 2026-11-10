@@ -42,7 +42,7 @@ namespace eastl
 	{
 		typedef int is_transparent;
 		template<typename A, typename B>
-		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const
+		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::forward<A>(a) + eastl::forward<B>(b)))
 			-> decltype(eastl::forward<A>(a) + eastl::forward<B>(b))
 			{ return eastl::forward<A>(a) + eastl::forward<B>(b); }
 	};
@@ -60,7 +60,7 @@ namespace eastl
 	{
 		typedef int is_transparent;
 		template<typename A, typename B>
-		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const
+		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::forward<A>(a) - eastl::forward<B>(b)))
 			-> decltype(eastl::forward<A>(a) - eastl::forward<B>(b))
 			{ return eastl::forward<A>(a) - eastl::forward<B>(b); }
 	};
@@ -78,7 +78,7 @@ namespace eastl
 	{
 		typedef int is_transparent;
 		template<typename A, typename B>
-		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const
+		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::forward<A>(a) * eastl::forward<B>(b)))
 			-> decltype(eastl::forward<A>(a) * eastl::forward<B>(b))
 			{ return eastl::forward<A>(a) * eastl::forward<B>(b); }
 	};
@@ -140,7 +140,7 @@ namespace eastl
 	template <typename T = void>
 	struct equal_to
 	{
-		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const
+		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a == b))
 			{ return a == b; }
 	};
 
@@ -150,7 +150,7 @@ namespace eastl
 	{
 		typedef int is_transparent;
 		template<typename A, typename B>
-		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const
+		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::forward<A>(a) == eastl::forward<B>(b)))
 			-> decltype(eastl::forward<A>(a) == eastl::forward<B>(b))
 			{ return eastl::forward<A>(a) == eastl::forward<B>(b); }
 	};
@@ -164,7 +164,7 @@ namespace eastl
     template <typename T = void>
     struct not_equal_to
     {
-		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const
+		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a != b))
 			{ return a != b; }
 	};
 
@@ -174,7 +174,7 @@ namespace eastl
 	{
 		typedef int is_transparent;
 		template<typename A, typename B>
-		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const
+		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::forward<A>(a) != eastl::forward<B>(b)))
 			-> decltype(eastl::forward<A>(a) != eastl::forward<B>(b))
 			{ return eastl::forward<A>(a) != eastl::forward<B>(b); }
 	};
@@ -220,7 +220,7 @@ namespace eastl
 	template <typename T = void>
 	struct greater
 	{
-		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const
+		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a > b))
 			{ return a > b; }
 	};
 
@@ -230,7 +230,7 @@ namespace eastl
 	{
 		typedef int is_transparent;
 		template<typename A, typename B>
-		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const
+		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::forward<A>(a) > eastl::forward<B>(b)))
 			-> decltype(eastl::forward<A>(a) > eastl::forward<B>(b))
 			{ return eastl::forward<A>(a) > eastl::forward<B>(b); }
 	};
@@ -293,7 +293,7 @@ namespace eastl
     template <typename T = void>
     struct greater_equal
     {
-		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const
+		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a >= b))
 			{ return a >= b; }
 	};
 
@@ -303,7 +303,7 @@ namespace eastl
 	{
 		typedef int is_transparent;
 		template<typename A, typename B>
-		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const
+		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::forward<A>(a) >= eastl::forward<B>(b)))
 			-> decltype(eastl::forward<A>(a) >= eastl::forward<B>(b))
 			{ return eastl::forward<A>(a) >= eastl::forward<B>(b); }
 	};
@@ -317,7 +317,7 @@ namespace eastl
 	template <typename T = void>
 	struct less_equal
 	{
-		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const
+		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a <= b))
 			{ return a <= b; }
 	};
 
@@ -327,7 +327,7 @@ namespace eastl
 	{
 		typedef int is_transparent;
 		template<typename A, typename B>
-		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const
+		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::forward<A>(a) <= eastl::forward<B>(b)))
 			-> decltype(eastl::forward<A>(a) <= eastl::forward<B>(b))
 			{ return eastl::forward<A>(a) <= eastl::forward<B>(b); }
 	};
@@ -501,29 +501,29 @@ namespace eastl
 	template <typename F>
 	struct not_fn_ret
 	{
-		explicit not_fn_ret(F&& f) : mDecayF(eastl::forward<F>(f)) {}
+		explicit not_fn_ret(F&& f) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible<eastl::decay_t<F>, F>::value)) : mDecayF(eastl::forward<F>(f)) {}
 		not_fn_ret(not_fn_ret&& f) = default;
 		not_fn_ret(const not_fn_ret& f) = default;
 
 		// overloads for lvalues
 		template <class... Args>
-		auto operator()(Args&&... args) &
+		auto operator()(Args&&... args) & EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(!eastl::invoke(mDecayF, eastl::forward<Args>(args)...)))
 		    -> decltype(!eastl::declval<eastl::invoke_result_t<eastl::decay_t<F>&, Args...>>())
 		{ return !eastl::invoke(mDecayF, eastl::forward<Args>(args)...); }
 
 		template <class... Args>
-		auto operator()(Args&&... args) const &
+		auto operator()(Args&&... args) const & EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(!eastl::invoke(mDecayF, eastl::forward<Args>(args)...)))
 		    -> decltype(!eastl::declval<eastl::invoke_result_t<eastl::decay_t<F> const&, Args...>>())
 		{ return !eastl::invoke(mDecayF, eastl::forward<Args>(args)...); }
 
 		// overloads for rvalues
 		template <class... Args>
-		auto operator()(Args&&... args) &&
+		auto operator()(Args&&... args) && EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(!eastl::invoke(eastl::move(mDecayF), eastl::forward<Args>(args)...)))
 		    -> decltype(!eastl::declval<eastl::invoke_result_t<eastl::decay_t<F>, Args...>>())
 		{ return !eastl::invoke(eastl::move(mDecayF), eastl::forward<Args>(args)...); }
 
 		template <class... Args>
-		auto operator()(Args&&... args) const &&
+		auto operator()(Args&&... args) const && EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(!eastl::invoke(eastl::move(mDecayF), eastl::forward<Args>(args)...)))
 		    -> decltype(!eastl::declval<eastl::invoke_result_t<eastl::decay_t<F> const, Args...>>())
 		{ return !eastl::invoke(eastl::move(mDecayF), eastl::forward<Args>(args)...); }
 
@@ -543,7 +543,7 @@ namespace eastl
 	///     assert(nf());  // return true
 	///
 	template <class F>
-	inline not_fn_ret<F> not_fn(F&& f)
+	inline not_fn_ret<F> not_fn(F&& f) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible<eastl::decay_t<F>, F>::value))
 	{
 		return not_fn_ret<F>(eastl::forward<F>(f));
 	}
@@ -575,7 +575,7 @@ namespace eastl
 		template <typename T>
 		struct EnableHashIf<T, true>
 		{
-			size_t operator()(T p) const { return size_t(p); }
+			size_t operator()(T p) const EA_NOEXCEPT { return size_t(p); }
 		};
 	} // namespace Internal
 
@@ -588,67 +588,67 @@ namespace eastl
 	EA_RESTORE_VC_WARNING()
 
 	template <typename T> struct hash<T*> // Note that we use the pointer as-is and don't divide by sizeof(T*). This is because the table is of a prime size and this division doesn't benefit distribution.
-		{ size_t operator()(T* p) const { return size_t(uintptr_t(p)); } };
+		{ size_t operator()(T* p) const EA_NOEXCEPT { return size_t(uintptr_t(p)); } };
 
 	template <> struct hash<std::nullptr_t> // Like std; the same value as hash<T*> of a null pointer.
-		{ size_t operator()(std::nullptr_t) const { return 0; } };
+		{ size_t operator()(std::nullptr_t) const EA_NOEXCEPT { return 0; } };
 
 	template <> struct hash<bool>
-		{ size_t operator()(bool val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(bool val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	template <> struct hash<char>
-		{ size_t operator()(char val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(char val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	template <> struct hash<signed char>
-		{ size_t operator()(signed char val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(signed char val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	template <> struct hash<unsigned char>
-		{ size_t operator()(unsigned char val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(unsigned char val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	#if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
 		template <> struct hash<char8_t>
-			{ size_t operator()(char8_t val) const { return static_cast<size_t>(val); } };
+			{ size_t operator()(char8_t val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 	#endif
 
 	#if defined(EA_CHAR16_NATIVE) && EA_CHAR16_NATIVE
 		template <> struct hash<char16_t>
-			{ size_t operator()(char16_t val) const { return static_cast<size_t>(val); } };
+			{ size_t operator()(char16_t val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 	#endif
 
 	#if defined(EA_CHAR32_NATIVE) && EA_CHAR32_NATIVE
 		template <> struct hash<char32_t>
-			{ size_t operator()(char32_t val) const { return static_cast<size_t>(val); } };
+			{ size_t operator()(char32_t val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 	#endif
 
 	// If wchar_t is a native type instead of simply a define to an existing type...
 	#if !defined(EA_WCHAR_T_NON_NATIVE)
 		template <> struct hash<wchar_t>
-			{ size_t operator()(wchar_t val) const { return static_cast<size_t>(val); } };
+			{ size_t operator()(wchar_t val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 	#endif
 
 	template <> struct hash<signed short>
-		{ size_t operator()(signed short val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(signed short val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	template <> struct hash<unsigned short>
-		{ size_t operator()(unsigned short val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(unsigned short val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	template <> struct hash<signed int>
-		{ size_t operator()(signed int val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(signed int val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	template <> struct hash<unsigned int>
-		{ size_t operator()(unsigned int val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(unsigned int val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	template <> struct hash<signed long>
-		{ size_t operator()(signed long val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(signed long val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	template <> struct hash<unsigned long>
-		{ size_t operator()(unsigned long val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(unsigned long val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	template <> struct hash<signed long long>
-		{ size_t operator()(signed long long val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(signed long long val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	template <> struct hash<unsigned long long>
-		{ size_t operator()(unsigned long long val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(unsigned long long val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 
 	namespace internal
 	{
@@ -667,17 +667,17 @@ namespace eastl
 	}
 
 	template <> struct hash<float>
-		{ size_t operator()(float val) const { return internal::floating_point_hash(val); } };
+		{ size_t operator()(float val) const EA_NOEXCEPT { return internal::floating_point_hash(val); } };
 
 	template <> struct hash<double>
-		{ size_t operator()(double val) const { return internal::floating_point_hash(val); } };
+		{ size_t operator()(double val) const EA_NOEXCEPT { return internal::floating_point_hash(val); } };
 
 	template <> struct hash<long double>
-		{ size_t operator()(long double val) const { return internal::floating_point_hash(val); } };
+		{ size_t operator()(long double val) const EA_NOEXCEPT { return internal::floating_point_hash(val); } };
 
 	#if defined(EA_HAVE_INT128) && EA_HAVE_INT128
 	template <> struct hash<uint128_t>
-		{ size_t operator()(uint128_t val) const { return static_cast<size_t>(val); } };
+		{ size_t operator()(uint128_t val) const EA_NOEXCEPT { return static_cast<size_t>(val); } };
 	#endif
 
 
@@ -695,7 +695,7 @@ namespace eastl
 
 	template <> struct hash<char*>
 	{
-		size_t operator()(const char* p) const
+		size_t operator()(const char* p) const EA_NOEXCEPT
 		{
 			uint32_t c, result = 2166136261U;   // FNV1 hash. Perhaps the best string hash. Intentionally uint32_t instead of size_t, so the behavior is the same regardless of size.
 			while((c = (uint8_t)*p++) != 0)     // Using '!=' disables compiler warnings.
@@ -706,7 +706,7 @@ namespace eastl
 
 	template <> struct hash<const char*>
 	{
-		size_t operator()(const char* p) const
+		size_t operator()(const char* p) const EA_NOEXCEPT
 		{
 			uint32_t c, result = 2166136261U;   // Intentionally uint32_t instead of size_t, so the behavior is the same regardless of size.
 			while((c = (uint8_t)*p++) != 0)     // cast to unsigned 8 bit.
@@ -718,7 +718,7 @@ namespace eastl
 #if EA_CHAR8_UNIQUE
 	template <> struct hash<char8_t*>
 	{
-		size_t operator()(const char8_t* p) const
+		size_t operator()(const char8_t* p) const EA_NOEXCEPT
 		{
 			uint32_t c, result = 2166136261U;   // FNV1 hash. Perhaps the best string hash. Intentionally uint32_t instead of size_t, so the behavior is the same regardless of size.
 			while((c = (uint8_t)*p++) != 0)     // Using '!=' disables compiler warnings.
@@ -729,7 +729,7 @@ namespace eastl
 
 	template <> struct hash<const char8_t*>
 	{
-		size_t operator()(const char8_t* p) const
+		size_t operator()(const char8_t* p) const EA_NOEXCEPT
 		{
 			uint32_t c, result = 2166136261U;   // Intentionally uint32_t instead of size_t, so the behavior is the same regardless of size.
 			while((c = (uint8_t)*p++) != 0)     // cast to unsigned 8 bit.
@@ -742,7 +742,7 @@ namespace eastl
 
 	template <> struct hash<char16_t*>
 	{
-		size_t operator()(const char16_t* p) const
+		size_t operator()(const char16_t* p) const EA_NOEXCEPT
 		{
 			uint32_t c, result = 2166136261U;   // Intentionally uint32_t instead of size_t, so the behavior is the same regardless of size.
 			while((c = (uint16_t)*p++) != 0)    // cast to unsigned 16 bit.
@@ -753,7 +753,7 @@ namespace eastl
 
 	template <> struct hash<const char16_t*>
 	{
-		size_t operator()(const char16_t* p) const
+		size_t operator()(const char16_t* p) const EA_NOEXCEPT
 		{
 			uint32_t c, result = 2166136261U;   // Intentionally uint32_t instead of size_t, so the behavior is the same regardless of size.
 			while((c = (uint16_t)*p++) != 0)    // cast to unsigned 16 bit.
@@ -764,7 +764,7 @@ namespace eastl
 
 	template <> struct hash<char32_t*>
 	{
-		size_t operator()(const char32_t* p) const
+		size_t operator()(const char32_t* p) const EA_NOEXCEPT
 		{
 			uint32_t c, result = 2166136261U;   // Intentionally uint32_t instead of size_t, so the behavior is the same regardless of size.
 			while((c = (uint32_t)*p++) != 0)    // cast to unsigned 32 bit.
@@ -775,7 +775,7 @@ namespace eastl
 
 	template <> struct hash<const char32_t*>
 	{
-		size_t operator()(const char32_t* p) const
+		size_t operator()(const char32_t* p) const EA_NOEXCEPT
 		{
 			uint32_t c, result = 2166136261U;   // Intentionally uint32_t instead of size_t, so the behavior is the same regardless of size.
 			while((c = (uint32_t)*p++) != 0)    // cast to unsigned 32 bit.
@@ -787,7 +787,7 @@ namespace eastl
 #if defined(EA_WCHAR_UNIQUE) && EA_WCHAR_UNIQUE
 	template<> struct hash<wchar_t*>
 	{
-		size_t operator()(const wchar_t* p) const
+		size_t operator()(const wchar_t* p) const EA_NOEXCEPT
 		{
 			uint32_t c, result = 2166136261U;    // Intentionally uint32_t instead of size_t, so the behavior is the same regardless of size.
 			while ((c = (uint32_t)*p++) != 0)    // cast to unsigned 32 bit.
@@ -798,7 +798,7 @@ namespace eastl
 
 	template<> struct hash<const wchar_t*>
 	{
-		size_t operator()(const wchar_t* p) const
+		size_t operator()(const wchar_t* p) const EA_NOEXCEPT
 		{
 			uint32_t c, result = 2166136261U;    // Intentionally uint32_t instead of size_t, so the behavior is the same regardless of size.
 			while ((c = (uint32_t)*p++) != 0)    // cast to unsigned 32 bit.
@@ -822,7 +822,7 @@ namespace eastl
 		typedef typename String::value_type                    value_type;
 		typedef typename eastl::make_unsigned<value_type>::type unsigned_value_type;
 
-		size_t operator()(const string_type& s) const
+		size_t operator()(const string_type& s) const EA_NOEXCEPT
 		{
 			const unsigned_value_type* p = (const unsigned_value_type*)s.c_str();
 			uint32_t c, result = 2166136261U;   // Intentionally uint32_t instead of size_t, so the behavior is the same regardless of size.

@@ -13,6 +13,35 @@
 #include <EASTL/set.h>
 #include <EASTL/random.h>
 
+// uniform_int_distribution and its param_type, except the call operator that runs a generator, are noexcept as in the
+// standard.
+namespace NoexceptRandomTest
+{
+	#define EASTL_TEST_NOEXCEPT_UNIFORM_INT_DISTRIBUTION(T) \
+		static_assert(noexcept(eastl::uniform_int_distribution<T>::param_type(1, 5)), "param_type(a, b) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::uniform_int_distribution<T>::param_type&>().a()), "param_type::a is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::uniform_int_distribution<T>::param_type&>().b()), "param_type::b is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::uniform_int_distribution<T>::param_type&>() == eastl::declval<const eastl::uniform_int_distribution<T>::param_type&>()), "param_type::operator== is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::uniform_int_distribution<T>::param_type&>() != eastl::declval<const eastl::uniform_int_distribution<T>::param_type&>()), "param_type::operator!= is noexcept"); \
+		static_assert(noexcept(eastl::uniform_int_distribution<T>()), "uniform_int_distribution() is noexcept"); \
+		static_assert(noexcept(eastl::uniform_int_distribution<T>(1, 5)), "uniform_int_distribution(a, b) is noexcept"); \
+		static_assert(noexcept(eastl::uniform_int_distribution<T>(eastl::declval<const eastl::uniform_int_distribution<T>::param_type&>())), "uniform_int_distribution(const param_type&) is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::uniform_int_distribution<T>&>().reset()), "uniform_int_distribution::reset is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::uniform_int_distribution<T>&>().a()), "uniform_int_distribution::a is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::uniform_int_distribution<T>&>().b()), "uniform_int_distribution::b is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::uniform_int_distribution<T>&>().param()), "uniform_int_distribution::param() is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::uniform_int_distribution<T>&>().param(eastl::declval<const eastl::uniform_int_distribution<T>::param_type&>())), "uniform_int_distribution::param(const param_type&) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::uniform_int_distribution<T>&>().min()), "uniform_int_distribution::min is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::uniform_int_distribution<T>&>().max()), "uniform_int_distribution::max is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::uniform_int_distribution<T>&>() == eastl::declval<const eastl::uniform_int_distribution<T>&>()), "operator== of uniform_int_distribution is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::uniform_int_distribution<T>&>() != eastl::declval<const eastl::uniform_int_distribution<T>&>()), "operator!= of uniform_int_distribution is noexcept");
+	EASTL_TEST_NOEXCEPT_UNIFORM_INT_DISTRIBUTION(int)
+	EASTL_TEST_NOEXCEPT_UNIFORM_INT_DISTRIBUTION(unsigned int)
+	EASTL_TEST_NOEXCEPT_UNIFORM_INT_DISTRIBUTION(long long)
+	EASTL_TEST_NOEXCEPT_UNIFORM_INT_DISTRIBUTION(short)
+	#undef EASTL_TEST_NOEXCEPT_UNIFORM_INT_DISTRIBUTION
+}
+
 #ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
 	#include <random>
 #endif

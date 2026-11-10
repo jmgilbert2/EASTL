@@ -30,28 +30,28 @@ namespace eastl
 
 	// get
 	template <size_t I, typename... Ts_>
-	EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>& get(tuple<Ts_...>& t);
+	EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>& get(tuple<Ts_...>& t) EA_NOEXCEPT;
 
 	template <size_t I, typename... Ts_>
-	EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t);
+	EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t) EA_NOEXCEPT;
 
 	template <size_t I, typename... Ts_>
-	EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t);
+	EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t) EA_NOEXCEPT;
 
 	template <size_t I, typename... Ts_>
-	EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts_...>>&& get(const tuple<Ts_...>&& t);
+	EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts_...>>&& get(const tuple<Ts_...>&& t) EA_NOEXCEPT;
 
 	template <typename T, typename... ts_>
-	EA_CPP14_CONSTEXPR T& get(tuple<ts_...>& t);
+	EA_CPP14_CONSTEXPR T& get(tuple<ts_...>& t) EA_NOEXCEPT;
 
 	template <typename T, typename... ts_>
-	EA_CPP14_CONSTEXPR const T& get(const tuple<ts_...>& t);
+	EA_CPP14_CONSTEXPR const T& get(const tuple<ts_...>& t) EA_NOEXCEPT;
 
 	template <typename T, typename... ts_>
-	EA_CPP14_CONSTEXPR T&& get(tuple<ts_...>&& t);
+	EA_CPP14_CONSTEXPR T&& get(tuple<ts_...>&& t) EA_NOEXCEPT;
 
 	template <typename T, typename... ts_>
-	EA_CPP14_CONSTEXPR const T&& get(const tuple<ts_...>&& t);
+	EA_CPP14_CONSTEXPR const T&& get(const tuple<ts_...>&& t) EA_NOEXCEPT;
 }
 
 #endif  // EASTL_VARIADIC_TEMPLATES_ENABLED

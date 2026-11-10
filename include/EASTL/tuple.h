@@ -183,7 +183,7 @@ namespace Internal
 	class TupleLeaf;
 
 	template <size_t I, typename ValueType, bool IsEmpty>
-	inline EA_CPP20_CONSTEXPR void swap(TupleLeaf<I, ValueType, IsEmpty>& a, TupleLeaf<I, ValueType, IsEmpty>& b)
+	inline EA_CPP20_CONSTEXPR void swap(TupleLeaf<I, ValueType, IsEmpty>& a, TupleLeaf<I, ValueType, IsEmpty>& b) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<ValueType>::value)
 	{
 		using eastl::swap; // Unqualified so that user-defined swaps are found via argument-dependent lookup.
 		swap(a.getInternal(), b.getInternal());
@@ -191,7 +191,7 @@ namespace Internal
 
 	// For tuple's const swap: a reference element swaps the referenced objects.
 	template <size_t I, typename ValueType, bool IsEmpty>
-	inline EA_CPP20_CONSTEXPR void swap(const TupleLeaf<I, ValueType, IsEmpty>& a, const TupleLeaf<I, ValueType, IsEmpty>& b)
+	inline EA_CPP20_CONSTEXPR void swap(const TupleLeaf<I, ValueType, IsEmpty>& a, const TupleLeaf<I, ValueType, IsEmpty>& b) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<const ValueType>::value)
 	{
 		using eastl::swap;
 		swap(a.getInternal(), b.getInternal());
@@ -201,15 +201,15 @@ namespace Internal
 	class TupleLeaf
 	{
 	public:
-		EA_CONSTEXPR TupleLeaf() : mValue() {}
+		EA_CONSTEXPR TupleLeaf() EA_NOEXCEPT_IF(eastl::is_nothrow_default_constructible<ValueType>::value) : mValue() {}
 
 		// We shouldn't need this explicit constructor as it should be handled by the template below but OSX clang
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
-		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
+		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible<ValueType, ValueType&&>::value)) : mValue(eastl::forward<ValueType>(v)) {}
 
 		// Excludes TupleLeaf so that it can't stand in for a deleted copy or move by building the element from the leaf.
 		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value && is_constructible<ValueType, T&&>::value>>
-		explicit EA_CONSTEXPR TupleLeaf(T&& t)
+		explicit EA_CONSTEXPR TupleLeaf(T&& t) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible<ValueType, T&&>::value))
 			: mValue(eastl::forward<T>(t))
 		{
 		}
@@ -227,7 +227,7 @@ namespace Internal
 		// copy (move) assignment: the copy assignment is then implicitly deleted, as the standard requires for tuple.
 		// The move assignment forwards the element like std::tuple's: a reference element is assigned from an lvalue,
 		// i.e. the referenced object is copied, not moved from.
-		EA_CPP20_CONSTEXPR TupleLeaf& operator=(conditional_t<is_copy_assignable<ValueType>::value, const TupleLeaf&, const nonesuch&> t)
+		EA_CPP20_CONSTEXPR TupleLeaf& operator=(conditional_t<is_copy_assignable<ValueType>::value, const TupleLeaf&, const nonesuch&> t) EA_NOEXCEPT_IF(eastl::is_nothrow_copy_assignable<ValueType>::value)
 		{
 			mValue = t.getInternal();
 			return *this;
@@ -239,19 +239,19 @@ namespace Internal
 		}
 
 		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value>>
-		EA_CPP20_CONSTEXPR TupleLeaf& operator=(T&& t)
+		EA_CPP20_CONSTEXPR TupleLeaf& operator=(T&& t) EA_NOEXCEPT_IF((eastl::is_nothrow_assignable<ValueType&, T>::value))
 		{
 			mValue = eastl::forward<T>(t);
 			return *this;
 		}
 
-		EA_CPP20_CONSTEXPR int swap(TupleLeaf& t)
+		EA_CPP20_CONSTEXPR int swap(TupleLeaf& t) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<ValueType>::value)
 		{
 			eastl::Internal::swap(*this, t);
 			return 0;
 		}
 
-		EA_CPP20_CONSTEXPR int swap(const TupleLeaf& t) const
+		EA_CPP20_CONSTEXPR int swap(const TupleLeaf& t) const EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<const ValueType>::value)
 		{
 			eastl::Internal::swap(*this, t);
 			return 0;
@@ -276,10 +276,10 @@ namespace Internal
 
 		// We shouldn't need this explicit constructor as it should be handled by the template below but OSX clang
 		// is_constructible type trait incorrectly gives false for is_constructible<T&&, T&&>::value
-		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) : mValue(eastl::forward<ValueType>(v)) {}
+		explicit EA_CONSTEXPR TupleLeaf(ValueType&& v) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible<ValueType, ValueType&&>::value)) : mValue(eastl::forward<ValueType>(v)) {}
 
 		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value && is_constructible<ValueType, T&&>::value>>
-		explicit EA_CONSTEXPR TupleLeaf(T&& t)
+		explicit EA_CONSTEXPR TupleLeaf(T&& t) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible<ValueType, T&&>::value))
 			: mValue(eastl::forward<T>(t))
 		{
 		}
@@ -290,19 +290,19 @@ namespace Internal
 		TupleLeaf& operator=(TupleLeaf&&) noexcept = default;
 
 		template <typename T, typename = enable_if_t<!is_same<remove_cvref_t<T>, TupleLeaf>::value>>
-		EA_CPP20_CONSTEXPR TupleLeaf& operator=(T&& t)
+		EA_CPP20_CONSTEXPR TupleLeaf& operator=(T&& t) EA_NOEXCEPT_IF((eastl::is_nothrow_assignable<ValueType&, T>::value))
 		{
 			mValue = eastl::forward<T>(t);
 			return *this;
 		}
 
-		EA_CPP20_CONSTEXPR int swap(TupleLeaf& t)
+		EA_CPP20_CONSTEXPR int swap(TupleLeaf& t) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<ValueType>::value)
 		{
 			eastl::Internal::swap(*this, t);
 			return 0;
 		}
 
-		EA_CPP20_CONSTEXPR int swap(const TupleLeaf& t) const
+		EA_CPP20_CONSTEXPR int swap(const TupleLeaf& t) const EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<const ValueType>::value)
 		{
 			eastl::Internal::swap(*this, t);
 			return 0;
@@ -361,6 +361,7 @@ namespace Internal
 		// 
 		template <typename... Us, typename... ValueTypes>
 		explicit EA_CONSTEXPR TupleImpl(integer_sequence<size_t, Indices...>, TupleTypes<Us...>, ValueTypes&&... values)
+			EA_NOEXCEPT_IF((eastl::conjunction<eastl::is_nothrow_constructible<Ts, ValueTypes&&>...>::value))
 			: TupleLeaf<Indices, Ts>(eastl::forward<ValueTypes>(values))...
 		{
 		}
@@ -374,20 +375,22 @@ namespace Internal
 		// copy or move: tuple<NonMovable> must not be move constructible or assignable.
 		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
 		EA_CONSTEXPR TupleImpl(OtherTuple&& t)
+			EA_NOEXCEPT_IF((eastl::conjunction<eastl::is_nothrow_constructible<Ts, tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>&&>...>::value))
 			: TupleLeaf<Indices, Ts>(eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...
 		{
 		}
 
 		template <typename OtherTuple, typename = enable_if_t<!is_same<remove_cvref_t<OtherTuple>, TupleImpl>::value>>
 		EA_CPP20_CONSTEXPR TupleImpl& operator=(OtherTuple&& t)
+			EA_NOEXCEPT_IF((eastl::conjunction<eastl::is_nothrow_assignable<Ts&, tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>&&>...>::value))
 		{
 			swallow(TupleLeaf<Indices, Ts>::operator=(
 						eastl::forward<tuple_element_t<Indices, MakeTupleTypes_t<OtherTuple>>>(get<Indices>(t)))...);
 			return *this;
 		}
 
-		EA_CPP20_CONSTEXPR void swap(TupleImpl& t) { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<TupleLeaf<Indices, Ts>&>(t))...); }
-		EA_CPP20_CONSTEXPR void swap(const TupleImpl& t) const { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<const TupleLeaf<Indices, Ts>&>(t))...); }
+		EA_CPP20_CONSTEXPR void swap(TupleImpl& t) EA_NOEXCEPT_IF((eastl::conjunction<eastl::is_nothrow_swappable<Ts>...>::value)) { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<TupleLeaf<Indices, Ts>&>(t))...); }
+		EA_CPP20_CONSTEXPR void swap(const TupleImpl& t) const EA_NOEXCEPT_IF((eastl::conjunction<eastl::is_nothrow_swappable<const Ts>...>::value)) { swallow(TupleLeaf<Indices, Ts>::swap(static_cast<const TupleLeaf<Indices, Ts>&>(t))...); }
 	};
 
 	template <size_t I, typename Indices, typename... Ts>
@@ -756,7 +759,7 @@ public:
 		enable_if_t<conjunction<is_default_constructible<T2>, is_default_constructible<Ts>...>::value &&
 		            conjunction<Internal::is_implicitly_default_constructible<T2>,
 		                        Internal::is_implicitly_default_constructible<Ts>...>::value, int> = 0>
-	EA_CONSTEXPR tuple()
+	EA_CONSTEXPR tuple() EA_NOEXCEPT_IF((eastl::conjunction<eastl::is_nothrow_default_constructible<T2>, eastl::is_nothrow_default_constructible<Ts>...>::value))
 	{
 	}
 
@@ -764,20 +767,20 @@ public:
 		enable_if_t<conjunction<is_default_constructible<T2>, is_default_constructible<Ts>...>::value &&
 		            !conjunction<Internal::is_implicitly_default_constructible<T2>,
 		                         Internal::is_implicitly_default_constructible<Ts>...>::value, int> = 0>
-	explicit EA_CONSTEXPR tuple()
+	explicit EA_CONSTEXPR tuple() EA_NOEXCEPT_IF((eastl::conjunction<eastl::is_nothrow_default_constructible<T2>, eastl::is_nothrow_default_constructible<Ts>...>::value))
 	{
 	}
 
 	template <typename T2 = T, 
 		Internal::TupleImplicitlyConvertible_t<tuple, const T2&, const Ts&...> = 0>
-	EA_CONSTEXPR tuple(const T& t, const Ts&... ts)
+	EA_CONSTEXPR tuple(const T& t, const Ts&... ts) EA_NOEXCEPT_IF((eastl::conjunction<eastl::is_nothrow_copy_constructible<T2>, eastl::is_nothrow_copy_constructible<Ts>...>::value))
 		: mImpl(make_index_sequence<sizeof...(Ts) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, t, ts...)
 	{
 	}
 
 	template <typename T2 = T, 
 		Internal::TupleExplicitlyConvertible_t<tuple, const T2&, const Ts&...> = 0>
-	explicit EA_CONSTEXPR tuple(const T& t, const Ts&... ts)
+	explicit EA_CONSTEXPR tuple(const T& t, const Ts&... ts) EA_NOEXCEPT_IF((eastl::conjunction<eastl::is_nothrow_copy_constructible<T2>, eastl::is_nothrow_copy_constructible<Ts>...>::value))
 		: mImpl(make_index_sequence<sizeof...(Ts) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, t, ts...)
 	{
 	}
@@ -789,6 +792,7 @@ public:
 		Internal::TupleImplicitlyConvertible_t<tuple, U, Us...> = 0,
 		enable_if_t<!Internal::TupleBindsTemporary<tuple, U, Us...>::value, bool> = false>
 		EA_CONSTEXPR tuple(U&& u, Us&&... us)
+			EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(Impl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::declval<U>(), eastl::declval<Us>()...)))
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
 					eastl::forward<Us>(us)...)
 	{
@@ -799,6 +803,7 @@ public:
 		Internal::TupleExplicitlyConvertible_t<tuple, U, Us...> = 0,
 		enable_if_t<!Internal::TupleBindsTemporary<tuple, U, Us...>::value, bool> = false>
 		explicit EA_CONSTEXPR tuple(U&& u, Us&&... us)
+			EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(Impl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::declval<U>(), eastl::declval<Us>()...)))
 			: mImpl(make_index_sequence<sizeof...(Us) + 1>{}, Internal::MakeTupleTypes_t<tuple>{}, eastl::forward<U>(u),
 					eastl::forward<Us>(us)...)
 	{
@@ -821,7 +826,7 @@ public:
 			  enable_if_t<Internal::TupleConstructible<OtherTuple, tuple>::value &&
 			              !Internal::TupleBindsTemporaryFromTuple<OtherTuple, tuple>::value &&
 			              Internal::TupleConvertible<OtherTuple, tuple>::value, bool> = false>
-	EA_CONSTEXPR tuple(OtherTuple&& t)
+	EA_CONSTEXPR tuple(OtherTuple&& t) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(Impl(eastl::declval<OtherTuple>())))
 		: mImpl(eastl::forward<OtherTuple>(t))
 	{
 	}
@@ -830,54 +835,54 @@ public:
 			  enable_if_t<Internal::TupleConstructible<OtherTuple, tuple>::value &&
 			              !Internal::TupleBindsTemporaryFromTuple<OtherTuple, tuple>::value &&
 			              !Internal::TupleConvertible<OtherTuple, tuple>::value, bool> = false>
-	explicit EA_CONSTEXPR tuple(OtherTuple&& t)
+	explicit EA_CONSTEXPR tuple(OtherTuple&& t) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(Impl(eastl::declval<OtherTuple>())))
 		: mImpl(eastl::forward<OtherTuple>(t))
 	{
 	}
 
 	template <typename OtherTuple,
 			  typename enable_if<Internal::TupleAssignable<tuple, OtherTuple>::value, bool>::type = false>
-	EA_CPP20_CONSTEXPR tuple& operator=(OtherTuple&& t)
+	EA_CPP20_CONSTEXPR tuple& operator=(OtherTuple&& t) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(mImpl.operator=(eastl::declval<OtherTuple>())))
 	{
 		mImpl.operator=(eastl::forward<OtherTuple>(t));
 		return *this;
 	}
 
-	EA_CPP20_CONSTEXPR void swap(tuple& t) { mImpl.swap(t.mImpl); }
+	EA_CPP20_CONSTEXPR void swap(tuple& t) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(mImpl.swap(t.mImpl))) { mImpl.swap(t.mImpl); }
 
 	// C++23: swaps the elements of const tuples, i.e. the objects that a tuple of references refers to. This is what
 	// swap(*a, *b) uses for an iterator whose reference is a tuple of references (tuple_vector's). A template so that
 	// it's only instantiated when called: explicitly instantiating or dll-exporting a tuple<int> must still compile.
 	template <int = 0>
-	EA_CPP20_CONSTEXPR void swap(const tuple& t) const { mImpl.swap(t.mImpl); }
+	EA_CPP20_CONSTEXPR void swap(const tuple& t) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(mImpl.swap(t.mImpl))) { mImpl.swap(t.mImpl); }
 
 private:
 	typedef Internal::TupleImpl<make_index_sequence<sizeof...(Ts) + 1>, T, Ts...> Impl;
 	Impl mImpl;
 
 	template <size_t I, typename... Ts_>
-	friend EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>& get(tuple<Ts_...>& t);
+	friend EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>& get(tuple<Ts_...>& t) EA_NOEXCEPT;
 
 	template <size_t I, typename... Ts_>
-	friend EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t);
+	friend EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts_...>>& get(const tuple<Ts_...>& t) EA_NOEXCEPT;
 
 	template <size_t I, typename... Ts_>
-	friend EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t);
+	friend EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts_...>>&& get(tuple<Ts_...>&& t) EA_NOEXCEPT;
 
 	template <size_t I, typename... Ts_>
-	friend EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts_...>>&& get(const tuple<Ts_...>&& t);
+	friend EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts_...>>&& get(const tuple<Ts_...>&& t) EA_NOEXCEPT;
 
 	template <typename T_, typename... ts_>
-	friend EA_CPP14_CONSTEXPR T_& get(tuple<ts_...>& t);
+	friend EA_CPP14_CONSTEXPR T_& get(tuple<ts_...>& t) EA_NOEXCEPT;
 
 	template <typename T_, typename... ts_>
-	friend EA_CPP14_CONSTEXPR const T_& get(const tuple<ts_...>& t);
+	friend EA_CPP14_CONSTEXPR const T_& get(const tuple<ts_...>& t) EA_NOEXCEPT;
 
 	template <typename T_, typename... ts_>
-	friend EA_CPP14_CONSTEXPR T_&& get(tuple<ts_...>&& t);
+	friend EA_CPP14_CONSTEXPR T_&& get(tuple<ts_...>&& t) EA_NOEXCEPT;
 
 	template <typename T_, typename... ts_>
-	friend EA_CPP14_CONSTEXPR const T_&& get(const tuple<ts_...>&& t);
+	friend EA_CPP14_CONSTEXPR const T_&& get(const tuple<ts_...>&& t) EA_NOEXCEPT;
 };
 
 // template specialization for an empty tuple
@@ -885,67 +890,67 @@ template <>
 class tuple<>
 {
 public:
-	EA_CPP20_CONSTEXPR void swap(tuple&) {}
-	EA_CPP20_CONSTEXPR void swap(const tuple&) const {}
+	EA_CPP20_CONSTEXPR void swap(tuple&) EA_NOEXCEPT {}
+	EA_CPP20_CONSTEXPR void swap(const tuple&) const EA_NOEXCEPT {}
 };
 
 template <size_t I, typename... Ts>
-inline EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts...>>& get(tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts...>>& get(tuple<Ts...>& t) EA_NOEXCEPT
 {
 	return Internal::getImpl<I>(t.mImpl);
 }
 
 template <size_t I, typename... Ts>
-inline EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts...>>& get(const tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts...>>& get(const tuple<Ts...>& t) EA_NOEXCEPT
 {
 	return Internal::getImpl<I>(t.mImpl);
 }
 
 template <size_t I, typename... Ts>
-inline EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts...>>&& get(tuple<Ts...>&& t)
+inline EA_CPP14_CONSTEXPR tuple_element_t<I, tuple<Ts...>>&& get(tuple<Ts...>&& t) EA_NOEXCEPT
 {
 	return Internal::getImpl<I>(eastl::move(t.mImpl));
 }
 
 template <size_t I, typename... Ts>
-inline EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts...>>&& get(const tuple<Ts...>&& t)
+inline EA_CPP14_CONSTEXPR const tuple_element_t<I, tuple<Ts...>>&& get(const tuple<Ts...>&& t) EA_NOEXCEPT
 {
 	return Internal::getImpl<I>(eastl::move(t.mImpl));
 }
 
 template <typename T, typename... Ts>
-inline EA_CPP14_CONSTEXPR T& get(tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR T& get(tuple<Ts...>& t) EA_NOEXCEPT
 {
 	return Internal::getImpl<T>(t.mImpl);
 }
 
 template <typename T, typename... Ts>
-inline EA_CPP14_CONSTEXPR const T& get(const tuple<Ts...>& t)
+inline EA_CPP14_CONSTEXPR const T& get(const tuple<Ts...>& t) EA_NOEXCEPT
 {
 	return Internal::getImpl<T>(t.mImpl);
 }
 
 template <typename T, typename... Ts>
-inline EA_CPP14_CONSTEXPR T&& get(tuple<Ts...>&& t)
+inline EA_CPP14_CONSTEXPR T&& get(tuple<Ts...>&& t) EA_NOEXCEPT
 {
 	return Internal::getImpl<T>(eastl::move(t.mImpl));
 }
 
 template <typename T, typename... Ts>
-inline EA_CPP14_CONSTEXPR const T&& get(const tuple<Ts...>&& t)
+inline EA_CPP14_CONSTEXPR const T&& get(const tuple<Ts...>&& t) EA_NOEXCEPT
 {
 	return Internal::getImpl<T>(eastl::move(t.mImpl));
 }
 
 template <typename... Ts, typename eastl::enable_if<eastl::conjunction<eastl::is_swappable<Ts>...>::value, int>::type = 0>
-inline EA_CPP20_CONSTEXPR void swap(tuple<Ts...>& a, tuple<Ts...>& b)
+inline EA_CPP20_CONSTEXPR void swap(tuple<Ts...>& a, tuple<Ts...>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
 {
 	a.swap(b);
 }
 
 // C++23: only for element types that can be swapped as const, e.g. references.
 template <typename... Ts, typename eastl::enable_if<eastl::conjunction<eastl::is_swappable<const Ts>...>::value, int>::type = 0>
-inline EA_CPP20_CONSTEXPR void swap(const tuple<Ts...>& a, const tuple<Ts...>& b)
+inline EA_CPP20_CONSTEXPR void swap(const tuple<Ts...>& a, const tuple<Ts...>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
 {
 	a.swap(b);
 }
@@ -1153,7 +1158,7 @@ inline EA_CONSTEXPR tuple<Ts&...> tie(Ts&... ts) EA_NOEXCEPT
 namespace detail
 {
 	template <class F, class Tuple, size_t... I>
-	EA_CONSTEXPR decltype(auto) apply_impl(F&& f, Tuple&& t, index_sequence<I...>)
+	EA_CONSTEXPR decltype(auto) apply_impl(F&& f, Tuple&& t, index_sequence<I...>) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::invoke(eastl::forward<F>(f), get<I>(eastl::forward<Tuple>(t))...)))
 	{
 		return eastl::invoke(eastl::forward<F>(f), get<I>(eastl::forward<Tuple>(t))...);
 	}
@@ -1161,6 +1166,7 @@ namespace detail
 
 template <class F, class Tuple>
 EA_CONSTEXPR decltype(auto) apply(F&& f, Tuple&& t)
+	EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(detail::apply_impl(eastl::forward<F>(f), eastl::forward<Tuple>(t), make_index_sequence<tuple_size_v<remove_reference_t<Tuple>>>{})))
 {
 	return detail::apply_impl(eastl::forward<F>(f), eastl::forward<Tuple>(t),
 		                      make_index_sequence<tuple_size_v<remove_reference_t<Tuple>>>{});
@@ -1177,6 +1183,7 @@ namespace detail
 {
 template <typename T, typename Tuple, size_t... I>
 constexpr eastl::enable_if_t<eastl::is_constructible_v<T, decltype(eastl::get<I>(eastl::declval<Tuple>()))...>, T> make_from_tuple_impl(Tuple&& t, eastl::index_sequence<I...>)
+	EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T, decltype(eastl::get<I>(eastl::declval<Tuple>()))...>))
 {
 	// C++23's Mandates, applied in every language mode.
 	static_assert(sizeof...(I) != 1 ||
@@ -1188,6 +1195,7 @@ constexpr eastl::enable_if_t<eastl::is_constructible_v<T, decltype(eastl::get<I>
 
 template <typename T, typename Tuple>
 constexpr T make_from_tuple(Tuple&& t)
+	EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(detail::make_from_tuple_impl<T>(eastl::forward<Tuple>(t), eastl::make_index_sequence<eastl::tuple_size_v<eastl::remove_reference_t<Tuple>>>{})))
 {
 	return detail::make_from_tuple_impl<T>(eastl::forward<Tuple>(t), eastl::make_index_sequence<eastl::tuple_size_v<eastl::remove_reference_t<Tuple>>>{});
 }

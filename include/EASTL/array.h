@@ -112,19 +112,19 @@ namespace eastl
 		EA_CPP14_CONSTEXPR T*       data() EA_NOEXCEPT;
 		EA_CPP14_CONSTEXPR const T* data() const EA_NOEXCEPT;
 
-		EA_CPP14_CONSTEXPR reference       operator[](size_type i);
-		EA_CPP14_CONSTEXPR const_reference operator[](size_type i) const;
+		EA_CPP14_CONSTEXPR reference       operator[](size_type i) EA_NOEXCEPT;
+		EA_CPP14_CONSTEXPR const_reference operator[](size_type i) const EA_NOEXCEPT;
 		EA_CPP14_CONSTEXPR const_reference at(size_type i) const;
 		EA_CPP14_CONSTEXPR reference       at(size_type i);
 
-		EA_CPP14_CONSTEXPR reference       front();
-		EA_CPP14_CONSTEXPR const_reference front() const;
+		EA_CPP14_CONSTEXPR reference       front() EA_NOEXCEPT;
+		EA_CPP14_CONSTEXPR const_reference front() const EA_NOEXCEPT;
 
-		EA_CPP14_CONSTEXPR reference       back();
-		EA_CPP14_CONSTEXPR const_reference back() const;
+		EA_CPP14_CONSTEXPR reference       back() EA_NOEXCEPT;
+		EA_CPP14_CONSTEXPR const_reference back() const EA_NOEXCEPT;
 
-		bool validate() const;
-		int  validate_iterator(const_iterator i) const;
+		bool validate() const EA_NOEXCEPT;
+		int  validate_iterator(const_iterator i) const EA_NOEXCEPT;
 
 	}; // class array
 
@@ -176,8 +176,8 @@ namespace eastl
 		EA_CPP14_CONSTEXPR T* data() EA_NOEXCEPT { return nullptr; }
 		EA_CPP14_CONSTEXPR const T* data() const EA_NOEXCEPT { return nullptr; }
 
-		EA_CPP14_CONSTEXPR reference       operator[](size_type) { return *data(); }
-		EA_CPP14_CONSTEXPR const_reference operator[](size_type) const { return *data(); }
+		EA_CPP14_CONSTEXPR reference       operator[](size_type) EA_NOEXCEPT { return *data(); }
+		EA_CPP14_CONSTEXPR const_reference operator[](size_type) const EA_NOEXCEPT { return *data(); }
 
 		EA_DISABLE_VC_WARNING(4702); // unreachable code
 		EA_CPP14_CONSTEXPR const_reference at(size_type) const
@@ -203,14 +203,14 @@ namespace eastl
 		}
 		EA_RESTORE_VC_WARNING();
 
-		EA_CPP14_CONSTEXPR reference       front() { return *data(); }
-		EA_CPP14_CONSTEXPR const_reference front() const { return *data(); }
+		EA_CPP14_CONSTEXPR reference       front() EA_NOEXCEPT { return *data(); }
+		EA_CPP14_CONSTEXPR const_reference front() const EA_NOEXCEPT { return *data(); }
 
-		EA_CPP14_CONSTEXPR reference       back() { return *data(); }
-		EA_CPP14_CONSTEXPR const_reference back() const { return *data(); }
+		EA_CPP14_CONSTEXPR reference       back() EA_NOEXCEPT { return *data(); }
+		EA_CPP14_CONSTEXPR const_reference back() const EA_NOEXCEPT { return *data(); }
 
-		bool validate() const { return true; }
-		int  validate_iterator(const_iterator) const { return isf_none; }
+		bool validate() const EA_NOEXCEPT { return true; }
+		int  validate_iterator(const_iterator) const EA_NOEXCEPT { return isf_none; }
 
 	}; // class array
 
@@ -364,7 +364,7 @@ namespace eastl
 
 	template <typename T, size_t N>
 	EA_CPP14_CONSTEXPR inline typename array<T, N>::reference
-	array<T, N>::operator[](size_type i)
+	array<T, N>::operator[](size_type i) EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(i >= N))
@@ -381,7 +381,7 @@ namespace eastl
 
 	template <typename T, size_t N>
 	EA_CPP14_CONSTEXPR inline typename array<T, N>::const_reference
-	array<T, N>::operator[](size_type i) const
+	array<T, N>::operator[](size_type i) const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(i >= N))
@@ -398,7 +398,7 @@ namespace eastl
 
 	template <typename T, size_t N>
 	EA_CPP14_CONSTEXPR inline typename array<T, N>::reference
-	array<T, N>::front()
+	array<T, N>::front() EA_NOEXCEPT
 	{
 		return mValue[0];
 	}
@@ -406,7 +406,7 @@ namespace eastl
 
 	template <typename T, size_t N>
 	EA_CPP14_CONSTEXPR inline typename array<T, N>::const_reference
-	array<T, N>::front() const
+	array<T, N>::front() const EA_NOEXCEPT
 	{
 		return mValue[0];
 	}
@@ -414,7 +414,7 @@ namespace eastl
 
 	template <typename T, size_t N>
 	EA_CPP14_CONSTEXPR inline typename array<T, N>::reference
-	array<T, N>::back()
+	array<T, N>::back() EA_NOEXCEPT
 	{
 		return mValue[N - 1];
 	}
@@ -422,7 +422,7 @@ namespace eastl
 
 	template <typename T, size_t N>
 	EA_CPP14_CONSTEXPR inline typename array<T, N>::const_reference
-	array<T, N>::back() const
+	array<T, N>::back() const EA_NOEXCEPT
 	{
 		return mValue[N - 1];
 	}
@@ -473,14 +473,14 @@ namespace eastl
 
 
 	template <typename T, size_t N>
-	inline bool array<T, N>::validate() const
+	inline bool array<T, N>::validate() const EA_NOEXCEPT
 	{
 		return true; // There is nothing to do.
 	}
 
 
 	template <typename T, size_t N>
-	inline int array<T, N>::validate_iterator(const_iterator i) const
+	inline int array<T, N>::validate_iterator(const_iterator i) const EA_NOEXCEPT
 	{
 		if(i >= mValue)
 		{
@@ -582,7 +582,7 @@ namespace eastl
 	}
 
 	template <typename T, size_t N>
-	inline void swap(array<T, N>& a, array<T, N>& b)
+	inline void swap(array<T, N>& a, array<T, N>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
 	{
 		eastl::swap_ranges(&a.mValue[0], &a.mValue[N], &b.mValue[0]);
 	}

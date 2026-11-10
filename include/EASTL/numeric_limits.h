@@ -177,31 +177,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return false; }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return true; }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return false; }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return false; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return false; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return value_type(); }
 	};
 
@@ -237,31 +237,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN(value_type); }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN(value_type); }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }    // Question: Should we return 0 here or value_type()?
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return (value_type)0; }
 	};
 
@@ -297,31 +297,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX_U(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return (value_type)0; }
 	};
 
@@ -357,31 +357,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN_S(value_type); }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX_S(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN_S(value_type); }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return (value_type)0; }
 	};
 
@@ -421,31 +421,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN(value_type); }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN(value_type); }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return (value_type)0; }
 	};
 
@@ -481,31 +481,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min()
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN(value_type); }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX(value_type); }
 
-		static constexpr value_type lowest()
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN(value_type); }
 
-		static constexpr value_type epsilon()
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error()
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity()
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type quiet_NaN()
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type denorm_min()
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return (value_type)0; }
 	};
 	#endif
@@ -543,31 +543,31 @@ namespace eastl
 			static constexpr bool               has_denorm_loss   = false;
 			static constexpr bool               is_iec559         = false;
 
-			static constexpr value_type min() 
+			static constexpr value_type min() EA_NOEXCEPT
 				{ return EASTL_LIMITS_MIN(value_type); }
 
-			static constexpr value_type max()
+			static constexpr value_type max() EA_NOEXCEPT
 				{ return EASTL_LIMITS_MAX(value_type); }
 
-			static constexpr value_type lowest() 
+			static constexpr value_type lowest() EA_NOEXCEPT
 				{ return EASTL_LIMITS_MIN(value_type); }
 
-			static constexpr value_type epsilon() 
+			static constexpr value_type epsilon() EA_NOEXCEPT
 				{ return 0; }
 
-			static constexpr value_type round_error() 
+			static constexpr value_type round_error() EA_NOEXCEPT
 				{ return 0; }
 
-			static constexpr value_type infinity() 
+			static constexpr value_type infinity() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type quiet_NaN() 
+			static constexpr value_type quiet_NaN() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type signaling_NaN()
+			static constexpr value_type signaling_NaN() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type denorm_min() 
+			static constexpr value_type denorm_min() EA_NOEXCEPT
 				{ return (value_type)0; }
 		};
 
@@ -607,31 +607,31 @@ namespace eastl
 			static constexpr bool               has_denorm_loss   = false;
 			static constexpr bool               is_iec559         = false;
 
-			static constexpr value_type min() 
+			static constexpr value_type min() EA_NOEXCEPT
 				{ return EASTL_LIMITS_MIN(value_type); }
 
-			static constexpr value_type max()
+			static constexpr value_type max() EA_NOEXCEPT
 				{ return EASTL_LIMITS_MAX(value_type); }
 
-			static constexpr value_type lowest() 
+			static constexpr value_type lowest() EA_NOEXCEPT
 				{ return EASTL_LIMITS_MIN(value_type); }
 
-			static constexpr value_type epsilon() 
+			static constexpr value_type epsilon() EA_NOEXCEPT
 				{ return 0; }
 
-			static constexpr value_type round_error() 
+			static constexpr value_type round_error() EA_NOEXCEPT
 				{ return 0; }
 
-			static constexpr value_type infinity() 
+			static constexpr value_type infinity() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type quiet_NaN() 
+			static constexpr value_type quiet_NaN() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type signaling_NaN()
+			static constexpr value_type signaling_NaN() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type denorm_min() 
+			static constexpr value_type denorm_min() EA_NOEXCEPT
 				{ return (value_type)0; }
 		};
 
@@ -669,31 +669,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX_U(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return static_cast<value_type>(0); }
 	};
 
@@ -729,31 +729,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN_S(value_type); }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX_S(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN_S(value_type); }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return static_cast<value_type>(0); }
 	};
 
@@ -790,31 +790,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX_U(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return static_cast<value_type>(0); }
 	};
 
@@ -850,31 +850,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return INT_MIN; } // It's hard to get EASTL_LIMITS_MIN_S to work with all compilers here.
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX_S(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return INT_MIN; }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return static_cast<value_type>(0); }
 	};
 
@@ -910,31 +910,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX_U(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return static_cast<value_type>(0); }
 	};
 
@@ -970,31 +970,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return LONG_MIN; }  // It's hard to get EASTL_LIMITS_MIN_S to work with all compilers here.
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX_S(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return LONG_MIN; }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return static_cast<value_type>(0); }
 	};
 
@@ -1030,31 +1030,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX_U(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return static_cast<value_type>(0); }
 	};
 
@@ -1090,31 +1090,31 @@ namespace eastl
 		static constexpr bool               has_denorm_loss   = false;
 		static constexpr bool               is_iec559         = false;
 
-		static constexpr value_type min() 
+		static constexpr value_type min() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN_S(value_type); }
 
-		static constexpr value_type max()
+		static constexpr value_type max() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MAX_S(value_type); }
 
-		static constexpr value_type lowest() 
+		static constexpr value_type lowest() EA_NOEXCEPT
 			{ return EASTL_LIMITS_MIN_S(value_type); }
 
-		static constexpr value_type epsilon() 
+		static constexpr value_type epsilon() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type round_error() 
+		static constexpr value_type round_error() EA_NOEXCEPT
 			{ return 0; }
 
-		static constexpr value_type infinity() 
+		static constexpr value_type infinity() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type quiet_NaN() 
+		static constexpr value_type quiet_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type signaling_NaN()
+		static constexpr value_type signaling_NaN() EA_NOEXCEPT
 			{ return value_type(); }
 
-		static constexpr value_type denorm_min() 
+		static constexpr value_type denorm_min() EA_NOEXCEPT
 			{ return static_cast<value_type>(0); }
 	};
 
@@ -1151,31 +1151,31 @@ namespace eastl
 			static constexpr bool               has_denorm_loss   = false;
 			static constexpr bool               is_iec559         = false;
 
-			static constexpr value_type min() 
+			static constexpr value_type min() EA_NOEXCEPT
 				{ return 0; }
 
-			static constexpr value_type max()
+			static constexpr value_type max() EA_NOEXCEPT
 				{ return EASTL_LIMITS_MAX_U(value_type); }
 
-			static constexpr value_type lowest() 
+			static constexpr value_type lowest() EA_NOEXCEPT
 				{ return 0; }
 
-			static constexpr value_type epsilon() 
+			static constexpr value_type epsilon() EA_NOEXCEPT
 				{ return 0; }
 
-			static constexpr value_type round_error() 
+			static constexpr value_type round_error() EA_NOEXCEPT
 				{ return 0; }
 
-			static constexpr value_type infinity() 
+			static constexpr value_type infinity() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type quiet_NaN() 
+			static constexpr value_type quiet_NaN() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type signaling_NaN()
+			static constexpr value_type signaling_NaN() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type denorm_min() 
+			static constexpr value_type denorm_min() EA_NOEXCEPT
 				{ return static_cast<value_type>(0); }
 		};
 
@@ -1211,31 +1211,31 @@ namespace eastl
 			static constexpr bool               has_denorm_loss   = false;
 			static constexpr bool               is_iec559         = false;
 
-			static constexpr value_type min() 
+			static constexpr value_type min() EA_NOEXCEPT
 				{ return EASTL_LIMITS_MIN_S(value_type); }
 
-			static constexpr value_type max()
+			static constexpr value_type max() EA_NOEXCEPT
 				{ return EASTL_LIMITS_MAX_S(value_type); }
 
-			static constexpr value_type lowest() 
+			static constexpr value_type lowest() EA_NOEXCEPT
 				{ return EASTL_LIMITS_MIN_S(value_type); }
 
-			static constexpr value_type epsilon() 
+			static constexpr value_type epsilon() EA_NOEXCEPT
 				{ return 0; }
 
-			static constexpr value_type round_error() 
+			static constexpr value_type round_error() EA_NOEXCEPT
 				{ return 0; }
 
-			static constexpr value_type infinity() 
+			static constexpr value_type infinity() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type quiet_NaN() 
+			static constexpr value_type quiet_NaN() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type signaling_NaN()
+			static constexpr value_type signaling_NaN() EA_NOEXCEPT
 				{ return value_type(); }
 
-			static constexpr value_type denorm_min() 
+			static constexpr value_type denorm_min() EA_NOEXCEPT
 				{ return static_cast<value_type>(0); }
 		};
 	#endif
@@ -1273,59 +1273,59 @@ namespace eastl
 		static constexpr bool               is_iec559         = has_infinity && has_quiet_NaN && (has_denorm == denorm_present);
 
 		#if (defined(EA_COMPILER_GNUC) || defined(__clang__)) && defined(__FLT_MIN__)
-			static constexpr value_type min()
+			static constexpr value_type min() EA_NOEXCEPT
 				{ return __FLT_MIN__; }
 
-			static constexpr value_type max()
+			static constexpr value_type max() EA_NOEXCEPT
 				{ return __FLT_MAX__; }
 
-			static constexpr value_type lowest() 
+			static constexpr value_type lowest() EA_NOEXCEPT
 				{ return -__FLT_MAX__; }
 
-			static constexpr value_type epsilon() 
+			static constexpr value_type epsilon() EA_NOEXCEPT
 				{ return __FLT_EPSILON__; }
 
-			static constexpr value_type round_error() 
+			static constexpr value_type round_error() EA_NOEXCEPT
 				{ return 0.5f; }
 
-			static constexpr value_type infinity() 
+			static constexpr value_type infinity() EA_NOEXCEPT
 				{ return __builtin_huge_valf(); }
 
-			static constexpr value_type quiet_NaN() 
+			static constexpr value_type quiet_NaN() EA_NOEXCEPT
 				{ return __builtin_nanf(""); }
 
-			static constexpr value_type signaling_NaN()
+			static constexpr value_type signaling_NaN() EA_NOEXCEPT
 				{ return __builtin_nansf(""); }
 
-			static constexpr value_type denorm_min() 
+			static constexpr value_type denorm_min() EA_NOEXCEPT
 				{ return __FLT_DENORM_MIN__; }
 
 		#elif defined(EA_COMPILER_MSVC) // cl, with the same builtins as MSVC STL
-			static constexpr value_type min()
+			static constexpr value_type min() EA_NOEXCEPT
 				{ return FLT_MIN; }
 
-			static constexpr value_type max()
+			static constexpr value_type max() EA_NOEXCEPT
 				{ return FLT_MAX; }
 
-			static constexpr value_type lowest() 
+			static constexpr value_type lowest() EA_NOEXCEPT
 				{ return -FLT_MAX; }
 
-			static constexpr value_type epsilon() 
+			static constexpr value_type epsilon() EA_NOEXCEPT
 				{ return FLT_EPSILON; }
 
-			static constexpr value_type round_error() 
+			static constexpr value_type round_error() EA_NOEXCEPT
 				{ return 0.5f; }
 
-			static constexpr value_type infinity()
+			static constexpr value_type infinity() EA_NOEXCEPT
 				{ return __builtin_huge_valf(); }
 
-			static constexpr value_type quiet_NaN()
+			static constexpr value_type quiet_NaN() EA_NOEXCEPT
 				{ return __builtin_nanf("0"); }
 
-			static constexpr value_type signaling_NaN()
+			static constexpr value_type signaling_NaN() EA_NOEXCEPT
 				{ return __builtin_nansf("1"); }
 
-			static constexpr value_type denorm_min()
+			static constexpr value_type denorm_min() EA_NOEXCEPT
 				{ return FLT_TRUE_MIN; }
 		#endif
 	};
@@ -1363,59 +1363,59 @@ namespace eastl
 		static constexpr bool               is_iec559         = has_infinity && has_quiet_NaN && (has_denorm == denorm_present);
 
 		#if (defined(EA_COMPILER_GNUC) || defined(__clang__)) && defined(__DBL_MIN__)
-			static constexpr value_type min()
+			static constexpr value_type min() EA_NOEXCEPT
 				{ return __DBL_MIN__; }
 
-			static constexpr value_type max()
+			static constexpr value_type max() EA_NOEXCEPT
 				{ return __DBL_MAX__; }
 
-			static constexpr value_type lowest() 
+			static constexpr value_type lowest() EA_NOEXCEPT
 				{ return -__DBL_MAX__; }
 
-			static constexpr value_type epsilon() 
+			static constexpr value_type epsilon() EA_NOEXCEPT
 				{ return __DBL_EPSILON__; }
 
-			static constexpr value_type round_error() 
+			static constexpr value_type round_error() EA_NOEXCEPT
 				{ return 0.5f; }
 
-			static constexpr value_type infinity() 
+			static constexpr value_type infinity() EA_NOEXCEPT
 				{ return __builtin_huge_val(); }
 
-			static constexpr value_type quiet_NaN() 
+			static constexpr value_type quiet_NaN() EA_NOEXCEPT
 				{ return __builtin_nan(""); }
 
-			static constexpr value_type signaling_NaN()
+			static constexpr value_type signaling_NaN() EA_NOEXCEPT
 				{ return __builtin_nans(""); }
 
-			static constexpr value_type denorm_min() 
+			static constexpr value_type denorm_min() EA_NOEXCEPT
 				{ return __DBL_DENORM_MIN__; }
 
 		#elif defined(EA_COMPILER_MSVC) // cl, with the same builtins as MSVC STL
-			static constexpr value_type min()
+			static constexpr value_type min() EA_NOEXCEPT
 				{ return DBL_MIN; }
 
-			static constexpr value_type max()
+			static constexpr value_type max() EA_NOEXCEPT
 				{ return DBL_MAX; }
 
-			static constexpr value_type lowest() 
+			static constexpr value_type lowest() EA_NOEXCEPT
 				{ return -DBL_MAX; }
 
-			static constexpr value_type epsilon() 
+			static constexpr value_type epsilon() EA_NOEXCEPT
 				{ return DBL_EPSILON; }
 
-			static constexpr value_type round_error() 
+			static constexpr value_type round_error() EA_NOEXCEPT
 				{ return 0.5f; }
 
-			static constexpr value_type infinity()
+			static constexpr value_type infinity() EA_NOEXCEPT
 				{ return __builtin_huge_val(); }
 
-			static constexpr value_type quiet_NaN()
+			static constexpr value_type quiet_NaN() EA_NOEXCEPT
 				{ return __builtin_nan("0"); }
 
-			static constexpr value_type signaling_NaN()
+			static constexpr value_type signaling_NaN() EA_NOEXCEPT
 				{ return __builtin_nans("1"); }
 
-			static constexpr value_type denorm_min()
+			static constexpr value_type denorm_min() EA_NOEXCEPT
 				{ return DBL_TRUE_MIN; }
 		#endif
 	};
@@ -1453,59 +1453,59 @@ namespace eastl
 		static constexpr bool               is_iec559         = has_infinity && has_quiet_NaN && (has_denorm == denorm_present);
 
 		#if (defined(EA_COMPILER_GNUC) || defined(__clang__)) && defined(__LDBL_MIN__)
-			static constexpr value_type min()
+			static constexpr value_type min() EA_NOEXCEPT
 				{ return __LDBL_MIN__; }
 
-			static constexpr value_type max()
+			static constexpr value_type max() EA_NOEXCEPT
 				{ return __LDBL_MAX__; }
 
-			static constexpr value_type lowest() 
+			static constexpr value_type lowest() EA_NOEXCEPT
 				{ return -__LDBL_MAX__; }
 
-			static constexpr value_type epsilon() 
+			static constexpr value_type epsilon() EA_NOEXCEPT
 				{ return __LDBL_EPSILON__; }
 
-			static constexpr value_type round_error() 
+			static constexpr value_type round_error() EA_NOEXCEPT
 				{ return 0.5f; }
 
-			static constexpr value_type infinity() 
+			static constexpr value_type infinity() EA_NOEXCEPT
 				{ return __builtin_huge_val(); }
 
-			static constexpr value_type quiet_NaN() 
+			static constexpr value_type quiet_NaN() EA_NOEXCEPT
 				{ return __builtin_nan(""); }
 
-			static constexpr value_type signaling_NaN()
+			static constexpr value_type signaling_NaN() EA_NOEXCEPT
 				{ return __builtin_nans(""); }
 
-			static constexpr value_type denorm_min() 
+			static constexpr value_type denorm_min() EA_NOEXCEPT
 				{ return __LDBL_DENORM_MIN__; }
 
 		#elif defined(EA_COMPILER_MSVC) // cl, with the same builtins as MSVC STL
-			static constexpr value_type min()
+			static constexpr value_type min() EA_NOEXCEPT
 				{ return LDBL_MIN; }
 
-			static constexpr value_type max()
+			static constexpr value_type max() EA_NOEXCEPT
 				{ return LDBL_MAX; }
 
-			static constexpr value_type lowest() 
+			static constexpr value_type lowest() EA_NOEXCEPT
 				{ return -LDBL_MAX; }
 
-			static constexpr value_type epsilon() 
+			static constexpr value_type epsilon() EA_NOEXCEPT
 				{ return LDBL_EPSILON; }
 
-			static constexpr value_type round_error() 
+			static constexpr value_type round_error() EA_NOEXCEPT
 				{ return 0.5f; }
 
-			static constexpr value_type infinity()
+			static constexpr value_type infinity() EA_NOEXCEPT
 				{ return __builtin_huge_val(); }
 
-			static constexpr value_type quiet_NaN()
+			static constexpr value_type quiet_NaN() EA_NOEXCEPT
 				{ return __builtin_nan("0"); }
 
-			static constexpr value_type signaling_NaN()
+			static constexpr value_type signaling_NaN() EA_NOEXCEPT
 				{ return __builtin_nans("1"); }
 
-			static constexpr value_type denorm_min()
+			static constexpr value_type denorm_min() EA_NOEXCEPT
 				{ return LDBL_TRUE_MIN; }
 		#endif
 	};

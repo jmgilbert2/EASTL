@@ -26,6 +26,95 @@ EA_DISABLE_ALL_VC_WARNINGS()
 #endif
 EA_RESTORE_ALL_VC_WARNINGS()
 
+// The exception specifications of pair, make_pair, get and exchange follow the standard (the conditional ones as
+// MSVC's STL strengthens them).
+namespace NoexceptUtilityTest
+{
+	// Everything noexcept, and constructible from an int.
+	struct Nothrow
+	{
+		Nothrow() EA_NOEXCEPT; Nothrow(int) EA_NOEXCEPT; Nothrow(const Nothrow&) EA_NOEXCEPT; Nothrow(Nothrow&&) EA_NOEXCEPT;
+		Nothrow& operator=(int) EA_NOEXCEPT; Nothrow& operator=(const Nothrow&) EA_NOEXCEPT; Nothrow& operator=(Nothrow&&) EA_NOEXCEPT;
+	};
+
+	// Everything may throw, and constructible from an int.
+	struct Throwing
+	{
+		Throwing(); Throwing(int); Throwing(const Throwing&); Throwing(Throwing&&) EA_NOEXCEPT_IF(false);
+		Throwing& operator=(int); Throwing& operator=(const Throwing&); Throwing& operator=(Throwing&&) EA_NOEXCEPT_IF(false);
+	};
+
+	// Only the copy may throw.
+	struct CopyThrowing
+	{
+		CopyThrowing() EA_NOEXCEPT; CopyThrowing(const CopyThrowing&); CopyThrowing(CopyThrowing&&) EA_NOEXCEPT;
+		CopyThrowing& operator=(const CopyThrowing&); CopyThrowing& operator=(CopyThrowing&&) EA_NOEXCEPT;
+	};
+
+	typedef eastl::pair<Nothrow, Nothrow>         NothrowPair;
+	typedef eastl::pair<Throwing, Throwing>       ThrowingPair;
+	typedef eastl::pair<Nothrow, Throwing>        MixedPair;
+	typedef eastl::pair<CopyThrowing, CopyThrowing> CopyThrowingPair;
+	typedef eastl::pair<int, int>                 IntPair;
+
+	// Constructors.
+	static_assert(noexcept(NothrowPair()), "pair() is noexcept when the elements' default constructors are");
+	static_assert(!noexcept(ThrowingPair()), "pair() may throw when the elements' default constructors may");
+	static_assert(!noexcept(MixedPair()), "pair() may throw when one element's default constructor may");
+	static_assert(noexcept(IntPair()), "pair<int, int>() is noexcept");
+	static_assert(noexcept(NothrowPair(eastl::declval<const Nothrow&>(), eastl::declval<const Nothrow&>())), "pair(const T1&, const T2&) is noexcept when the copies are");
+	static_assert(!noexcept(ThrowingPair(eastl::declval<const Throwing&>(), eastl::declval<const Throwing&>())), "pair(const T1&, const T2&) may throw when the copies may");
+	static_assert(!noexcept(CopyThrowingPair(eastl::declval<const CopyThrowing&>(), eastl::declval<const CopyThrowing&>())), "pair(const T1&, const T2&) may throw when the copies may");
+	static_assert(noexcept(NothrowPair(eastl::declval<Nothrow>(), eastl::declval<Nothrow>())), "pair(U&&, V&&) is noexcept when the constructions are");
+	static_assert(noexcept(CopyThrowingPair(eastl::declval<CopyThrowing>(), eastl::declval<CopyThrowing>())), "pair(U&&, V&&) is noexcept when the moves are");
+	static_assert(!noexcept(ThrowingPair(eastl::declval<Throwing>(), eastl::declval<Throwing>())), "pair(U&&, V&&) may throw when the moves may");
+	static_assert(noexcept(NothrowPair(eastl::declval<Nothrow>(), eastl::declval<const Nothrow&>())), "pair(U&&, const T2&) is noexcept when the constructions are");
+	static_assert(!noexcept(MixedPair(eastl::declval<Nothrow>(), eastl::declval<const Throwing&>())), "pair(U&&, const T2&) may throw when the constructions may");
+	static_assert(noexcept(NothrowPair(eastl::declval<const Nothrow&>(), eastl::declval<Nothrow>())), "pair(const T1&, V&&) is noexcept when the constructions are");
+	static_assert(!noexcept(MixedPair(eastl::declval<const Nothrow&>(), eastl::declval<Throwing>())), "pair(const T1&, V&&) may throw when the constructions may");
+	static_assert(noexcept(NothrowPair(eastl::declval<const eastl::pair<int, int>&>())), "pair(const pair<U, V>&) is noexcept when the constructions are");
+	static_assert(!noexcept(ThrowingPair(eastl::declval<const eastl::pair<int, int>&>())), "pair(const pair<U, V>&) may throw when the constructions may");
+	static_assert(noexcept(NothrowPair(eastl::declval<eastl::pair<int, int> >())), "pair(pair<U, V>&&) is noexcept when the constructions are");
+	static_assert(!noexcept(ThrowingPair(eastl::declval<eastl::pair<int, int> >())), "pair(pair<U, V>&&) may throw when the constructions may");
+	static_assert(noexcept(NothrowPair(eastl::declval<const NothrowPair&>())) && noexcept(NothrowPair(eastl::declval<NothrowPair>())), "the copy and move constructors are noexcept when the elements' are");
+	static_assert(!noexcept(ThrowingPair(eastl::declval<const ThrowingPair&>())), "the copy constructor may throw when the elements' may");
+	static_assert(noexcept(CopyThrowingPair(eastl::declval<CopyThrowingPair>())), "the move constructor is noexcept when the elements' are");
+
+	// Assignment.
+	static_assert(noexcept(eastl::declval<NothrowPair&>() = eastl::declval<const NothrowPair&>()), "pair copy assignment is noexcept when the elements' are");
+	static_assert(noexcept(eastl::declval<NothrowPair&>() = eastl::declval<NothrowPair>()), "pair move assignment is noexcept when the elements' are");
+	static_assert(!noexcept(eastl::declval<ThrowingPair&>() = eastl::declval<const ThrowingPair&>()), "pair copy assignment may throw when the elements' may");
+	static_assert(noexcept(eastl::declval<NothrowPair&>() = eastl::declval<const eastl::pair<int, int>&>()), "pair::operator=(const pair<U, V>&) is noexcept when the assignments are");
+	static_assert(!noexcept(eastl::declval<ThrowingPair&>() = eastl::declval<const eastl::pair<int, int>&>()), "pair::operator=(const pair<U, V>&) may throw when the assignments may");
+	static_assert(noexcept(eastl::declval<NothrowPair&>() = eastl::declval<eastl::pair<int, int> >()), "pair::operator=(pair<U, V>&&) is noexcept when the assignments are");
+	static_assert(!noexcept(eastl::declval<ThrowingPair&>() = eastl::declval<eastl::pair<int, int> >()), "pair::operator=(pair<U, V>&&) may throw when the assignments may");
+	static_assert(noexcept(eastl::declval<CopyThrowingPair&>() = eastl::declval<CopyThrowingPair>()), "pair move assignment is noexcept when the elements' are");
+	static_assert(!noexcept(eastl::declval<CopyThrowingPair&>() = eastl::declval<const CopyThrowingPair&>()), "pair copy assignment may throw when the elements' may");
+
+	// make_pair, get and exchange.
+	static_assert(noexcept(eastl::make_pair(eastl::declval<Nothrow>(), eastl::declval<Nothrow>())), "make_pair is noexcept when the constructions are");
+	static_assert(noexcept(eastl::make_pair(eastl::declval<int>(), eastl::declval<int&>())), "make_pair of ints is noexcept");
+	static_assert(!noexcept(eastl::make_pair(eastl::declval<Throwing>(), eastl::declval<Throwing>())), "make_pair may throw when the constructions may");
+	static_assert(!noexcept(eastl::make_pair(eastl::declval<const CopyThrowing&>(), eastl::declval<const CopyThrowing&>())), "make_pair may throw when the copies may");
+	static_assert(noexcept(eastl::make_pair(eastl::declval<CopyThrowing>(), eastl::declval<CopyThrowing>())), "make_pair is noexcept when the moves are");
+
+	static_assert(noexcept(eastl::get<0>(eastl::declval<ThrowingPair&>())), "get<0>(pair&) is noexcept");
+	static_assert(noexcept(eastl::get<1>(eastl::declval<ThrowingPair&>())), "get<1>(pair&) is noexcept");
+	static_assert(noexcept(eastl::get<0>(eastl::declval<const ThrowingPair&>())), "get<0>(const pair&) is noexcept");
+	static_assert(noexcept(eastl::get<1>(eastl::declval<const ThrowingPair&>())), "get<1>(const pair&) is noexcept");
+	static_assert(noexcept(eastl::get<0>(eastl::declval<ThrowingPair>())), "get<0>(pair&&) is noexcept");
+	static_assert(noexcept(eastl::get<1>(eastl::declval<ThrowingPair>())), "get<1>(pair&&) is noexcept");
+	static_assert(noexcept(eastl::get<0>(eastl::declval<const ThrowingPair>())), "get<0>(const pair&&) is noexcept");
+	static_assert(noexcept(eastl::get<1>(eastl::declval<const ThrowingPair>())), "get<1>(const pair&&) is noexcept");
+
+	static_assert(noexcept(eastl::exchange(eastl::declval<int&>(), 1)), "exchange of an int is noexcept");
+	static_assert(noexcept(eastl::exchange(eastl::declval<Nothrow&>(), eastl::declval<Nothrow>())), "exchange is noexcept when the move and the assignment are");
+	static_assert(noexcept(eastl::exchange(eastl::declval<Nothrow&>(), 1)), "exchange is noexcept when the move and the assignment from the value are");
+	static_assert(!noexcept(eastl::exchange(eastl::declval<Throwing&>(), eastl::declval<Throwing>())), "exchange may throw when the move may");
+	static_assert(!noexcept(eastl::exchange(eastl::declval<CopyThrowing&>(), eastl::declval<const CopyThrowing&>())), "exchange may throw when the assignment may");
+	static_assert(noexcept(eastl::exchange(eastl::declval<CopyThrowing&>(), eastl::declval<CopyThrowing>())), "exchange is noexcept when the move and the move assignment are");
+}
+
 struct BasicObject
 {
 	int mX;

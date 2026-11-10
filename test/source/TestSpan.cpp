@@ -7,6 +7,29 @@
 #include <EASTL/span.h>
 #include <EASTL/vector.h>
 
+// The exception specifications of span's constructors from a pointer, its subviews and its element access follow the
+// standard (MSVC's STL strengthens them).
+namespace NoexceptSpanTest
+{
+	#define EASTL_TEST_NOEXCEPT_SPAN(T, X) \
+		static_assert(noexcept(eastl::declval<const eastl::span<T, X>&>().front()), "span<" #T ", " #X ">::front is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::span<T, X>&>().back()), "span<" #T ", " #X ">::back is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::span<T, X>&>()[0]), "span<" #T ", " #X ">::operator[] is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::span<T, X>&>()(0)), "span<" #T ", " #X ">::operator() is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::span<T, X>&>().template first<1>()), "span<" #T ", " #X ">::first<Count> is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::span<T, X>&>().first(1)), "span<" #T ", " #X ">::first(Count) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::span<T, X>&>().template last<1>()), "span<" #T ", " #X ">::last<Count> is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::span<T, X>&>().last(1)), "span<" #T ", " #X ">::last(Count) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::span<T, X>&>().template subspan<0>()), "span<" #T ", " #X ">::subspan<Offset> is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::span<T, X>&>().subspan(0, 1)), "span<" #T ", " #X ">::subspan(Offset, Count) is noexcept"); \
+		static_assert(noexcept(eastl::span<T, X>(static_cast<T*>(nullptr), 3)), "span<" #T ", " #X ">(pointer, count) is noexcept"); \
+		static_assert(noexcept(eastl::span<T, X>(static_cast<T*>(nullptr), static_cast<T*>(nullptr))), "span<" #T ", " #X ">(pointer, pointer) is noexcept");
+	EASTL_TEST_NOEXCEPT_SPAN(int, eastl::dynamic_extent)
+	EASTL_TEST_NOEXCEPT_SPAN(int, 3)
+	EASTL_TEST_NOEXCEPT_SPAN(const char, eastl::dynamic_extent)
+	#undef EASTL_TEST_NOEXCEPT_SPAN
+}
+
 void TestSpanCtor(int& nErrorCount)
 {
 	using namespace eastl;

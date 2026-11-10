@@ -8,6 +8,69 @@
 #include <EABase/eabase.h>
 #include <EASTL/bit.h>
 
+// The exception specifications of bitset follow the standard: all of its operations except the ones that take a bit
+// position (which throw out_of_range in the standard) are noexcept, and to_ulong and the other conversions to an
+// integer are noexcept when the bitset fits in it.
+namespace NoexceptBitsetTest
+{
+	#define EASTL_TEST_NOEXCEPT_BITSET(N, W) \
+		static_assert(noexcept(eastl::bitset<N, W>()), "bitset() is noexcept"); \
+		static_assert(noexcept(eastl::bitset<N, W>(1ull)), "bitset(unsigned long long) is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>() &= eastl::declval<const eastl::bitset<N, W>&>()), "bitset::operator&= is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>() |= eastl::declval<const eastl::bitset<N, W>&>()), "bitset::operator|= is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>() ^= eastl::declval<const eastl::bitset<N, W>&>()), "bitset::operator^= is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>() <<= 1), "bitset::operator<<= is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>() >>= 1), "bitset::operator>>= is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>().set()), "bitset::set() is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>().reset()), "bitset::reset() is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>().flip()), "bitset::flip() is noexcept"); \
+		static_assert(noexcept(~eastl::declval<const eastl::bitset<N, W>&>()), "bitset::operator~ is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>()[1]), "bitset::operator[] is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>()[1]), "bitset::operator[] const is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>().size()), "bitset::size is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>().count()), "bitset::count is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>() == eastl::declval<const eastl::bitset<N, W>&>()), "bitset::operator== is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>() != eastl::declval<const eastl::bitset<N, W>&>()), "bitset::operator!= is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>().any()), "bitset::any is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>().all()), "bitset::all is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>().none()), "bitset::none is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>() << 1), "bitset::operator<< is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>() >> 1), "bitset::operator>> is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>() & eastl::declval<const eastl::bitset<N, W>&>()), "operator& of bitsets is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>() | eastl::declval<const eastl::bitset<N, W>&>()), "operator| of bitsets is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>() ^ eastl::declval<const eastl::bitset<N, W>&>()), "operator^ of bitsets is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>()[1] = true), "bitset::reference::operator=(bool) is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>()[1] = eastl::declval<eastl::bitset<N, W>&>()[2]), "bitset::reference::operator=(const reference&) is noexcept"); \
+		static_assert(noexcept(~eastl::declval<eastl::bitset<N, W>&>()[1]), "bitset::reference::operator~ is noexcept"); \
+		static_assert(noexcept(static_cast<bool>(eastl::declval<eastl::bitset<N, W>&>()[1])), "bitset::reference::operator bool is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>()[1].flip()), "bitset::reference::flip is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::bitset<N, W>&>().data()), "bitset::data is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>().data()), "bitset::data const is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>().find_first()), "bitset::find_first is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>().find_next(1)), "bitset::find_next is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>().find_last()), "bitset::find_last is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::bitset<N, W>&>().find_prev(1)), "bitset::find_prev is noexcept");
+	EASTL_TEST_NOEXCEPT_BITSET(5, uint64_t)    // one word
+	EASTL_TEST_NOEXCEPT_BITSET(100, uint64_t)  // two words
+	EASTL_TEST_NOEXCEPT_BITSET(300, uint64_t)  // more words
+	EASTL_TEST_NOEXCEPT_BITSET(40, uint32_t)
+	EASTL_TEST_NOEXCEPT_BITSET(70, uint16_t)
+	EASTL_TEST_NOEXCEPT_BITSET(5, uint8_t)
+	#undef EASTL_TEST_NOEXCEPT_BITSET
+
+	// The conversions to an integer are noexcept when the bitset fits: they can't overflow then.
+	static_assert(noexcept(eastl::declval<const eastl::bitset<32>&>().to_ulong()), "bitset<32>::to_ulong is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::bitset<32>&>().to_uint32()), "bitset<32>::to_uint32 is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::bitset<64>&>().to_uint64()), "bitset<64>::to_uint64 is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::bitset<64>&>().to_ullong_assert_convertible()), "bitset<64>::to_ullong_assert_convertible is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::bitset<32>&>().to_ulong_assert_convertible()), "bitset<32>::to_ulong_assert_convertible is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::bitset<32>&>().to_uint32_assert_convertible()), "bitset<32>::to_uint32_assert_convertible is noexcept");
+	static_assert(!noexcept(eastl::declval<const eastl::bitset<100>&>().to_uint64()), "bitset<100>::to_uint64 may throw");
+	static_assert(!noexcept(eastl::declval<const eastl::bitset<100>&>().to_ullong_assert_convertible()), "bitset<100>::to_ullong_assert_convertible may throw");
+	static_assert(!noexcept(eastl::declval<const eastl::bitset<65>&>().to_uint64_no_assert_convertible()), "bitset<65>::to_uint64_no_assert_convertible may throw");
+	static_assert(!noexcept(eastl::declval<const eastl::bitset<33>&>().to_uint32()), "bitset<33>::to_uint32 may throw");
+}
+
 #ifdef _MSC_VER
 	#pragma warning(push, 0)
 #endif

@@ -144,19 +144,19 @@ namespace eastl
 		// Like std, the constructors from a pointer and a size or an end, from a container and from a span of
 		// dynamic extent are explicit when this span's extent is static (C++20's explicit(extent != dynamic_extent)).
 		template <size_t E = Extent, enable_if_t<E == eastl::dynamic_extent, int> = 0>
-		EA_CONSTEXPR span(pointer ptr, index_type count)
+		EA_CONSTEXPR span(pointer ptr, index_type count) EA_NOEXCEPT
 			: mStorage(ptr, count) {}
 
 		template <size_t E = Extent, enable_if_t<E != eastl::dynamic_extent, int> = 0>
-		EA_CONSTEXPR explicit span(pointer ptr, index_type count)
+		EA_CONSTEXPR explicit span(pointer ptr, index_type count) EA_NOEXCEPT
 			: mStorage(ptr, count) {}
 
 		template <size_t E = Extent, enable_if_t<E == eastl::dynamic_extent, int> = 0>
-		EA_CONSTEXPR span(pointer pBegin, pointer pEnd)
+		EA_CONSTEXPR span(pointer pBegin, pointer pEnd) EA_NOEXCEPT
 			: mStorage(pBegin, static_cast<index_type>(pEnd - pBegin)) {}
 
 		template <size_t E = Extent, enable_if_t<E != eastl::dynamic_extent, int> = 0>
-		EA_CONSTEXPR explicit span(pointer pBegin, pointer pEnd)
+		EA_CONSTEXPR explicit span(pointer pBegin, pointer pEnd) EA_NOEXCEPT
 			: mStorage(pBegin, static_cast<index_type>(pEnd - pBegin)) {}
 		            ~span() EA_NOEXCEPT = default;
 
@@ -216,16 +216,16 @@ namespace eastl
 
 		// subviews
 		template<size_t Count>
-		EA_CPP14_CONSTEXPR span<element_type, Count> first() const;
-		EA_CPP14_CONSTEXPR span<element_type, dynamic_extent> first(size_t Count) const;
+		EA_CPP14_CONSTEXPR span<element_type, Count> first() const EA_NOEXCEPT;
+		EA_CPP14_CONSTEXPR span<element_type, dynamic_extent> first(size_t Count) const EA_NOEXCEPT;
 
 		template<size_t Count>
-		EA_CPP14_CONSTEXPR span<element_type, Count> last() const;
-		EA_CPP14_CONSTEXPR span<element_type, dynamic_extent> last(size_t Count) const;
+		EA_CPP14_CONSTEXPR span<element_type, Count> last() const EA_NOEXCEPT;
+		EA_CPP14_CONSTEXPR span<element_type, dynamic_extent> last(size_t Count) const EA_NOEXCEPT;
 
 		template <size_t Offset, size_t Count = dynamic_extent>
-		EA_CONSTEXPR span<element_type, Internal::SubspanExtent<Extent, Offset, Count>::value> subspan() const;
-		EA_CONSTEXPR span<element_type, dynamic_extent> subspan(size_t Offset, size_t Count = dynamic_extent) const;
+		EA_CONSTEXPR span<element_type, Internal::SubspanExtent<Extent, Offset, Count>::value> subspan() const EA_NOEXCEPT;
+		EA_CONSTEXPR span<element_type, dynamic_extent> subspan(size_t Offset, size_t Count = dynamic_extent) const EA_NOEXCEPT;
 
 		// observers
 		EA_CONSTEXPR pointer    data() const EA_NOEXCEPT;
@@ -234,10 +234,10 @@ namespace eastl
 		EA_CONSTEXPR bool       empty() const EA_NOEXCEPT;
 
 		// subscript operators, element access
-		EA_CONSTEXPR reference front() const;
-		EA_CONSTEXPR reference back() const;
-		EA_CONSTEXPR reference operator[](index_type idx) const;
-		EA_CONSTEXPR reference operator()(index_type idx) const;
+		EA_CONSTEXPR reference front() const EA_NOEXCEPT;
+		EA_CONSTEXPR reference back() const EA_NOEXCEPT;
+		EA_CONSTEXPR reference operator[](index_type idx) const EA_NOEXCEPT;
+		EA_CONSTEXPR reference operator()(index_type idx) const EA_NOEXCEPT;
 
 		// iterator support
 		EA_CONSTEXPR iterator begin() const EA_NOEXCEPT;
@@ -253,7 +253,7 @@ namespace eastl
 		Internal::SpanStorage<T, Extent> mStorage;
 
 	private:
-		EA_CONSTEXPR bool bounds_check(size_t) const;  // utility used in asserts
+		EA_CONSTEXPR bool bounds_check(size_t) const EA_NOEXCEPT;  // utility used in asserts
 	};
 
 
@@ -360,7 +360,7 @@ namespace eastl
 	}
 
 	template <typename T, size_t Extent>
-	EA_CONSTEXPR typename span<T, Extent>::reference span<T, Extent>::front() const
+	EA_CONSTEXPR typename span<T, Extent>::reference span<T, Extent>::front() const EA_NOEXCEPT
 	{
 		EASTL_ASSERT_MSG(!empty(), "undefined behavior accessing an empty span");
 
@@ -368,7 +368,7 @@ namespace eastl
 	}
 
 	template <typename T, size_t Extent>
-	EA_CONSTEXPR typename span<T, Extent>::reference span<T, Extent>::back() const
+	EA_CONSTEXPR typename span<T, Extent>::reference span<T, Extent>::back() const EA_NOEXCEPT
 	{
 		EASTL_ASSERT_MSG(!empty(), "undefined behavior accessing an empty span");
 
@@ -376,7 +376,7 @@ namespace eastl
 	}
 
 	template <typename T, size_t Extent>
-	EA_CONSTEXPR typename span<T, Extent>::reference span<T, Extent>::operator[](index_type idx) const
+	EA_CONSTEXPR typename span<T, Extent>::reference span<T, Extent>::operator[](index_type idx) const EA_NOEXCEPT
 	{
 		EASTL_ASSERT_MSG(!empty(),          "undefined behavior accessing an empty span");
 		EASTL_ASSERT_MSG(bounds_check(idx), "undefined behavior accessing out of bounds");
@@ -385,7 +385,7 @@ namespace eastl
 	}
 
 	template <typename T, size_t Extent>
-	EA_CONSTEXPR typename span<T, Extent>::reference span<T, Extent>::operator()(index_type idx) const
+	EA_CONSTEXPR typename span<T, Extent>::reference span<T, Extent>::operator()(index_type idx) const EA_NOEXCEPT
 	{
 		EASTL_ASSERT_MSG(!empty(),          "undefined behavior accessing an empty span");
 		EASTL_ASSERT_MSG(bounds_check(idx), "undefined behavior accessing out of bounds");
@@ -443,7 +443,7 @@ namespace eastl
 
 	template <typename T, size_t Extent>
 	template <size_t Count>
-	EA_CPP14_CONSTEXPR span<typename span<T, Extent>::element_type, Count> span<T, Extent>::first() const
+	EA_CPP14_CONSTEXPR span<typename span<T, Extent>::element_type, Count> span<T, Extent>::first() const EA_NOEXCEPT
 	{
 		EASTL_ASSERT_MSG(Count <= size(), "undefined behavior accessing out of bounds");
 		return span<element_type, Count>(data(), static_cast<index_type>(Count));
@@ -451,7 +451,7 @@ namespace eastl
 
 	template <typename T, size_t Extent>
 	EA_CPP14_CONSTEXPR span<typename span<T, Extent>::element_type, dynamic_extent> 
-	span<T, Extent>::first(size_t sz) const
+	span<T, Extent>::first(size_t sz) const EA_NOEXCEPT
 	{
 		EASTL_ASSERT_MSG(sz <= size(), "undefined behavior accessing out of bounds");
 		return {data(), static_cast<index_type>(sz)};
@@ -459,7 +459,7 @@ namespace eastl
 
 	template <typename T, size_t Extent>
 	template <size_t Count>
-	EA_CPP14_CONSTEXPR span<typename span<T, Extent>::element_type, Count> span<T, Extent>::last() const
+	EA_CPP14_CONSTEXPR span<typename span<T, Extent>::element_type, Count> span<T, Extent>::last() const EA_NOEXCEPT
 	{
 		EASTL_ASSERT_MSG(Count <= size(), "undefined behavior accessing out of bounds");
 		return span<element_type, Count>(data() + size() - Count, static_cast<index_type>(Count));
@@ -467,7 +467,7 @@ namespace eastl
 
 	template <typename T, size_t Extent>
 	EA_CPP14_CONSTEXPR span<typename span<T, Extent>::element_type, dynamic_extent> 
-	span<T, Extent>::last(size_t sz) const
+	span<T, Extent>::last(size_t sz) const EA_NOEXCEPT
 	{
 		EASTL_ASSERT_MSG(sz <= size(), "undefined behavior accessing out of bounds");
 		return {data() + size() - sz, static_cast<index_type>(sz)};
@@ -476,7 +476,7 @@ namespace eastl
 	template <typename T, size_t Extent>
 	template <size_t Offset, size_t Count>
 	EA_CONSTEXPR span<typename span<T, Extent>::element_type, Internal::SubspanExtent<Extent, Offset, Count>::value>
-	span<T, Extent>::subspan() const
+	span<T, Extent>::subspan() const EA_NOEXCEPT
 	{
 		EASTL_ASSERT_MSG(Offset <= size(),                                       "undefined behaviour accessing out of bounds");
 		EASTL_ASSERT_MSG(Count == dynamic_extent || Count <= (size() - Offset), "undefined behaviour exceeding size of span");
@@ -486,7 +486,7 @@ namespace eastl
 
 	template <typename T, size_t Extent>
 	EA_CONSTEXPR span<typename span<T, Extent>::element_type, dynamic_extent>
-	span<T, Extent>::subspan(size_t offset, size_t count) const
+	span<T, Extent>::subspan(size_t offset, size_t count) const EA_NOEXCEPT
 	{
 		EASTL_ASSERT_MSG(offset <= size(),                                      "undefined behaviour accessing out of bounds");
 		EASTL_ASSERT_MSG(count == dynamic_extent || count <= (size() - offset), "undefined behaviour exceeding size of span");
@@ -495,7 +495,7 @@ namespace eastl
 	}
 
 	template <typename T, size_t Extent>
-	EA_CONSTEXPR bool span<T, Extent>::bounds_check(size_t offset) const
+	EA_CONSTEXPR bool span<T, Extent>::bounds_check(size_t offset) const EA_NOEXCEPT
 	{
 		return offset < size();
 	}
