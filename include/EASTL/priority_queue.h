@@ -111,13 +111,14 @@ namespace eastl
 		compare_type    comp; // The C++ standard specifies that you declare a protected member variable of type Compare called 'comp'.
 
 	public:
-		priority_queue();
+		priority_queue() EA_NOEXCEPT_IF((eastl::is_nothrow_default_constructible_v<container_type> && eastl::is_nothrow_default_constructible_v<compare_type>));
 
 		// Allocator is templated here because we aren't allowed to infer the allocator_type from the Container, as some containers (e.g. array) don't 
 		// have allocators. For containers that don't have allocator types, you could use void or char as the Allocator template type.
 
 		template <class Allocator>                      
 		explicit priority_queue(const Allocator& allocator, typename eastl::enable_if<eastl::uses_allocator<container_type, Allocator>::value>::type* = NULL)
+		   EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<container_type, const Allocator&> && eastl::is_nothrow_default_constructible_v<compare_type>))
 		   : c(allocator), comp()
 		{
 		}    
@@ -131,12 +132,13 @@ namespace eastl
 
 		template <class Allocator>
 		priority_queue(this_type&& x, const Allocator& allocator, typename eastl::enable_if<eastl::uses_allocator<container_type, Allocator>::value>::type* = NULL)
+			EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<container_type, container_type, const Allocator&> && eastl::is_nothrow_move_constructible_v<compare_type>))
 			: c(eastl::move(x.c), allocator), comp(x.comp)
 		{
 			eastl::make_heap(c.begin(), c.end(), comp);
 		}
 
-		explicit priority_queue(const compare_type& compare);
+		explicit priority_queue(const compare_type& compare) EA_NOEXCEPT_IF((eastl::is_nothrow_default_constructible_v<container_type> && eastl::is_nothrow_copy_constructible_v<compare_type>));
 		explicit priority_queue(const compare_type& compare, container_type&& x);
 
 		priority_queue(const compare_type& compare, const container_type& x);
@@ -177,10 +179,10 @@ namespace eastl
 		// template <typename InputIterator, class Allocator>
 		// priority_queue(InputIterator first, InputIterator last, const compare_type& compare, container_type&& x, const Allocator& allocator);
 
-		bool      empty() const;
-		size_type size() const;
+		bool      empty() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.empty()));
+		size_type size() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.size()));
 
-		const_reference top() const;
+		const_reference top() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.front()));
 
 		void push(const value_type& value);
 
@@ -196,8 +198,8 @@ namespace eastl
 		void change(size_type n);   /// Extension to the C++ Standard. Moves the item at the given array index to a new location based on its current priority.
 		void remove(size_type n);   /// Extension to the C++ Standard. Removes the item at the given array index.
 
-		container_type&       get_container();
-		const container_type& get_container() const;
+		container_type&       get_container() EA_NOEXCEPT;
+		const container_type& get_container() const EA_NOEXCEPT;
 
 		void swap(this_type& x) EA_NOEXCEPT_IF((eastl::is_nothrow_swappable<this_type::container_type>::value && eastl::is_nothrow_swappable<this_type::compare_type>::value));
 		
@@ -214,7 +216,7 @@ namespace eastl
 
 
 	template <typename T, typename Container, typename Compare>
-	inline priority_queue<T, Container, Compare>::priority_queue()
+	inline priority_queue<T, Container, Compare>::priority_queue() EA_NOEXCEPT_IF((eastl::is_nothrow_default_constructible_v<container_type> && eastl::is_nothrow_default_constructible_v<compare_type>))
 		: c(),  // To consider: use c(EASTL_PRIORITY_QUEUE_DEFAULT_ALLOCATOR) here, though that would add the requirement that the user supplied container support this.
 		  comp()
 	{
@@ -222,7 +224,7 @@ namespace eastl
 
 
 	template <typename T, typename Container, typename Compare>
-	inline priority_queue<T, Container, Compare>::priority_queue(const compare_type& compare)
+	inline priority_queue<T, Container, Compare>::priority_queue(const compare_type& compare) EA_NOEXCEPT_IF((eastl::is_nothrow_default_constructible_v<container_type> && eastl::is_nothrow_copy_constructible_v<compare_type>))
 		: c(),  // To consider: use c(EASTL_PRIORITY_QUEUE_DEFAULT_ALLOCATOR) here, though that would add the requirement that the user supplied container support this.
 		  comp(compare)
 	{
@@ -294,7 +296,7 @@ namespace eastl
 
 
 	template <typename T, typename Container, typename Compare>
-	inline bool priority_queue<T, Container, Compare>::empty() const
+	inline bool priority_queue<T, Container, Compare>::empty() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.empty()))
 	{
 		return c.empty();
 	}
@@ -302,7 +304,7 @@ namespace eastl
 
 	template <typename T, typename Container, typename Compare>
 	inline typename priority_queue<T, Container, Compare>::size_type
-	priority_queue<T, Container, Compare>::size() const
+	priority_queue<T, Container, Compare>::size() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.size()))
 	{
 		return c.size();
 	}
@@ -310,7 +312,7 @@ namespace eastl
 
 	template <typename T, typename Container, typename Compare>
 	inline typename priority_queue<T, Container, Compare>::const_reference
-	priority_queue<T, Container, Compare>::top() const
+	priority_queue<T, Container, Compare>::top() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.front()))
 	{
 #if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 		if (EASTL_UNLIKELY(c.empty()))
@@ -437,7 +439,7 @@ namespace eastl
 
 	template <typename T, typename Container, typename Compare>
 	inline typename priority_queue<T, Container, Compare>::container_type&
-	priority_queue<T, Container, Compare>::get_container()
+	priority_queue<T, Container, Compare>::get_container() EA_NOEXCEPT
 	{
 		return c;
 	}
@@ -445,7 +447,7 @@ namespace eastl
 
 	template <typename T, typename Container, typename Compare>
 	inline const typename priority_queue<T, Container, Compare>::container_type&
-	priority_queue<T, Container, Compare>::get_container() const
+	priority_queue<T, Container, Compare>::get_container() const EA_NOEXCEPT
 	{
 		return c;
 	}

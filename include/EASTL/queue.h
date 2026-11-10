@@ -74,13 +74,14 @@ namespace eastl
 		container_type c; // The C++ standard specifies that you declare a protected member variable of type Container called 'c'.
 
 	public:
-		queue();
+		queue() EA_NOEXCEPT_IF(eastl::is_nothrow_default_constructible_v<container_type>);
 
 		// Allocator is templated here because we aren't allowed to infer the allocator_type from the Container, as some containers (e.g. array) don't 
 		// have allocators. For containers that don't have allocator types, you could use void or char as the Allocator template type.
 
 		template <class Allocator>                      
 		explicit queue(const Allocator& allocator, typename eastl::enable_if<eastl::uses_allocator<container_type, Allocator>::value>::type* = NULL)
+		  EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<container_type, const Allocator&>))
 		  : c(allocator)
 		{
 		}    
@@ -93,12 +94,13 @@ namespace eastl
 
 		template <class Allocator>
 		queue(this_type&& x, const Allocator& allocator, typename eastl::enable_if<eastl::uses_allocator<container_type, Allocator>::value>::type* = NULL)
+		  EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<container_type, container_type, const Allocator&>))
 		  : c(eastl::move(x.c), allocator)
 		{
 		}
 
 		explicit queue(const container_type& x);
-		explicit queue(container_type&& x);
+		explicit queue(container_type&& x) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible_v<container_type>);
 
 		// Additional C++11 support to consider:
 		//
@@ -116,14 +118,14 @@ namespace eastl
 
 		queue(std::initializer_list<value_type> ilist); // C++11 doesn't specify that std::queue has initializer list support.
 
-		bool      empty() const;
-		size_type size() const;
+		bool      empty() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.empty()));
+		size_type size() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.size()));
 
-		reference       front();
-		const_reference front() const;
+		reference       front() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.front()));
+		const_reference front() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.front()));
 
-		reference       back();
-		const_reference back() const;
+		reference       back() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.back()));
+		const_reference back() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.back()));
 
 		void push(const value_type& value);
 		void push(value_type&& x);
@@ -131,10 +133,10 @@ namespace eastl
 		template <class... Args>
 		decltype(auto) emplace(Args&&... args);
 
-		void pop();
+		void pop() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.pop_front()));
 
-		container_type&       get_container();
-		const container_type& get_container() const;
+		container_type&       get_container() EA_NOEXCEPT;
+		const container_type& get_container() const EA_NOEXCEPT;
 
 		void swap(this_type& x) EA_NOEXCEPT_IF((eastl::is_nothrow_swappable<this_type::container_type>::value));
 
@@ -150,7 +152,7 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template <typename T, typename Container>
-	inline queue<T, Container>::queue()
+	inline queue<T, Container>::queue() EA_NOEXCEPT_IF(eastl::is_nothrow_default_constructible_v<container_type>)
 		: c() // To consider: use c(EASTL_QUEUE_DEFAULT_ALLOCATOR) here, though that would add the requirement that the user supplied container support this.
 	{
 		// Empty
@@ -166,7 +168,7 @@ namespace eastl
 
 
 	template <typename T, typename Container>
-	inline queue<T, Container>::queue(Container&& x)
+	inline queue<T, Container>::queue(Container&& x) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible_v<container_type>)
 		: c(eastl::move(x))
 	{
 		// Empty
@@ -190,7 +192,7 @@ namespace eastl
 
 
 	template <typename T, typename Container>
-	inline bool queue<T, Container>::empty() const
+	inline bool queue<T, Container>::empty() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.empty()))
 	{
 		return c.empty();
 	}
@@ -198,7 +200,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline typename queue<T, Container>::size_type
-	queue<T, Container>::size() const
+	queue<T, Container>::size() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.size()))
 	{
 		return c.size();
 	}
@@ -206,7 +208,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline typename queue<T, Container>::reference
-	queue<T, Container>::front()
+	queue<T, Container>::front() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.front()))
 	{
 #if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 		if (EASTL_UNLIKELY(c.empty()))
@@ -219,7 +221,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline typename queue<T, Container>::const_reference
-	queue<T, Container>::front() const
+	queue<T, Container>::front() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.front()))
 	{
 #if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 		if (EASTL_UNLIKELY(c.empty()))
@@ -232,7 +234,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline typename queue<T, Container>::reference
-	queue<T, Container>::back()
+	queue<T, Container>::back() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.back()))
 	{
 #if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 		if (EASTL_UNLIKELY(c.empty()))
@@ -245,7 +247,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline typename queue<T, Container>::const_reference
-	queue<T, Container>::back() const
+	queue<T, Container>::back() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.back()))
 	{
 #if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 		if (EASTL_UNLIKELY(c.empty()))
@@ -278,7 +280,7 @@ namespace eastl
 
 
 	template <typename T, typename Container>
-	inline void queue<T, Container>::pop()
+	inline void queue<T, Container>::pop() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.pop_front()))
 	{
 #if EASTL_ASSERT_ENABLED
 		if (EASTL_UNLIKELY(c.empty()))
@@ -291,7 +293,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline typename queue<T, Container>::container_type&
-	queue<T, Container>::get_container()
+	queue<T, Container>::get_container() EA_NOEXCEPT
 	{
 		return c;
 	}
@@ -299,7 +301,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline const typename queue<T, Container>::container_type&
-	queue<T, Container>::get_container() const
+	queue<T, Container>::get_container() const EA_NOEXCEPT
 	{
 		return c;
 	}

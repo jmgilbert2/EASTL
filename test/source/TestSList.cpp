@@ -12,6 +12,82 @@
 using namespace eastl;
 
 
+///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: slist (and SListIterator) are at least as noexcept as MSVC STL's forward_list.
+// (swap and move assignment compare allocators and copy for unequal ones, so they are not noexcept.)
+namespace
+{
+	struct SListNoexceptThrowing // Copy and move operations may throw.
+	{
+		SListNoexceptThrowing() {}
+		SListNoexceptThrowing(const SListNoexceptThrowing&) {}
+		SListNoexceptThrowing(SListNoexceptThrowing&&) noexcept(false) {}
+		SListNoexceptThrowing& operator=(const SListNoexceptThrowing&) { return *this; }
+		SListNoexceptThrowing& operator=(SListNoexceptThrowing&&) noexcept(false) { return *this; }
+	};
+
+	// An allocator whose construction cannot throw, so that the default constructor of the container can be noexcept.
+	class SListNothrowAllocator
+	{
+	public:
+		explicit SListNothrowAllocator(const char* = "SListNothrowAllocator") noexcept {}
+		SListNothrowAllocator(const SListNothrowAllocator&) noexcept {}
+		SListNothrowAllocator(const SListNothrowAllocator&, const char*) noexcept {}
+		SListNothrowAllocator& operator=(const SListNothrowAllocator&) noexcept { return *this; }
+		void* allocate(size_t n, int = 0) { return ::operator new(n); }
+		void* allocate(size_t n, size_t, size_t, int = 0) { return ::operator new(n); }
+		void  deallocate(void* p, size_t) noexcept { ::operator delete(p); }
+		const char* get_name() const noexcept { return "SListNothrowAllocator"; }
+		void        set_name(const char*) noexcept {}
+
+		bool operator==(const SListNothrowAllocator&) const noexcept { return true; }
+		bool operator!=(const SListNothrowAllocator&) const noexcept { return false; }
+	};
+
+	template <typename T>
+	struct SListNoexceptChecks
+	{
+		typedef eastl::slist<T>                                      S;
+		typedef eastl::slist<T, SListNothrowAllocator>               SNA;
+		typedef typename S::iterator                                 I;
+		typedef typename S::const_iterator                           CI;
+
+		static_assert(noexcept(S(eastl::declval<const typename S::allocator_type&>())), "slist(const allocator_type&) must be noexcept");
+		static_assert(noexcept(SNA()), "slist() must be noexcept when the allocator can be default-named without throwing");
+		static_assert(noexcept(SNA(eastl::declval<const SListNothrowAllocator&>())), "slist(const allocator_type&) must be noexcept");
+
+		static_assert(noexcept(eastl::declval<S&>().front()), "slist::front must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().front()), "slist::front const must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().pop_front()), "slist::pop_front must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase_after(eastl::declval<CI>())), "slist::erase_after(const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase_after(eastl::declval<CI>(), eastl::declval<CI>())), "slist::erase_after(const_iterator, const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<CI>())), "slist::erase(const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<CI>(), eastl::declval<CI>())), "slist::erase(const_iterator, const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().previous(eastl::declval<CI>())), "slist::previous must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().previous(eastl::declval<CI>())), "slist::previous const must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().validate()), "slist::validate must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().validate_iterator(eastl::declval<CI>())), "slist::validate_iterator must be noexcept");
+
+		// SListIterator
+		static_assert(noexcept(I()), "SListIterator() must be noexcept");
+		static_assert(noexcept(CI()), "SListIterator() must be noexcept");
+		static_assert(noexcept(CI(eastl::declval<const I&>())), "const_iterator(const iterator&) must be noexcept");
+		static_assert(noexcept(*eastl::declval<const I&>()), "SListIterator::operator* must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>().operator->()), "SListIterator::operator-> must be noexcept");
+		static_assert(noexcept(++eastl::declval<I&>()), "SListIterator::operator++() must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>()++), "SListIterator::operator++(int) must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() == eastl::declval<const I&>()), "SListIterator operator== must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() != eastl::declval<const I&>()), "SListIterator operator!= must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() == eastl::declval<const CI&>()), "iterator == const_iterator must be noexcept");
+		static_assert(noexcept(eastl::declval<const CI&>() != eastl::declval<const I&>()), "const_iterator != iterator must be noexcept");
+	};
+
+	template struct SListNoexceptChecks<int>;
+	template struct SListNoexceptChecks<SListNoexceptThrowing>;
+}
+
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct TestObj
 {

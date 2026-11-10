@@ -16,6 +16,47 @@ template class eastl::list<bool>;
 template class eastl::list<int>;
 template class eastl::list<Align64>;
 template class eastl::list<TestObject>;
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: list is at least as noexcept as MSVC STL's list.
+// (swap and move assignment compare allocators and copy for unequal ones, so they are not noexcept.)
+namespace
+{
+	struct ListNoexceptThrowing // Copy and move operations may throw.
+	{
+		ListNoexceptThrowing() {}
+		ListNoexceptThrowing(const ListNoexceptThrowing&) {}
+		ListNoexceptThrowing(ListNoexceptThrowing&&) noexcept(false) {}
+		ListNoexceptThrowing& operator=(const ListNoexceptThrowing&) { return *this; }
+		ListNoexceptThrowing& operator=(ListNoexceptThrowing&&) noexcept(false) { return *this; }
+	};
+
+	template <typename T>
+	struct ListNoexceptChecks
+	{
+		typedef eastl::list<T>                       L;
+		typedef typename L::const_iterator           CI;
+		typedef typename L::const_reverse_iterator   CRI;
+
+		static_assert(noexcept(eastl::declval<L&>().front()), "list::front must be noexcept");
+		static_assert(noexcept(eastl::declval<const L&>().front()), "list::front const must be noexcept");
+		static_assert(noexcept(eastl::declval<L&>().back()), "list::back must be noexcept");
+		static_assert(noexcept(eastl::declval<const L&>().back()), "list::back const must be noexcept");
+		static_assert(noexcept(eastl::declval<L&>().pop_front()), "list::pop_front must be noexcept");
+		static_assert(noexcept(eastl::declval<L&>().pop_back()), "list::pop_back must be noexcept");
+		static_assert(noexcept(eastl::declval<L&>().erase(eastl::declval<CI>())), "list::erase(const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<L&>().erase(eastl::declval<CI>(), eastl::declval<CI>())), "list::erase(const_iterator, const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<L&>().erase(eastl::declval<CRI>())), "list::erase(const_reverse_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<L&>().erase(eastl::declval<CRI>(), eastl::declval<CRI>())), "list::erase(const_reverse_iterator, const_reverse_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<const L&>().validate()), "list::validate must be noexcept");
+		static_assert(noexcept(eastl::declval<const L&>().validate_iterator(eastl::declval<CI>())), "list::validate_iterator must be noexcept");
+	};
+
+	template struct ListNoexceptChecks<int>;
+	template struct ListNoexceptChecks<ListNoexceptThrowing>;
+}
+
 // template class eastl::list<eastl::unique_ptr<int>>;
 
 

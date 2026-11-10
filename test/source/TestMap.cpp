@@ -28,6 +28,87 @@ template class eastl::multimap<TestObject, TestObject>;
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: map and multimap (and rbtree_iterator) are at least as noexcept as MSVC STL's.
+// EASTL has no allocator_traits and behaves as if propagate_on_container_move_assignment
+// and propagate_on_container_swap were true, so only the comparator matters for move assignment and swap.
+namespace
+{
+	struct MapNoexceptThrowing // Copy and move operations may throw.
+	{
+		MapNoexceptThrowing() {}
+		MapNoexceptThrowing(const MapNoexceptThrowing&) {}
+		MapNoexceptThrowing(MapNoexceptThrowing&&) noexcept(false) {}
+		MapNoexceptThrowing& operator=(const MapNoexceptThrowing&) { return *this; }
+		MapNoexceptThrowing& operator=(MapNoexceptThrowing&&) noexcept(false) { return *this; }
+	};
+
+	struct MapNothrowCompare
+	{
+		bool operator()(int a, int b) const noexcept { return a < b; }
+	};
+
+	struct MapThrowingCompare // Copying, moving, swapping and comparing may throw.
+	{
+		MapThrowingCompare() {}
+		MapThrowingCompare(const MapThrowingCompare&) noexcept(false) {}
+		MapThrowingCompare(MapThrowingCompare&&) noexcept(false) {}
+		MapThrowingCompare& operator=(const MapThrowingCompare&) noexcept(false) { return *this; }
+		MapThrowingCompare& operator=(MapThrowingCompare&&) noexcept(false) { return *this; }
+		bool operator()(int a, int b) const noexcept(false) { return a < b; }
+	};
+
+	template <typename M, bool kNothrowCompare>
+	struct MapNoexceptChecks
+	{
+		typedef typename M::iterator                 I;
+		typedef typename M::const_iterator           CI;
+		typedef typename M::const_reverse_iterator   CRI;
+
+		// Conditional on the comparator, as in the standard library.
+		static_assert(noexcept(eastl::declval<M&>() = eastl::declval<M&&>()) == kNothrowCompare, "map::operator=(map&&)");
+		static_assert(noexcept(eastl::declval<M&>().swap(eastl::declval<M&>())) == kNothrowCompare, "map::swap");
+		static_assert(noexcept(eastl::declval<M&>().erase(eastl::declval<const typename M::key_type&>())) == kNothrowCompare, "map::erase(const key_type&)");
+
+		static_assert(noexcept(eastl::declval<M&>().clear()), "map::clear must be noexcept");
+		static_assert(noexcept(eastl::declval<M&>().reset_lose_memory()), "map::reset_lose_memory must be noexcept");
+		static_assert(noexcept(eastl::declval<M&>().erase(eastl::declval<I>())), "map::erase(iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<M&>().erase(eastl::declval<CI>())), "map::erase(const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<M&>().erase(eastl::declval<CI>(), eastl::declval<CI>())), "map::erase(const_iterator, const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<M&>().erase(eastl::declval<CRI>())), "map::erase(const_reverse_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<M&>().erase(eastl::declval<CRI>(), eastl::declval<CRI>())), "map::erase(const_reverse_iterator, const_reverse_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<const M&>().validate()), "map::validate must be noexcept");
+		static_assert(noexcept(eastl::declval<const M&>().validate_iterator(eastl::declval<CI>())), "map::validate_iterator must be noexcept");
+
+		// rbtree_iterator
+		static_assert(noexcept(I()), "rbtree_iterator() must be noexcept");
+		static_assert(noexcept(CI()), "rbtree_iterator() must be noexcept");
+		static_assert(noexcept(I(eastl::declval<const I&>())), "rbtree_iterator(const iterator&) must be noexcept");
+		static_assert(noexcept(CI(eastl::declval<const I&>())), "const_iterator(const iterator&) must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>() = eastl::declval<const I&>()), "rbtree_iterator::operator= must be noexcept");
+		static_assert(noexcept(eastl::declval<CI&>() = eastl::declval<const I&>()), "const_iterator::operator=(const iterator&) must be noexcept");
+		static_assert(noexcept(*eastl::declval<const I&>()), "rbtree_iterator::operator* must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>().operator->()), "rbtree_iterator::operator-> must be noexcept");
+		static_assert(noexcept(++eastl::declval<I&>()), "rbtree_iterator::operator++() must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>()++), "rbtree_iterator::operator++(int) must be noexcept");
+		static_assert(noexcept(--eastl::declval<I&>()), "rbtree_iterator::operator--() must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>()--), "rbtree_iterator::operator--(int) must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() == eastl::declval<const I&>()), "rbtree_iterator operator== must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() != eastl::declval<const I&>()), "rbtree_iterator operator!= must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() == eastl::declval<const CI&>()), "iterator == const_iterator must be noexcept");
+		static_assert(noexcept(eastl::declval<const CI&>() != eastl::declval<const I&>()), "const_iterator != iterator must be noexcept");
+	};
+
+	template struct MapNoexceptChecks<eastl::map<int, int, MapNothrowCompare>, true>;
+	template struct MapNoexceptChecks<eastl::map<int, MapNoexceptThrowing, MapNothrowCompare>, true>;
+	template struct MapNoexceptChecks<eastl::multimap<int, int, MapNothrowCompare>, true>;
+	template struct MapNoexceptChecks<eastl::multimap<int, MapNoexceptThrowing, MapNothrowCompare>, true>;
+	template struct MapNoexceptChecks<eastl::map<int, int, MapThrowingCompare>, false>;
+	template struct MapNoexceptChecks<eastl::multimap<int, int, MapThrowingCompare>, false>;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
 // typedefs
 //
 typedef eastl::map<int, int> VM1;

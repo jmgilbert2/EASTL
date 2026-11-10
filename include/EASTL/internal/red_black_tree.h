@@ -168,32 +168,32 @@ namespace eastl
 		base_node_type* mpNode;
 
 	public:
-		rbtree_iterator();
-		explicit rbtree_iterator(const base_node_type* pNode);
+		rbtree_iterator() EA_NOEXCEPT;
+		explicit rbtree_iterator(const base_node_type* pNode) EA_NOEXCEPT;
 		// Note: this isn't always a copy constructor, iterator is not always equal to this_type
-		rbtree_iterator(const iterator& x);
+		rbtree_iterator(const iterator& x) EA_NOEXCEPT;
 		// Note: this isn't always a copy assignment operator, iterator is not always equal to this_type
-		rbtree_iterator& operator=(const iterator& x);
+		rbtree_iterator& operator=(const iterator& x) EA_NOEXCEPT;
 
 		// Calling these on the end() of a tree invokes undefined behavior.
-		reference operator*() const;
-		pointer   operator->() const;
+		reference operator*() const EA_NOEXCEPT;
+		pointer   operator->() const EA_NOEXCEPT;
 
-		rbtree_iterator& operator++();
-		rbtree_iterator  operator++(int);
+		rbtree_iterator& operator++() EA_NOEXCEPT;
+		rbtree_iterator  operator++(int) EA_NOEXCEPT;
 
-		rbtree_iterator& operator--();
-		rbtree_iterator  operator--(int);
+		rbtree_iterator& operator--() EA_NOEXCEPT;
+		rbtree_iterator  operator--(int) EA_NOEXCEPT;
 	private:
 
 		template<class U, class PtrA, class RefA, class PtrB, class RefB>
-		friend bool operator==(const rbtree_iterator<U, PtrA, RefA>&, const rbtree_iterator<U, PtrB, RefB>&);
+		friend bool operator==(const rbtree_iterator<U, PtrA, RefA>&, const rbtree_iterator<U, PtrB, RefB>&) EA_NOEXCEPT;
 
 		template<class U, class PtrA, class RefA, class PtrB, class RefB>
-		friend bool operator!=(const rbtree_iterator<U, PtrA, RefA>&, const rbtree_iterator<U, PtrB, RefB>&);
+		friend bool operator!=(const rbtree_iterator<U, PtrA, RefA>&, const rbtree_iterator<U, PtrB, RefB>&) EA_NOEXCEPT;
 
 		template<class U, class PtrA, class RefA>
-		friend bool operator!=(const rbtree_iterator<U, PtrA, RefA>&, const rbtree_iterator<U, PtrA, RefA>&);
+		friend bool operator!=(const rbtree_iterator<U, PtrA, RefA>&, const rbtree_iterator<U, PtrA, RefA>&) EA_NOEXCEPT;
 
 		// rbtree uses mpNode.
 		template <class Key, class Value, class Compare, class Allocator,
@@ -493,9 +493,9 @@ namespace eastl
 
 		this_type& operator=(const this_type& x);
 		this_type& operator=(std::initializer_list<value_type> ilist);
-		this_type& operator=(this_type&& x);
+		this_type& operator=(this_type&& x) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<Compare>); // EASTL behaves as if propagate_on_container_move_assignment were true (see swap).
 
-		void swap(this_type& x);
+		void swap(this_type& x) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable_v<Compare>); // EASTL behaves as if propagate_on_container_swap were true: the allocator is swapped along with the storage.
 
 	public: 
 		// iterators
@@ -568,11 +568,11 @@ namespace eastl
 		iterator								insert_or_assign(const_iterator hint, KX&& k, M&& obj) { return DoInsertOrAssign(hint, eastl::forward<KX>(k), eastl::forward<M>(obj)); }
 
 		template <typename Iter = iterator, typename eastl::enable_if<!eastl::is_same_v<Iter, const_iterator>, int>::type = 0>
-		iterator         erase(iterator position) { return erase(const_iterator(position)); }
-		iterator         erase(const_iterator position);
-		iterator         erase(const_iterator first, const_iterator last);
-		reverse_iterator erase(const_reverse_iterator position);
-		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last);
+		iterator         erase(iterator position) EA_NOEXCEPT { return erase(const_iterator(position)); }
+		iterator         erase(const_iterator position) EA_NOEXCEPT;
+		iterator         erase(const_iterator first, const_iterator last) EA_NOEXCEPT;
+		reverse_iterator erase(const_reverse_iterator position) EA_NOEXCEPT;
+		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT;
 
 		// For some reason, multiple STL versions make a specialization 
 		// for erasing an array of key_types. I'm pretty sure we don't
@@ -582,8 +582,8 @@ namespace eastl
 		// a return value would be nearly meaningless.
 		void erase(const key_type* first, const key_type* last);
 
-		void clear();
-		void reset_lose_memory(); // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
+		void clear() EA_NOEXCEPT;
+		void reset_lose_memory() EA_NOEXCEPT; // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
 
 		iterator       find(const key_type& key) { return DoFind(key); }
 		const_iterator find(const key_type& key) const { return DoFind(key); }
@@ -628,8 +628,8 @@ namespace eastl
 		template<typename KX, typename Cmp = Compare, eastl::enable_if_t<eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
 		const_iterator upper_bound(const KX& key) const { return DoUpperBound(key); }
 
-		bool validate() const;
-		int  validate_iterator(const_iterator i) const;
+		bool validate() const EA_NOEXCEPT;
+		int  validate_iterator(const_iterator i) const EA_NOEXCEPT;
 
 	protected:
 		node_type* DoAllocateNode();
@@ -740,22 +740,22 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template <typename T, typename Pointer, typename Reference>
-	rbtree_iterator<T, Pointer, Reference>::rbtree_iterator()
+	rbtree_iterator<T, Pointer, Reference>::rbtree_iterator() EA_NOEXCEPT
 		: mpNode(NULL) { }
 
 
 	template <typename T, typename Pointer, typename Reference>
-	rbtree_iterator<T, Pointer, Reference>::rbtree_iterator(const base_node_type* pNode)
+	rbtree_iterator<T, Pointer, Reference>::rbtree_iterator(const base_node_type* pNode) EA_NOEXCEPT
 		: mpNode(const_cast<base_node_type*>(pNode)) { }
 
 
 	template <typename T, typename Pointer, typename Reference>
-	rbtree_iterator<T, Pointer, Reference>::rbtree_iterator(const iterator& x)
+	rbtree_iterator<T, Pointer, Reference>::rbtree_iterator(const iterator& x) EA_NOEXCEPT
 		: mpNode(x.mpNode) { }
 
 	template <typename T, typename Pointer, typename Reference>
 	typename rbtree_iterator<T, Pointer, Reference>::this_type&
-	rbtree_iterator<T, Pointer, Reference>::operator=(const iterator& x)
+	rbtree_iterator<T, Pointer, Reference>::operator=(const iterator& x) EA_NOEXCEPT
 	{
 		mpNode = x.mpNode;
 		return *this;
@@ -763,7 +763,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference>
 	typename rbtree_iterator<T, Pointer, Reference>::reference
-	rbtree_iterator<T, Pointer, Reference>::operator*() const
+	rbtree_iterator<T, Pointer, Reference>::operator*() const EA_NOEXCEPT
 	{
 		return static_cast<node_type*>(mpNode)->mValue;
 	}
@@ -771,7 +771,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference>
 	typename rbtree_iterator<T, Pointer, Reference>::pointer
-	rbtree_iterator<T, Pointer, Reference>::operator->() const
+	rbtree_iterator<T, Pointer, Reference>::operator->() const EA_NOEXCEPT
 	{
 		return &static_cast<node_type*>(mpNode)->mValue;
 	}
@@ -779,7 +779,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference>
 	typename rbtree_iterator<T, Pointer, Reference>::this_type&
-	rbtree_iterator<T, Pointer, Reference>::operator++()
+	rbtree_iterator<T, Pointer, Reference>::operator++() EA_NOEXCEPT
 	{
 		mpNode = RBTreeIncrement(mpNode);
 		return *this;
@@ -788,7 +788,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference>
 	typename rbtree_iterator<T, Pointer, Reference>::this_type
-	rbtree_iterator<T, Pointer, Reference>::operator++(int)
+	rbtree_iterator<T, Pointer, Reference>::operator++(int) EA_NOEXCEPT
 	{
 		this_type temp(*this);
 		mpNode = RBTreeIncrement(mpNode);
@@ -798,7 +798,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference>
 	typename rbtree_iterator<T, Pointer, Reference>::this_type&
-	rbtree_iterator<T, Pointer, Reference>::operator--()
+	rbtree_iterator<T, Pointer, Reference>::operator--() EA_NOEXCEPT
 	{
 		mpNode = RBTreeDecrement(mpNode);
 		return *this;
@@ -807,7 +807,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference>
 	typename rbtree_iterator<T, Pointer, Reference>::this_type
-	rbtree_iterator<T, Pointer, Reference>::operator--(int)
+	rbtree_iterator<T, Pointer, Reference>::operator--(int) EA_NOEXCEPT
 	{
 		this_type temp(*this);
 		mpNode = RBTreeDecrement(mpNode);
@@ -820,7 +820,7 @@ namespace eastl
 	// require us to support comparisons between reverse_iterators and const_reverse_iterators.
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB>
 	inline bool operator==(const rbtree_iterator<T, PointerA, ReferenceA>& a, 
-						   const rbtree_iterator<T, PointerB, ReferenceB>& b)
+						   const rbtree_iterator<T, PointerB, ReferenceB>& b) EA_NOEXCEPT
 	{
 		return a.mpNode == b.mpNode;
 	}
@@ -828,7 +828,7 @@ namespace eastl
 
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB>
 	inline bool operator!=(const rbtree_iterator<T, PointerA, ReferenceA>& a, 
-						   const rbtree_iterator<T, PointerB, ReferenceB>& b)
+						   const rbtree_iterator<T, PointerB, ReferenceB>& b) EA_NOEXCEPT
 	{
 		return a.mpNode != b.mpNode;
 	}
@@ -838,7 +838,7 @@ namespace eastl
 	// same type. This helps prevent ambiguity errors in the presence of rel_ops.
 	template <typename T, typename Pointer, typename Reference>
 	inline bool operator!=(const rbtree_iterator<T, Pointer, Reference>& a, 
-						   const rbtree_iterator<T, Pointer, Reference>& b)
+						   const rbtree_iterator<T, Pointer, Reference>& b) EA_NOEXCEPT
 	{
 		return a.mpNode != b.mpNode;
 	}
@@ -1094,7 +1094,7 @@ namespace eastl
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
 	inline typename rbtree<K, V, C, A, E, bM, bU>::this_type&
-	rbtree<K, V, C, A, E, bM, bU>::operator=(this_type&& x)
+	rbtree<K, V, C, A, E, bM, bU>::operator=(this_type&& x) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<C>)
 	{
 		if(this != &x)
 		{
@@ -1120,7 +1120,7 @@ namespace eastl
 
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
-	void rbtree<K, V, C, A, E, bM, bU>::swap(this_type& x)
+	void rbtree<K, V, C, A, E, bM, bU>::swap(this_type& x) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable_v<C>)
 	{
 	#if EASTL_RBTREE_LEGACY_SWAP_BEHAVIOUR_REQUIRES_COPY_CTOR
 		if(mAllocator == x.mAllocator) // If allocators are equivalent...
@@ -1777,7 +1777,7 @@ namespace eastl
 
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
-	inline void rbtree<K, V, C, A, E, bM, bU>::clear()
+	inline void rbtree<K, V, C, A, E, bM, bU>::clear() EA_NOEXCEPT
 	{
 		// Erase the entire tree. DoNukeSubtree is not a 
 		// conventional erase function, as it does no rebalancing.
@@ -1787,7 +1787,7 @@ namespace eastl
 
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
-	inline void rbtree<K, V, C, A, E, bM, bU>::reset_lose_memory()
+	inline void rbtree<K, V, C, A, E, bM, bU>::reset_lose_memory() EA_NOEXCEPT
 	{
 		// The reset_lose_memory function is a special extension function which unilaterally 
 		// resets the container to an empty state without freeing the memory of 
@@ -1803,7 +1803,7 @@ namespace eastl
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
 	inline typename rbtree<K, V, C, A, E, bM, bU>::iterator
-	rbtree<K, V, C, A, E, bM, bU>::erase(const_iterator position)
+	rbtree<K, V, C, A, E, bM, bU>::erase(const_iterator position) EA_NOEXCEPT
 	{
 		const iterator iErase(position.mpNode);
 		--mnSize; // Interleave this between the two references to itNext. We expect no exceptions to occur during the code below.
@@ -1816,7 +1816,7 @@ namespace eastl
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
 	typename rbtree<K, V, C, A, E, bM, bU>::iterator
-	rbtree<K, V, C, A, E, bM, bU>::erase(const_iterator first, const_iterator last)
+	rbtree<K, V, C, A, E, bM, bU>::erase(const_iterator first, const_iterator last) EA_NOEXCEPT
 	{
 		// We expect that if the user means to clear the container, they will call clear.
 		if(EASTL_LIKELY((first.mpNode != mAnchor.mpNodeLeft) || (last.mpNode != &mAnchor))) // If (first != begin or last != end) ...
@@ -1847,7 +1847,7 @@ namespace eastl
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
 	inline typename rbtree<K, V, C, A, E, bM, bU>::reverse_iterator
-	rbtree<K, V, C, A, E, bM, bU>::erase(const_reverse_iterator position)
+	rbtree<K, V, C, A, E, bM, bU>::erase(const_reverse_iterator position) EA_NOEXCEPT
 	{
 		return reverse_iterator(erase((++position).base()));
 	}
@@ -1855,7 +1855,7 @@ namespace eastl
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
 	typename rbtree<K, V, C, A, E, bM, bU>::reverse_iterator
-	rbtree<K, V, C, A, E, bM, bU>::erase(const_reverse_iterator first, const_reverse_iterator last)
+	rbtree<K, V, C, A, E, bM, bU>::erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT
 	{
 		// Version which erases in order from first to last.
 		// difference_type i(first.base() - last.base());
@@ -2032,7 +2032,7 @@ namespace eastl
 
 	// To do: Move this validate function entirely to a template-less implementation.
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
-	bool rbtree<K, V, C, A, E, bM, bU>::validate() const
+	bool rbtree<K, V, C, A, E, bM, bU>::validate() const EA_NOEXCEPT
 	{
 		// Red-black trees have the following canonical properties which we validate here:
 		//   1 Every node is either red or black.
@@ -2119,7 +2119,7 @@ namespace eastl
 
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
-	inline int rbtree<K, V, C, A, E, bM, bU>::validate_iterator(const_iterator i) const
+	inline int rbtree<K, V, C, A, E, bM, bU>::validate_iterator(const_iterator i) const EA_NOEXCEPT
 	{
 		// To do: Come up with a more efficient mechanism of doing this.
 
@@ -2417,7 +2417,7 @@ namespace eastl
 
 
 	template <typename K, typename V, typename A, typename C, typename E, bool bM, bool bU>
-	inline void swap(rbtree<K, V, C, A, E, bM, bU>& a, rbtree<K, V, C, A, E, bM, bU>& b)
+	inline void swap(rbtree<K, V, C, A, E, bM, bU>& a, rbtree<K, V, C, A, E, bM, bU>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
 	{
 		a.swap(b);
 	}

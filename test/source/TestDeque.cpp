@@ -31,6 +31,88 @@ template class eastl::deque<int>;
 template class eastl::deque<TestObject>;
 
 
+///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: deque (and DequeIterator) are at least as noexcept as MSVC STL's.
+// EASTL has no allocator_traits and behaves as if propagate_on_container_move_assignment
+// and propagate_on_container_swap were true, so move assignment and swap are unconditionally noexcept.
+namespace
+{
+	struct DequeNoexceptThrowing // Copy and move operations may throw.
+	{
+		DequeNoexceptThrowing() {}
+		DequeNoexceptThrowing(const DequeNoexceptThrowing&) {}
+		DequeNoexceptThrowing(DequeNoexceptThrowing&&) noexcept(false) {}
+		DequeNoexceptThrowing& operator=(const DequeNoexceptThrowing&) { return *this; }
+		DequeNoexceptThrowing& operator=(DequeNoexceptThrowing&&) noexcept(false) { return *this; }
+	};
+
+	template <typename T, bool kNothrowMoveAssign>
+	struct DequeNoexceptChecks
+	{
+		typedef eastl::deque<T>                     D;
+		typedef typename D::iterator                I;
+		typedef typename D::const_iterator          CI;
+		typedef typename D::reverse_iterator        RI;
+
+		static_assert(noexcept(eastl::declval<D&>() = eastl::declval<D&&>()), "deque::operator=(deque&&) must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().swap(eastl::declval<D&>())), "deque::swap must be noexcept");
+		static_assert(noexcept(eastl::swap(eastl::declval<D&>(), eastl::declval<D&>())), "swap(deque&, deque&) must be noexcept");
+
+		static_assert(noexcept(eastl::declval<D&>()[0]), "deque::operator[] must be noexcept");
+		static_assert(noexcept(eastl::declval<const D&>()[0]), "deque::operator[] const must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().front()), "deque::front must be noexcept");
+		static_assert(noexcept(eastl::declval<const D&>().front()), "deque::front const must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().back()), "deque::back must be noexcept");
+		static_assert(noexcept(eastl::declval<const D&>().back()), "deque::back const must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().pop_front()), "deque::pop_front must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().pop_back()), "deque::pop_back must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().clear()), "deque::clear must be noexcept");
+		static_assert(noexcept(eastl::declval<const D&>().validate()), "deque::validate must be noexcept");
+		static_assert(noexcept(eastl::declval<const D&>().validate_iterator(eastl::declval<CI>())), "deque::validate_iterator must be noexcept");
+
+		// erase is conditional on is_nothrow_move_assignable_v<value_type>, as in the standard library.
+		static_assert(noexcept(eastl::declval<D&>().erase(eastl::declval<CI>())) == kNothrowMoveAssign, "deque::erase(const_iterator)");
+		static_assert(noexcept(eastl::declval<D&>().erase(eastl::declval<CI>(), eastl::declval<CI>())) == kNothrowMoveAssign, "deque::erase(const_iterator, const_iterator)");
+		static_assert(noexcept(eastl::declval<D&>().erase(eastl::declval<RI>())) == kNothrowMoveAssign, "deque::erase(reverse_iterator)");
+		static_assert(noexcept(eastl::declval<D&>().erase(eastl::declval<RI>(), eastl::declval<RI>())) == kNothrowMoveAssign, "deque::erase(reverse_iterator, reverse_iterator)");
+
+		// DequeIterator
+		static_assert(noexcept(I()), "DequeIterator() must be noexcept");
+		static_assert(noexcept(CI()), "DequeIterator() must be noexcept");
+		static_assert(noexcept(I(eastl::declval<const I&>())), "DequeIterator(const iterator&) must be noexcept");
+		static_assert(noexcept(CI(eastl::declval<const I&>())), "const_iterator(const iterator&) must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>() = eastl::declval<const I&>()), "DequeIterator::operator=(const iterator&) must be noexcept");
+		static_assert(noexcept(eastl::declval<CI&>() = eastl::declval<const I&>()), "const_iterator::operator=(const iterator&) must be noexcept");
+		static_assert(noexcept(*eastl::declval<const I&>()), "DequeIterator::operator* must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>().operator->()), "DequeIterator::operator-> must be noexcept");
+		static_assert(noexcept(++eastl::declval<I&>()), "DequeIterator::operator++() must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>()++), "DequeIterator::operator++(int) must be noexcept");
+		static_assert(noexcept(--eastl::declval<I&>()), "DequeIterator::operator--() must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>()--), "DequeIterator::operator--(int) must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>() += 1), "DequeIterator::operator+= must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>() -= 1), "DequeIterator::operator-= must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() + 1), "DequeIterator::operator+ must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() - 1), "DequeIterator::operator- must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>()[1]), "DequeIterator::operator[] must be noexcept");
+		static_assert(noexcept(1 + eastl::declval<const I&>()), "operator+(n, DequeIterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() - eastl::declval<const I&>()), "operator-(DequeIterator, DequeIterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() - eastl::declval<const CI&>()), "operator-(iterator, const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() == eastl::declval<const I&>()), "DequeIterator operator== must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() != eastl::declval<const I&>()), "DequeIterator operator!= must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() == eastl::declval<const CI&>()), "iterator == const_iterator must be noexcept");
+		static_assert(noexcept(eastl::declval<const CI&>() != eastl::declval<const I&>()), "const_iterator != iterator must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() < eastl::declval<const I&>()), "DequeIterator operator< must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() > eastl::declval<const I&>()), "DequeIterator operator> must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() <= eastl::declval<const I&>()), "DequeIterator operator<= must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() >= eastl::declval<const CI&>()), "DequeIterator operator>= must be noexcept");
+	};
+
+	template struct DequeNoexceptChecks<int, true>;
+	template struct DequeNoexceptChecks<DequeNoexceptThrowing, false>;
+}
+
+
+
 // Test compiler issue that appeared in VS2012 relating to deque::kAlignment.
 struct StructWithContainerOfStructs
 {

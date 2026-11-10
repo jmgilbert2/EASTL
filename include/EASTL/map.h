@@ -146,7 +146,7 @@ namespace eastl
 
 		this_type& operator=(const this_type& x) { return (this_type&)base_type::operator=(x); }
 		this_type& operator=(std::initializer_list<value_type> ilist) { return (this_type&)base_type::operator=(ilist); }
-		this_type& operator=(this_type&& x) { return (this_type&)base_type::operator=(eastl::move(x)); }
+		this_type& operator=(this_type&& x) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<Compare>) { return (this_type&)base_type::operator=(eastl::move(x)); }
 
 	public:
 		/// This is an extension to the C++ standard. We insert a default-constructed 
@@ -162,12 +162,12 @@ namespace eastl
 
 		value_compare value_comp() const;
 
-		size_type erase(const Key& key) { return DoErase(key); }
+		size_type erase(const Key& key) EA_NOEXCEPT_IF((eastl::is_nothrow_invocable_v<const Compare&, const Key&, const Key&>)) { return DoErase(key); }
 
 		template<typename KX, typename Cmp = Compare,
 			eastl::enable_if_t<!eastl::is_convertible_v<KX&&, iterator> && !eastl::is_convertible_v<KX&&, const_iterator>
 			&& eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
-		size_type erase(KX&& key) { return DoErase(eastl::forward<KX>(key)); }
+		size_type erase(KX&& key) EA_NOEXCEPT_IF((eastl::is_nothrow_invocable_v<const Compare&, const Key&, const eastl::remove_reference_t<KX>&> && eastl::is_nothrow_invocable_v<const Compare&, const eastl::remove_reference_t<KX>&, const Key&>)) { return DoErase(eastl::forward<KX>(key)); }
 
 		size_type count(const Key& key) const;
 
@@ -323,7 +323,7 @@ namespace eastl
 
 		this_type& operator=(const this_type& x) { return (this_type&)base_type::operator=(x); }
 		this_type& operator=(std::initializer_list<value_type> ilist) { return (this_type&)base_type::operator=(ilist); }
-		this_type& operator=(this_type&& x) { return (this_type&)base_type::operator=(eastl::move(x)); }
+		this_type& operator=(this_type&& x) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<Compare>) { return (this_type&)base_type::operator=(eastl::move(x)); }
 
 	public:
 		/// This is an extension to the C++ standard. We insert a default-constructed 
@@ -339,12 +339,12 @@ namespace eastl
 
 		value_compare value_comp() const;
 
-		size_type erase(const Key& key) { return DoErase(key); }
+		size_type erase(const Key& key) EA_NOEXCEPT_IF((eastl::is_nothrow_invocable_v<const Compare&, const Key&, const Key&>)) { return DoErase(key); }
 		
 		template<typename KX, typename Cmp = Compare,
 			eastl::enable_if_t<!eastl::is_convertible_v<KX&&, iterator> && !eastl::is_convertible_v<KX&&, const_iterator>
 			&& eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
-		size_type erase(KX&& key) { return DoErase(eastl::forward<KX>(key)); }
+		size_type erase(KX&& key) EA_NOEXCEPT_IF((eastl::is_nothrow_invocable_v<const Compare&, const Key&, const eastl::remove_reference_t<KX>&> && eastl::is_nothrow_invocable_v<const Compare&, const eastl::remove_reference_t<KX>&, const Key&>)) { return DoErase(eastl::forward<KX>(key)); }
 
 		size_type count(const Key& key) const { return DoCount(key); }
 

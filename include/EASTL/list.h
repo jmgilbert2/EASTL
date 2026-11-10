@@ -329,11 +329,11 @@ namespace eastl
 		void resize(size_type n, const value_type& value);
 		void resize(size_type n);
 
-		reference       front();
-		const_reference front() const;
+		reference       front() EA_NOEXCEPT;
+		const_reference front() const EA_NOEXCEPT;
 
-		reference       back();
-		const_reference back() const;
+		reference       back() EA_NOEXCEPT;
+		const_reference back() const EA_NOEXCEPT;
 
 		template <typename... Args>
 		reference emplace_front(Args&&... args);
@@ -351,8 +351,8 @@ namespace eastl
 		reference push_back();
 		void*     push_back_uninitialized();
 
-		void pop_front();
-		void pop_back();
+		void pop_front() EA_NOEXCEPT;
+		void pop_back() EA_NOEXCEPT;
 
 		template <typename... Args>
 		iterator emplace(const_iterator position, Args&&... args);
@@ -366,11 +366,11 @@ namespace eastl
 		template <typename InputIterator>
 		iterator insert(const_iterator position, InputIterator first, InputIterator last);
 
-		iterator erase(const_iterator position);
-		iterator erase(const_iterator first, const_iterator last);
+		iterator erase(const_iterator position) EA_NOEXCEPT;
+		iterator erase(const_iterator first, const_iterator last) EA_NOEXCEPT;
 
-		reverse_iterator erase(const_reverse_iterator position);
-		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last);
+		reverse_iterator erase(const_reverse_iterator position) EA_NOEXCEPT;
+		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT;
 
 		void clear() EA_NOEXCEPT;
 		void reset_lose_memory() EA_NOEXCEPT;    // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
@@ -419,8 +419,8 @@ namespace eastl
 		void sort(Compare compare);
 
 	public:
-		bool validate() const;
-		int  validate_iterator(const_iterator i) const;
+		bool validate() const EA_NOEXCEPT;
+		int  validate_iterator(const_iterator i) const EA_NOEXCEPT;
 
 	protected:
 		node_type* DoCreateNode();
@@ -958,7 +958,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::reference
-	list<T, Allocator>::front()
+	list<T, Allocator>::front() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -973,7 +973,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::const_reference
-	list<T, Allocator>::front() const
+	list<T, Allocator>::front() const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -988,7 +988,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::reference
-	list<T, Allocator>::back()
+	list<T, Allocator>::back() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -1003,7 +1003,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::const_reference
-	list<T, Allocator>::back() const
+	list<T, Allocator>::back() const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -1250,7 +1250,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline void list<T, Allocator>::pop_front()
+	inline void list<T, Allocator>::pop_front() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -1301,7 +1301,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline void list<T, Allocator>::pop_back()
+	inline void list<T, Allocator>::pop_back() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -1391,7 +1391,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::iterator
-	list<T, Allocator>::erase(const_iterator position)
+	list<T, Allocator>::erase(const_iterator position) EA_NOEXCEPT
 	{
 		++position;
 		DoErase(position.mpNode->mpPrev);
@@ -1401,7 +1401,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename list<T, Allocator>::iterator
-	list<T, Allocator>::erase(const_iterator first, const_iterator last)
+	list<T, Allocator>::erase(const_iterator first, const_iterator last) EA_NOEXCEPT
 	{
 		while(first != last)
 			first = erase(first);
@@ -1411,7 +1411,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::reverse_iterator
-	list<T, Allocator>::erase(const_reverse_iterator position)
+	list<T, Allocator>::erase(const_reverse_iterator position) EA_NOEXCEPT
 	{
 		return reverse_iterator(erase((++position).base()));
 	}
@@ -1419,7 +1419,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename list<T, Allocator>::reverse_iterator
-	list<T, Allocator>::erase(const_reverse_iterator first, const_reverse_iterator last)
+	list<T, Allocator>::erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT
 	{
 		// Version which erases in order from first to last.
 		// difference_type i(first.base() - last.base());
@@ -2048,7 +2048,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool list<T, Allocator>::validate() const
+	inline bool list<T, Allocator>::validate() const EA_NOEXCEPT
 	{
 		#if EASTL_LIST_SIZE_CACHE
 			size_type n = 0;
@@ -2066,7 +2066,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline int list<T, Allocator>::validate_iterator(const_iterator i) const
+	inline int list<T, Allocator>::validate_iterator(const_iterator i) const EA_NOEXCEPT
 	{
 		// To do: Come up with a more efficient mechanism of doing this.
 

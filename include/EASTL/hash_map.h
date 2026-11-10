@@ -267,7 +267,7 @@ namespace eastl
 		}
 
 
-		this_type& operator=(this_type&& x)
+		this_type& operator=(this_type&& x) EA_NOEXCEPT_IF((eastl::is_nothrow_move_assignable_v<Hash> && eastl::is_nothrow_move_assignable_v<Predicate>))
 		{
 			return static_cast<this_type&>(base_type::operator=(eastl::move(x)));
 		}
@@ -611,7 +611,7 @@ namespace eastl
 		}
 
 
-		this_type& operator=(this_type&& x)
+		this_type& operator=(this_type&& x) EA_NOEXCEPT_IF((eastl::is_nothrow_move_assignable_v<Hash> && eastl::is_nothrow_move_assignable_v<Predicate>))
 		{
 			return static_cast<this_type&>(base_type::operator=(eastl::move(x)));
 		}

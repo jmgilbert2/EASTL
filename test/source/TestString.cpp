@@ -40,6 +40,84 @@ static_assert(false, "Building with char8_t tests enabled, but EA_CHAR8_UNIQUE e
 #define LITERAL(x) EA_CHAR32(x)
 #include "TestString.inl"
 
+///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: basic_string is at least as noexcept as MSVC STL's basic_string.
+// (swap and move assignment compare allocators and copy for unequal ones, so they are not noexcept.)
+namespace
+{
+	template <typename S>
+	struct StringNoexceptChecks
+	{
+		typedef typename S::value_type              CH;
+		typedef typename S::size_type               N;
+		typedef typename S::const_iterator          CI;
+		typedef typename S::reverse_iterator        RI;
+		typedef typename S::view_type               V;
+
+		static_assert(noexcept(eastl::declval<S&>()[0]), "basic_string::operator[] must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>()[0]), "basic_string::operator[] const must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().front()), "basic_string::front must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().front()), "basic_string::front const must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().back()), "basic_string::back must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().back()), "basic_string::back const must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().pop_back()), "basic_string::pop_back must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<CI>())), "basic_string::erase(const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<CI>(), eastl::declval<CI>())), "basic_string::erase(const_iterator, const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<RI>())), "basic_string::erase(reverse_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<RI>(), eastl::declval<RI>())), "basic_string::erase(reverse_iterator, reverse_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().make_lower()), "basic_string::make_lower must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().make_upper()), "basic_string::make_upper must be noexcept");
+
+		static_assert(noexcept(eastl::declval<const S&>().find(eastl::declval<const CH*>(), N(0))), "basic_string::find(const value_type*, size_type) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().find(eastl::declval<const CH*>(), N(0), N(0))), "basic_string::find(const value_type*, size_type, size_type) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().rfind(eastl::declval<const CH*>(), N(0))), "basic_string::rfind(const value_type*, size_type) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().rfind(eastl::declval<const CH*>(), N(0), N(0))), "basic_string::rfind(const value_type*, size_type, size_type) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().find_first_of(eastl::declval<const CH*>(), N(0))), "basic_string::find_first_of(const value_type*, size_type) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().find_first_of(eastl::declval<const CH*>(), N(0), N(0))), "basic_string::find_first_of(const value_type*, size_type, size_type) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().find_last_of(eastl::declval<const CH*>(), N(0))), "basic_string::find_last_of(const value_type*, size_type) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().find_last_of(eastl::declval<const CH*>(), N(0), N(0))), "basic_string::find_last_of(const value_type*, size_type, size_type) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().find_first_not_of(eastl::declval<const CH*>(), N(0))), "basic_string::find_first_not_of(const value_type*, size_type) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().find_first_not_of(eastl::declval<const CH*>(), N(0), N(0))), "basic_string::find_first_not_of(const value_type*, size_type, size_type) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().find_last_not_of(eastl::declval<const CH*>(), N(0))), "basic_string::find_last_not_of(const value_type*, size_type) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().find_last_not_of(eastl::declval<const CH*>(), N(0), N(0))), "basic_string::find_last_not_of(const value_type*, size_type, size_type) must be noexcept");
+
+		static_assert(noexcept(eastl::declval<const S&>().compare(eastl::declval<const CH*>())), "basic_string::compare(const value_type*) must be noexcept");
+		static_assert(noexcept(S::compare(eastl::declval<const CH*>(), eastl::declval<const CH*>(), eastl::declval<const CH*>(), eastl::declval<const CH*>())), "basic_string::compare(four pointers) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().comparei(eastl::declval<const CH*>())), "basic_string::comparei(const value_type*) must be noexcept");
+		static_assert(noexcept(S::comparei(eastl::declval<const CH*>(), eastl::declval<const CH*>(), eastl::declval<const CH*>(), eastl::declval<const CH*>())), "basic_string::comparei(four pointers) must be noexcept");
+
+		static_assert(noexcept(eastl::declval<const S&>() == eastl::declval<const S&>()), "operator==(basic_string, basic_string) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>() == eastl::declval<const CH*>()), "operator==(basic_string, const value_type*) must be noexcept");
+		static_assert(noexcept(eastl::declval<const CH*>() == eastl::declval<const S&>()), "operator==(const value_type*, basic_string) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>() != eastl::declval<const S&>()), "operator!=(basic_string, basic_string) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>() != eastl::declval<const CH*>()), "operator!=(basic_string, const value_type*) must be noexcept");
+		static_assert(noexcept(eastl::declval<const CH*>() != eastl::declval<const S&>()), "operator!=(const value_type*, basic_string) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>() < eastl::declval<const S&>()), "operator<(basic_string, basic_string) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>() < eastl::declval<const CH*>()), "operator<(basic_string, const value_type*) must be noexcept");
+		static_assert(noexcept(eastl::declval<const CH*>() < eastl::declval<const S&>()), "operator<(const value_type*, basic_string) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>() > eastl::declval<const S&>()), "operator>(basic_string, basic_string) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>() <= eastl::declval<const S&>()), "operator<=(basic_string, basic_string) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>() >= eastl::declval<const S&>()), "operator>=(basic_string, basic_string) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>() == eastl::declval<const V&>()), "operator==(basic_string, view) must be noexcept");
+		static_assert(noexcept(eastl::declval<const V&>() == eastl::declval<const S&>()), "operator==(view, basic_string) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>() != eastl::declval<const V&>()), "operator!=(basic_string, view) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>() < eastl::declval<const V&>()), "operator<(basic_string, view) must be noexcept");
+		static_assert(noexcept(eastl::declval<const V&>() < eastl::declval<const S&>()), "operator<(view, basic_string) must be noexcept");
+		#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+			static_assert(noexcept(eastl::declval<const S&>() <=> eastl::declval<const S&>()), "operator<=>(basic_string, basic_string) must be noexcept");
+			static_assert(noexcept(eastl::declval<const S&>() <=> eastl::declval<const CH*>()), "operator<=>(basic_string, const value_type*) must be noexcept");
+		#endif
+
+		static_assert(noexcept(eastl::declval<const eastl::hash<S>&>()(eastl::declval<const S&>())), "hash<basic_string>::operator() must be noexcept");
+	};
+
+	template struct StringNoexceptChecks<eastl::string>;
+	template struct StringNoexceptChecks<eastl::wstring>;
+	template struct StringNoexceptChecks<eastl::u16string>;
+	template struct StringNoexceptChecks<eastl::u32string>;
+}
+
+
 int TestString()
 {
 	int nErrorCount = 0;

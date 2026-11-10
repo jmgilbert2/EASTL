@@ -55,6 +55,58 @@ struct HasAddressOfOperator
 template class eastl::vector<HasAddressOfOperator>;  // force compile all functions of vector
 
 
+///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: vector is at least as noexcept as MSVC STL's vector.
+// EASTL has no allocator_traits and behaves as if propagate_on_container_move_assignment
+// and propagate_on_container_swap were true (the allocator is moved/swapped with the storage),
+// so move assignment and swap are unconditionally noexcept.
+namespace
+{
+	struct VectorNoexceptThrowing // Copy and move operations may throw.
+	{
+		VectorNoexceptThrowing() {}
+		VectorNoexceptThrowing(const VectorNoexceptThrowing&) {}
+		VectorNoexceptThrowing(VectorNoexceptThrowing&&) noexcept(false) {}
+		VectorNoexceptThrowing& operator=(const VectorNoexceptThrowing&) { return *this; }
+		VectorNoexceptThrowing& operator=(VectorNoexceptThrowing&&) noexcept(false) { return *this; }
+	};
+
+	template <typename T, bool kNothrowMoveAssign>
+	struct VectorNoexceptChecks
+	{
+		typedef eastl::vector<T>              V;
+		typedef typename V::allocator_type    A;
+		typedef typename V::const_iterator    CI;
+		typedef typename V::const_reverse_iterator CRI;
+
+		static_assert(noexcept(eastl::declval<V&>() = eastl::declval<V&&>()), "vector::operator=(vector&&) must be noexcept");
+		static_assert(noexcept(eastl::declval<V&>().swap(eastl::declval<V&>())), "vector::swap must be noexcept");
+		static_assert(noexcept(eastl::swap(eastl::declval<V&>(), eastl::declval<V&>())), "swap(vector&, vector&) must be noexcept");
+		static_assert(noexcept(V(eastl::declval<V&&>(), eastl::declval<const A&>())), "vector(vector&&, const allocator_type&) must be noexcept");
+
+		static_assert(noexcept(eastl::declval<V&>()[0]), "vector::operator[] must be noexcept");
+		static_assert(noexcept(eastl::declval<const V&>()[0]), "vector::operator[] const must be noexcept");
+		static_assert(noexcept(eastl::declval<V&>().front()), "vector::front must be noexcept");
+		static_assert(noexcept(eastl::declval<const V&>().front()), "vector::front const must be noexcept");
+		static_assert(noexcept(eastl::declval<V&>().back()), "vector::back must be noexcept");
+		static_assert(noexcept(eastl::declval<const V&>().back()), "vector::back const must be noexcept");
+		static_assert(noexcept(eastl::declval<V&>().pop_back()), "vector::pop_back must be noexcept");
+
+		// erase is conditional on is_nothrow_move_assignable_v<value_type>, as in the standard library.
+		static_assert(noexcept(eastl::declval<V&>().erase(eastl::declval<CI>())) == kNothrowMoveAssign, "vector::erase(const_iterator)");
+		static_assert(noexcept(eastl::declval<V&>().erase(eastl::declval<CI>(), eastl::declval<CI>())) == kNothrowMoveAssign, "vector::erase(const_iterator, const_iterator)");
+		static_assert(noexcept(eastl::declval<V&>().erase_unsorted(eastl::declval<CI>())) == kNothrowMoveAssign, "vector::erase_unsorted(const_iterator)");
+		static_assert(noexcept(eastl::declval<V&>().erase(eastl::declval<CRI>())) == kNothrowMoveAssign, "vector::erase(const_reverse_iterator)");
+		static_assert(noexcept(eastl::declval<V&>().erase(eastl::declval<CRI>(), eastl::declval<CRI>())) == kNothrowMoveAssign, "vector::erase(const_reverse_iterator, const_reverse_iterator)");
+		static_assert(noexcept(eastl::declval<V&>().erase_unsorted(eastl::declval<CRI>())) == kNothrowMoveAssign, "vector::erase_unsorted(const_reverse_iterator)");
+	};
+
+	template struct VectorNoexceptChecks<int, true>;
+	template struct VectorNoexceptChecks<VectorNoexceptThrowing, false>;
+}
+
+
+
 
 // Test compiler issue that appeared in VS2012 relating to kAlignment
 struct StructWithContainerOfStructs

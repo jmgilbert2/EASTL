@@ -244,7 +244,7 @@ namespace eastl
 		vector(const this_type& x);
 		vector(const this_type& x, const allocator_type& allocator);
 		vector(this_type&& x) EA_NOEXCEPT;
-		vector(this_type&& x, const allocator_type& allocator);
+		vector(this_type&& x, const allocator_type& allocator) EA_NOEXCEPT;
 		vector(std::initializer_list<value_type> ilist, const allocator_type& allocator = EASTL_VECTOR_DEFAULT_ALLOCATOR);
 
 		// note: this has pre-C++11 semantics:
@@ -256,9 +256,9 @@ namespace eastl
 
 		this_type& operator=(const this_type& x);
 		this_type& operator=(std::initializer_list<value_type> ilist);
-		this_type& operator=(this_type&& x); // TODO(c++17): noexcept(allocator_traits<Allocator>::propagate_on_container_move_assignment::value || allocator_traits<Allocator>::is_always_equal::value)
+		this_type& operator=(this_type&& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_move_assignment were true (see swap).
 
-		void swap(this_type& x); // TODO(c++17): noexcept(allocator_traits<Allocator>::propagate_on_container_move_assignment::value || allocator_traits<Allocator>::is_always_equal::value)
+		void swap(this_type& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_swap were true: the allocator is swapped along with the storage.
 
 		void assign(size_type n, const value_type& value);
 
@@ -297,23 +297,23 @@ namespace eastl
 		pointer       data() EA_NOEXCEPT;
 		const_pointer data() const EA_NOEXCEPT;
 
-		reference       operator[](size_type n);
-		const_reference operator[](size_type n) const;
+		reference       operator[](size_type n) EA_NOEXCEPT;
+		const_reference operator[](size_type n) const EA_NOEXCEPT;
 
 		reference       at(size_type n);
 		const_reference at(size_type n) const;
 
-		reference       front();
-		const_reference front() const;
+		reference       front() EA_NOEXCEPT;
+		const_reference front() const EA_NOEXCEPT;
 
-		reference       back();
-		const_reference back() const;
+		reference       back() EA_NOEXCEPT;
+		const_reference back() const EA_NOEXCEPT;
 
 		void      push_back(const value_type& value);
 		reference push_back();
 		void*     push_back_uninitialized();
 		void      push_back(value_type&& value);
-		void      pop_back();
+		void      pop_back() EA_NOEXCEPT;
 
 		template<class... Args>
 		iterator emplace(const_iterator position, Args&&... args);
@@ -337,13 +337,13 @@ namespace eastl
 		reverse_iterator erase_last(const T& value);
 		reverse_iterator erase_last_unsorted(const T& value); // Same as erase, except it doesn't preserve order, but is faster because it simply copies the last item in the vector over the erased position.
 
-		iterator erase(const_iterator position);
-		iterator erase(const_iterator first, const_iterator last);
-		iterator erase_unsorted(const_iterator position);         // Same as erase, except it doesn't preserve order, but is faster because it simply copies the last item in the vector over the erased position.
+		iterator erase(const_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>);
+		iterator erase(const_iterator first, const_iterator last) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>);
+		iterator erase_unsorted(const_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>);         // Same as erase, except it doesn't preserve order, but is faster because it simply copies the last item in the vector over the erased position.
 
-		reverse_iterator erase(const_reverse_iterator position);
-		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last);
-		reverse_iterator erase_unsorted(const_reverse_iterator position);
+		reverse_iterator erase(const_reverse_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>);
+		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>);
+		reverse_iterator erase_unsorted(const_reverse_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>);
 
 		void clear() EA_NOEXCEPT;
 		void reset_lose_memory() EA_NOEXCEPT;                       // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
@@ -609,7 +609,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline vector<T, Allocator>::vector(this_type&& x, const allocator_type& allocator)
+	inline vector<T, Allocator>::vector(this_type&& x, const allocator_type& allocator) EA_NOEXCEPT
 		: base_type(allocator)
 	{
 		if (internalAllocator() == x.internalAllocator()) // If allocators are equivalent...
@@ -694,7 +694,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename vector<T, Allocator>::this_type&
-	vector<T, Allocator>::operator=(this_type&& x)
+	vector<T, Allocator>::operator=(this_type&& x) EA_NOEXCEPT
 	{
 		if(this != &x)
 		{
@@ -951,7 +951,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::reference
-	vector<T, Allocator>::operator[](size_type n)
+	vector<T, Allocator>::operator[](size_type n) EA_NOEXCEPT
 	{
 	    #if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
@@ -968,7 +968,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::const_reference
-	vector<T, Allocator>::operator[](size_type n) const
+	vector<T, Allocator>::operator[](size_type n) const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(n >= (static_cast<size_type>(mpEnd - mpBegin))))
@@ -1021,7 +1021,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::reference
-	vector<T, Allocator>::front()
+	vector<T, Allocator>::front() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY((mpBegin == nullptr) || (mpEnd <= mpBegin))) // We don't allow the user to reference an empty container.
@@ -1036,7 +1036,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::const_reference
-	vector<T, Allocator>::front() const
+	vector<T, Allocator>::front() const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY((mpBegin == nullptr) || (mpEnd <= mpBegin))) // We don't allow the user to reference an empty container.
@@ -1051,7 +1051,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::reference
-	vector<T, Allocator>::back()
+	vector<T, Allocator>::back() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			// if mpEnd is nullptr the expression (mpEnd - 1) is undefined behaviour.
@@ -1066,7 +1066,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::const_reference
-	vector<T, Allocator>::back() const
+	vector<T, Allocator>::back() const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			// if mpEnd is nullptr the expression (mpEnd - 1) is undefined behaviour.
@@ -1127,7 +1127,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline void vector<T, Allocator>::pop_back()
+	inline void vector<T, Allocator>::pop_back() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(mpEnd <= mpBegin))
@@ -1241,7 +1241,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::iterator
-	vector<T, Allocator>::erase(const_iterator position)
+	vector<T, Allocator>::erase(const_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>)
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY((position < mpBegin) || (position >= mpEnd)))
@@ -1261,7 +1261,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::iterator
-	vector<T, Allocator>::erase(const_iterator first, const_iterator last)
+	vector<T, Allocator>::erase(const_iterator first, const_iterator last) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>)
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY((first < mpBegin) || (first > mpEnd) || (last < mpBegin) || (last > mpEnd) || (last < first)))
@@ -1281,7 +1281,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::iterator
-	vector<T, Allocator>::erase_unsorted(const_iterator position)
+	vector<T, Allocator>::erase_unsorted(const_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>)
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY((position < mpBegin) || (position >= mpEnd)))
@@ -1356,7 +1356,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::reverse_iterator
-	vector<T, Allocator>::erase(const_reverse_iterator position)
+	vector<T, Allocator>::erase(const_reverse_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>)
 	{
 		return reverse_iterator(erase((++position).base()));
 	}
@@ -1364,7 +1364,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::reverse_iterator
-	vector<T, Allocator>::erase(const_reverse_iterator first, const_reverse_iterator last)
+	vector<T, Allocator>::erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>)
 	{
 		// Version which erases in order from first to last.
 		// difference_type i(first.base() - last.base());
@@ -1379,7 +1379,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename vector<T, Allocator>::reverse_iterator
-	vector<T, Allocator>::erase_unsorted(const_reverse_iterator position)
+	vector<T, Allocator>::erase_unsorted(const_reverse_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>)
 	{
 		return reverse_iterator(erase_unsorted((++position).base()));
 	}
@@ -1411,7 +1411,7 @@ namespace eastl
 	// is false by default). EASTL doesn't have allocator_traits and so this doesn't directly apply,
 	// but EASTL has the effective behavior of propagate_on_container_swap = true for all allocators. 
 	template <typename T, typename Allocator>
-	inline void vector<T, Allocator>::swap(this_type& x)
+	inline void vector<T, Allocator>::swap(this_type& x) EA_NOEXCEPT
 	{
 	#if defined(EASTL_VECTOR_LEGACY_SWAP_BEHAVIOUR_REQUIRES_COPY_CTOR) && EASTL_VECTOR_LEGACY_SWAP_BEHAVIOUR_REQUIRES_COPY_CTOR
 		if(internalAllocator() == x.internalAllocator()) // If allocators are equivalent...
