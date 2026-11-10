@@ -174,7 +174,7 @@ namespace Internal
 	// Provides a vessel to expand variadic packs.
 	//
 	template <typename... Ts>
-	EA_CPP14_CONSTEXPR void swallow(Ts&&...) {}
+	EA_CPP14_CONSTEXPR void swallow(Ts&&...) EA_NOEXCEPT {}
 
 
 	// TupleLeaf
@@ -257,8 +257,8 @@ namespace Internal
 			return 0;
 		}
 
-		EA_CPP14_CONSTEXPR ValueType& getInternal() { return mValue; }
-		EA_CONSTEXPR const ValueType& getInternal() const { return mValue; }
+		EA_CPP14_CONSTEXPR ValueType& getInternal() EA_NOEXCEPT { return mValue; }
+		EA_CONSTEXPR const ValueType& getInternal() const EA_NOEXCEPT { return mValue; }
 
 	private:
 		ValueType mValue;  
@@ -308,8 +308,8 @@ namespace Internal
 			return 0;
 		}
 
-		EA_CPP14_CONSTEXPR ValueType& getInternal() { return mValue; }
-		EA_CONSTEXPR const ValueType& getInternal() const { return mValue; }
+		EA_CPP14_CONSTEXPR ValueType& getInternal() EA_NOEXCEPT { return mValue; }
+		EA_CONSTEXPR const ValueType& getInternal() const EA_NOEXCEPT { return mValue; }
 
 	private:
 		ValueType mValue;
@@ -394,56 +394,56 @@ namespace Internal
 	};
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline EA_CPP14_CONSTEXPR tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(TupleImpl<Indices, Ts...>& t) EA_NOEXCEPT
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<TupleLeaf<I, Type>&>(t).getInternal();
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline EA_CPP14_CONSTEXPR const tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(const TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR const tuple_element_t<I, TupleImpl<Indices, Ts...>>& getImpl(const TupleImpl<Indices, Ts...>& t) EA_NOEXCEPT
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<const TupleLeaf<I, Type>&>(t).getInternal();
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline EA_CPP14_CONSTEXPR tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(TupleImpl<Indices, Ts...>&& t)
+	inline EA_CPP14_CONSTEXPR tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(TupleImpl<Indices, Ts...>&& t) EA_NOEXCEPT
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<Type&&>(static_cast<TupleLeaf<I, Type>&>(t).getInternal());
 	}
 
 	template <size_t I, typename Indices, typename... Ts>
-	inline EA_CPP14_CONSTEXPR const tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(const TupleImpl<Indices, Ts...>&& t)
+	inline EA_CPP14_CONSTEXPR const tuple_element_t<I, TupleImpl<Indices, Ts...>>&& getImpl(const TupleImpl<Indices, Ts...>&& t) EA_NOEXCEPT
 	{
 		typedef tuple_element_t<I, TupleImpl<Indices, Ts...>> Type;
 		return static_cast<const Type&&>(static_cast<const TupleLeaf<I, Type>&>(t).getInternal());
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline EA_CPP14_CONSTEXPR T& getImpl(TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR T& getImpl(TupleImpl<Indices, Ts...>& t) EA_NOEXCEPT
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<TupleLeaf<Index::index, T>&>(t).getInternal();
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline EA_CPP14_CONSTEXPR const T& getImpl(const TupleImpl<Indices, Ts...>& t)
+	inline EA_CPP14_CONSTEXPR const T& getImpl(const TupleImpl<Indices, Ts...>& t) EA_NOEXCEPT
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<const TupleLeaf<Index::index, T>&>(t).getInternal();
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline EA_CPP14_CONSTEXPR T&& getImpl(TupleImpl<Indices, Ts...>&& t)
+	inline EA_CPP14_CONSTEXPR T&& getImpl(TupleImpl<Indices, Ts...>&& t) EA_NOEXCEPT
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<T&&>(static_cast<TupleLeaf<Index::index, T>&>(t).getInternal());
 	}
 
 	template <typename T, typename Indices, typename... Ts>
-	inline EA_CPP14_CONSTEXPR const T&& getImpl(const TupleImpl<Indices, Ts...>&& t)
+	inline EA_CPP14_CONSTEXPR const T&& getImpl(const TupleImpl<Indices, Ts...>&& t) EA_NOEXCEPT
 	{
 		typedef tuple_index<T, TupleImpl<Indices, Ts...>> Index;
 		return static_cast<const T&&>(static_cast<const TupleLeaf<Index::index, T>&>(t).getInternal());

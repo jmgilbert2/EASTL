@@ -485,8 +485,8 @@ namespace eastl
 
 		// Deprecated: use the bitset(unsigned long long) constructor instead.
 		// this was a workaround for when our constructor was defined as bitset(uint32_t) and could cause a narrowing conversion.
-		EASTL_REMOVE_AT_2024_SEPT void          from_uint32(uint32_t value);
-		EASTL_REMOVE_AT_2024_SEPT void          from_uint64(uint64_t value);
+		EASTL_REMOVE_AT_2024_SEPT void          from_uint32(uint32_t value) EA_NOEXCEPT;
+		EASTL_REMOVE_AT_2024_SEPT void          from_uint64(uint64_t value) EA_NOEXCEPT;
 
 		/// to_xxx()
 		/// 
@@ -582,7 +582,7 @@ namespace eastl
 	///
 	/// todo: Use bit.h's popcount instead?
 	template<typename UInt64>
-	eastl::enable_if_t<detail::is_word_type_v<UInt64> && sizeof(UInt64) == 8, uint32_t> BitsetCountBits(UInt64 x)
+	eastl::enable_if_t<detail::is_word_type_v<UInt64> && sizeof(UInt64) == 8, uint32_t> BitsetCountBits(UInt64 x) EA_NOEXCEPT
 	{
 		// GCC 3.x's implementation of UINT64_C is broken and fails to deal with 
 		// the code below correctly. So we make a workaround for it. Earlier and 
@@ -602,7 +602,7 @@ namespace eastl
 	}
 
 	template<typename UInt32>
-	eastl::enable_if_t<detail::is_word_type_v<UInt32> && sizeof(UInt32) == 4, uint32_t> BitsetCountBits(UInt32 x)
+	eastl::enable_if_t<detail::is_word_type_v<UInt32> && sizeof(UInt32) == 4, uint32_t> BitsetCountBits(UInt32 x) EA_NOEXCEPT
 	{
 		x = x - ((x >> 1) & 0x55555555);
 		x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
@@ -611,7 +611,7 @@ namespace eastl
 	}
 
 	template<typename SmallUInt>
-	eastl::enable_if_t< detail::is_word_type_v<SmallUInt> && sizeof(SmallUInt) < 4, uint32_t> BitsetCountBits(SmallUInt x)
+	eastl::enable_if_t< detail::is_word_type_v<SmallUInt> && sizeof(SmallUInt) < 4, uint32_t> BitsetCountBits(SmallUInt x) EA_NOEXCEPT
 	{
 		return BitsetCountBits((uint32_t)x);
 	}
@@ -622,7 +622,7 @@ namespace eastl
 
 
 	template<typename UInt8>
-	eastl::enable_if_t<detail::is_word_type_v<UInt8> && sizeof(UInt8) == 1, uint32_t> GetFirstBit(UInt8 x)
+	eastl::enable_if_t<detail::is_word_type_v<UInt8> && sizeof(UInt8) == 1, uint32_t> GetFirstBit(UInt8 x) EA_NOEXCEPT
 	{
 		if(x)
 		{
@@ -642,7 +642,7 @@ namespace eastl
 	// VC++ __lzcnt16, __lzcnt, __lzcnt64 requires recent CPUs (2013+) and probably can't be used.
 	// http://en.wikipedia.org/wiki/Haswell_%28microarchitecture%29#New_features
 	template<typename UInt16>
-	eastl::enable_if_t<detail::is_word_type_v<UInt16> && sizeof(UInt16) == 2, uint32_t> GetFirstBit(UInt16 x)
+	eastl::enable_if_t<detail::is_word_type_v<UInt16> && sizeof(UInt16) == 2, uint32_t> GetFirstBit(UInt16 x) EA_NOEXCEPT
 	{
 		if(x)
 		{
@@ -659,7 +659,7 @@ namespace eastl
 	}
 
 	template<typename UInt32>
-	eastl::enable_if_t<detail::is_word_type_v<UInt32> && sizeof(UInt32) == 4, uint32_t> GetFirstBit(UInt32 x)
+	eastl::enable_if_t<detail::is_word_type_v<UInt32> && sizeof(UInt32) == 4, uint32_t> GetFirstBit(UInt32 x) EA_NOEXCEPT
 	{
 #if defined(EA_COMPILER_MSVC) && (defined(EA_PROCESSOR_X86) || defined(EA_PROCESSOR_X86_64))
 		// This has been benchmarked as significantly faster than the generic code below.
@@ -689,7 +689,7 @@ namespace eastl
 	}
 
 	template<typename UInt64>
-	eastl::enable_if_t<detail::is_word_type_v<UInt64> && sizeof(UInt64) == 8, uint32_t> GetFirstBit(UInt64 x)
+	eastl::enable_if_t<detail::is_word_type_v<UInt64> && sizeof(UInt64) == 8, uint32_t> GetFirstBit(UInt64 x) EA_NOEXCEPT
 	{
 #if defined(EA_COMPILER_MSVC) && defined(EA_PROCESSOR_X86_64)
 		// This has been benchmarked as significantly faster than the generic code below.
@@ -721,7 +721,7 @@ namespace eastl
 
 
 	#if EASTL_INT128_SUPPORTED
-		inline uint32_t GetFirstBit(eastl_uint128_t x)
+		inline uint32_t GetFirstBit(eastl_uint128_t x) EA_NOEXCEPT
 		{
 			if(x)
 			{
@@ -742,7 +742,7 @@ namespace eastl
 	#endif
 
 	template<typename UInt8>
-	eastl::enable_if_t<detail::is_word_type_v<UInt8> && sizeof(UInt8) == 1, uint32_t> GetLastBit(UInt8 x)
+	eastl::enable_if_t<detail::is_word_type_v<UInt8> && sizeof(UInt8) == 1, uint32_t> GetLastBit(UInt8 x) EA_NOEXCEPT
 	{
 		if(x)
 		{
@@ -759,7 +759,7 @@ namespace eastl
 	}
 
 	template<typename UInt16>
-	eastl::enable_if_t<detail::is_word_type_v<UInt16> && sizeof(UInt16) == 2, uint32_t> GetLastBit(UInt16 x)
+	eastl::enable_if_t<detail::is_word_type_v<UInt16> && sizeof(UInt16) == 2, uint32_t> GetLastBit(UInt16 x) EA_NOEXCEPT
 	{
 		if(x)
 		{
@@ -777,7 +777,7 @@ namespace eastl
 	}
 
 	template<typename UInt32>
-	eastl::enable_if_t<detail::is_word_type_v<UInt32> && sizeof(UInt32) == 4, uint32_t> GetLastBit(UInt32 x)
+	eastl::enable_if_t<detail::is_word_type_v<UInt32> && sizeof(UInt32) == 4, uint32_t> GetLastBit(UInt32 x) EA_NOEXCEPT
 	{
 #if defined(EA_COMPILER_MSVC) && (defined(EA_PROCESSOR_X86) || defined(EA_PROCESSOR_X86_64))
 		// This has been benchmarked as significantly faster than the generic code below.
@@ -808,7 +808,7 @@ namespace eastl
 	}
 
 	template<typename UInt64>
-	eastl::enable_if_t<detail::is_word_type_v<UInt64> && sizeof(UInt64) == 8, uint32_t> GetLastBit(UInt64 x)
+	eastl::enable_if_t<detail::is_word_type_v<UInt64> && sizeof(UInt64) == 8, uint32_t> GetLastBit(UInt64 x) EA_NOEXCEPT
 	{
 #if defined(EA_COMPILER_MSVC) && defined(EA_PROCESSOR_X86_64)
 		// This has been benchmarked as significantly faster than the generic code below.
@@ -840,7 +840,7 @@ namespace eastl
 	}
 
 	#if EASTL_INT128_SUPPORTED
-		inline uint32_t GetLastBit(eastl_uint128_t x)
+		inline uint32_t GetLastBit(eastl_uint128_t x) EA_NOEXCEPT
 		{
 			if(x)
 			{
@@ -1874,14 +1874,14 @@ EA_RESTORE_GCC_WARNING()
 
 
 	template <size_t N, typename WordType>
-	inline void bitset<N, WordType>::from_uint32(uint32_t value)
+	inline void bitset<N, WordType>::from_uint32(uint32_t value) EA_NOEXCEPT
 	{
 		detail::from_unsigned_integral(*this, value);
 	}
 
 
 	template <size_t N, typename WordType>
-	inline void bitset<N, WordType>::from_uint64(uint64_t value)
+	inline void bitset<N, WordType>::from_uint64(uint64_t value) EA_NOEXCEPT
 	{
 		detail::from_unsigned_integral(*this, value);
 	}

@@ -28,6 +28,24 @@ namespace NoexceptSpanTest
 	EASTL_TEST_NOEXCEPT_SPAN(int, 3)
 	EASTL_TEST_NOEXCEPT_SPAN(const char, eastl::dynamic_extent)
 	#undef EASTL_TEST_NOEXCEPT_SPAN
+
+	// The constructors from a container are noexcept when the container's data() and size() are.
+	template <bool Nothrow>
+	struct Container
+	{
+		int* data() EA_NOEXCEPT_IF(Nothrow);
+		const int* data() const EA_NOEXCEPT_IF(Nothrow);
+		size_t size() const EA_NOEXCEPT_IF(Nothrow);
+	};
+	static_assert(noexcept(eastl::span<int>(eastl::declval<Container<true>&>())), "span(Container&) is noexcept when data and size are");
+	static_assert(noexcept(eastl::span<const int>(eastl::declval<const Container<true>&>())), "span(const Container&) is noexcept when data and size are");
+	static_assert(noexcept(eastl::span<int, 3>(eastl::declval<Container<true>&>())), "the explicit span(Container&) is noexcept when data and size are");
+	static_assert(noexcept(eastl::span<const int, 3>(eastl::declval<const Container<true>&>())), "the explicit span(const Container&) is noexcept when data and size are");
+	static_assert(!noexcept(eastl::span<int>(eastl::declval<Container<false>&>())), "span(Container&) may throw when data or size may");
+	static_assert(!noexcept(eastl::span<const int>(eastl::declval<const Container<false>&>())), "span(const Container&) may throw when data or size may");
+	static_assert(!noexcept(eastl::span<int, 3>(eastl::declval<Container<false>&>())), "the explicit span(Container&) may throw when data or size may");
+	static_assert(noexcept(eastl::Internal::SpanStorage<int, eastl::dynamic_extent>(static_cast<int*>(nullptr), 1)), "SpanStorage(pointer, size) is noexcept");
+	static_assert(noexcept(eastl::Internal::SpanStorage<int, 3>(static_cast<int*>(nullptr), 3)), "SpanStorage<T, Extent>(pointer, size) is noexcept");
 }
 
 void TestSpanCtor(int& nErrorCount)

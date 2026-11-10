@@ -730,7 +730,7 @@ namespace eastl
 	{
 		typedef T result_type;
 
-		const T& operator()(const T& x) const
+		const T& operator()(const T& x) const EA_NOEXCEPT
 			{ return x; }
 	};
 
@@ -747,7 +747,7 @@ namespace eastl
 		typedef Pair argument_type;
 		typedef typename Pair::first_type result_type;
 
-		const result_type& operator()(const Pair& x) const
+		const result_type& operator()(const Pair& x) const EA_NOEXCEPT
 			{ return x.first; }
 	};
 
@@ -762,7 +762,7 @@ namespace eastl
 		typedef Pair argument_type;
 		typedef typename Pair::second_type result_type;
 
-		const result_type& operator()(const Pair& x) const
+		const result_type& operator()(const Pair& x) const EA_NOEXCEPT
 			{ return x.second; }
 	};
 
@@ -943,25 +943,25 @@ namespace eastl
 			struct GetPair<0>
 			{
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR T1& get(pair<T1, T2>& p)
+				static EA_CONSTEXPR T1& get(pair<T1, T2>& p) EA_NOEXCEPT
 				{
 					return p.first;
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR const T1& get(const pair<T1, T2>& p)
+				static EA_CONSTEXPR const T1& get(const pair<T1, T2>& p) EA_NOEXCEPT
 				{
 					return p.first;
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR T1&& get(pair<T1, T2>&& p)
+				static EA_CONSTEXPR T1&& get(pair<T1, T2>&& p) EA_NOEXCEPT
 				{
 					return eastl::forward<T1>(p.first);
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR const T1&& get(const pair<T1, T2>&& p)
+				static EA_CONSTEXPR const T1&& get(const pair<T1, T2>&& p) EA_NOEXCEPT
 				{
 					return eastl::forward<const T1>(p.first);
 				}
@@ -971,25 +971,25 @@ namespace eastl
 			struct GetPair<1>
 			{
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR T2& get(pair<T1, T2>& p)
+				static EA_CONSTEXPR T2& get(pair<T1, T2>& p) EA_NOEXCEPT
 				{
 					return p.second;
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR const T2& get(const pair<T1, T2>& p)
+				static EA_CONSTEXPR const T2& get(const pair<T1, T2>& p) EA_NOEXCEPT
 				{
 					return p.second;
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR T2&& get(pair<T1, T2>&& p)
+				static EA_CONSTEXPR T2&& get(pair<T1, T2>&& p) EA_NOEXCEPT
 				{
 					return eastl::forward<T2>(p.second);
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR const T2&& get(const pair<T1, T2>&& p)
+				static EA_CONSTEXPR const T2&& get(const pair<T1, T2>&& p) EA_NOEXCEPT
 				{
 					return eastl::forward<const T2>(p.second);
 				}

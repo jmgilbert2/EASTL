@@ -95,6 +95,9 @@ namespace NoexceptFunctionalTest
 	static_assert(noexcept(eastl::declval<decltype(eastl::not_fn(eastl::declval<NothrowCallable&>()))>()(1)), "not_fn_ret::operator() && of a noexcept callable is noexcept");
 	static_assert(noexcept(eastl::declval<const decltype(eastl::not_fn(eastl::declval<NothrowCallable&>()))>()(1)), "not_fn_ret::operator() const&& of a noexcept callable is noexcept");
 	static_assert(!noexcept(eastl::declval<decltype(eastl::not_fn(eastl::declval<ThrowingCallable&>()))&>()(1)), "not_fn_ret::operator() of a callable that may throw may throw");
+
+	// The floating point hash helper only reinterprets the value.
+	static_assert(noexcept(eastl::internal::floating_point_hash(1.0f)) && noexcept(eastl::internal::floating_point_hash(1.0)) && noexcept(eastl::internal::floating_point_hash(1.0L)), "floating_point_hash is noexcept");
 }
 
 EA_DISABLE_ALL_VC_WARNINGS()

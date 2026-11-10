@@ -98,6 +98,19 @@ namespace NoexceptTupleTest
 	static_assert(!noexcept(eastl::apply(ThrowingFunctor(), eastl::declval<const IntTuple&>())), "apply may throw when the call may");
 	static_assert(noexcept(eastl::make_from_tuple<NothrowMaker>(eastl::declval<const IntTuple&>())), "make_from_tuple is noexcept when the construction is");
 	static_assert(!noexcept(eastl::make_from_tuple<ThrowingMaker>(eastl::declval<const IntTuple&>())), "make_from_tuple may throw when the construction may");
+
+	// Functions that cannot throw whatever the element types are: they only return references to elements.
+	struct EmptyType {};
+	typedef eastl::Internal::TupleImpl<eastl::make_index_sequence<2>, Nothrow, Throwing> MixedImpl;
+	static_assert(noexcept(eastl::declval<eastl::Internal::TupleLeaf<0, Throwing>&>().getInternal()), "TupleLeaf::getInternal is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::Internal::TupleLeaf<0, Throwing>&>().getInternal()), "TupleLeaf::getInternal const is noexcept");
+	static_assert(noexcept(eastl::declval<eastl::Internal::TupleLeaf<0, EmptyType>&>().getInternal()), "the empty TupleLeaf::getInternal is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::Internal::TupleLeaf<0, EmptyType>&>().getInternal()), "the empty TupleLeaf::getInternal const is noexcept");
+	static_assert(noexcept(eastl::Internal::getImpl<1>(eastl::declval<MixedImpl&>())) && noexcept(eastl::Internal::getImpl<1>(eastl::declval<const MixedImpl&>())), "getImpl<I>(TupleImpl&) is noexcept");
+	static_assert(noexcept(eastl::Internal::getImpl<1>(eastl::declval<MixedImpl>())) && noexcept(eastl::Internal::getImpl<1>(eastl::declval<const MixedImpl>())), "getImpl<I>(TupleImpl&&) is noexcept");
+	static_assert(noexcept(eastl::Internal::getImpl<Throwing>(eastl::declval<MixedImpl&>())) && noexcept(eastl::Internal::getImpl<Throwing>(eastl::declval<const MixedImpl&>())), "getImpl<T>(TupleImpl&) is noexcept");
+	static_assert(noexcept(eastl::Internal::getImpl<Throwing>(eastl::declval<MixedImpl>())) && noexcept(eastl::Internal::getImpl<Throwing>(eastl::declval<const MixedImpl>())), "getImpl<T>(TupleImpl&&) is noexcept");
+	static_assert(noexcept(eastl::Internal::swallow(eastl::declval<Throwing&>(), 1)), "swallow is noexcept");
 }
 
 namespace TestTupleInternal

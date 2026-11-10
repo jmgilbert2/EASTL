@@ -2014,7 +2014,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for const char*.
-	lexicographical_compare(const char* first1, const char* last1, const char* first2, const char* last2)
+	lexicographical_compare(const char* first1, const char* last1, const char* first2, const char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);
@@ -2025,7 +2025,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for char*.
-	lexicographical_compare(char* first1, char* last1, char* first2, char* last2)
+	lexicographical_compare(char* first1, char* last1, char* first2, char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);
@@ -2036,7 +2036,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for const unsigned char*.
-	lexicographical_compare(const unsigned char* first1, const unsigned char* last1, const unsigned char* first2, const unsigned char* last2)
+	lexicographical_compare(const unsigned char* first1, const unsigned char* last1, const unsigned char* first2, const unsigned char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);
@@ -2047,7 +2047,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for unsigned char*.
-	lexicographical_compare(unsigned char* first1, unsigned char* last1, unsigned char* first2, unsigned char* last2)
+	lexicographical_compare(unsigned char* first1, unsigned char* last1, unsigned char* first2, unsigned char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);
@@ -2058,7 +2058,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for const signed char*.
-	lexicographical_compare(const signed char* first1, const signed char* last1, const signed char* first2, const signed char* last2)
+	lexicographical_compare(const signed char* first1, const signed char* last1, const signed char* first2, const signed char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);
@@ -2069,7 +2069,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for signed char*.
-	lexicographical_compare(signed char* first1, signed char* last1, signed char* first2, signed char* last2)
+	lexicographical_compare(signed char* first1, signed char* last1, signed char* first2, signed char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);

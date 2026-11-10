@@ -105,7 +105,7 @@ namespace eastl
 		}
 
 		// Returns the high half of the 128-bit product a * b and stores its low half in low.
-		inline uint64_t urng_mul128(uint64_t a, uint64_t b, uint64_t& low)
+		inline uint64_t urng_mul128(uint64_t a, uint64_t b, uint64_t& low) EA_NOEXCEPT
 		{
 		#if EASTL_GCC_STYLE_INT128_SUPPORTED
 			const __uint128_t product = (__uint128_t)a * b;

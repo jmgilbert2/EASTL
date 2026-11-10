@@ -206,6 +206,16 @@ namespace NoexceptIteratorTest
 	static_assert(noexcept(eastl::rend(eastl::declval<int (&)[3]>())), "rend(array) is noexcept");
 	static_assert(noexcept(eastl::rbegin(eastl::declval<std::initializer_list<int> >())), "rbegin(initializer_list) is noexcept");
 	static_assert(noexcept(eastl::rend(eastl::declval<std::initializer_list<int> >())), "rend(initializer_list) is noexcept");
+
+	// front_insert_iterator and insert_iterator: they hold a pointer, and the operations that only return the iterator can't throw.
+	static_assert(noexcept(eastl::front_insert_iterator<eastl::list<int> >(eastl::declval<eastl::list<int>&>())), "front_insert_iterator(container) is noexcept");
+	static_assert(noexcept(*eastl::declval<eastl::front_insert_iterator<eastl::list<int> >&>()), "front_insert_iterator::operator* is noexcept");
+	static_assert(noexcept(++eastl::declval<eastl::front_insert_iterator<eastl::list<int> >&>()), "front_insert_iterator::operator++ is noexcept");
+	static_assert(noexcept(eastl::declval<eastl::front_insert_iterator<eastl::list<int> >&>()++), "front_insert_iterator::operator++(int) is noexcept");
+	static_assert(noexcept(eastl::front_inserter(eastl::declval<eastl::list<int>&>())), "front_inserter is noexcept");
+	static_assert(noexcept(*eastl::declval<eastl::insert_iterator<eastl::vector<int> >&>()), "insert_iterator::operator* is noexcept");
+	static_assert(noexcept(++eastl::declval<eastl::insert_iterator<eastl::vector<int> >&>()), "insert_iterator::operator++ is noexcept");
+	static_assert(noexcept(eastl::declval<eastl::insert_iterator<eastl::vector<int> >&>()++), "insert_iterator::operator++(int) is noexcept");
 }
 
 EA_DISABLE_ALL_VC_WARNINGS()

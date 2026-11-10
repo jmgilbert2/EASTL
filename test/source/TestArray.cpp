@@ -35,6 +35,10 @@ namespace NoexceptArrayTest
 	static_assert(noexcept(eastl::swap(eastl::declval<eastl::array<int, 3>&>(), eastl::declval<eastl::array<int, 3>&>())), "swap(array<int, 3>&, array<int, 3>&) is noexcept");
 	static_assert(!noexcept(eastl::swap(eastl::declval<eastl::array<Throwing, 3>&>(), eastl::declval<eastl::array<Throwing, 3>&>())), "swap(array<Throwing, 3>&, array<Throwing, 3>&) may throw");
 	static_assert(noexcept(eastl::swap(eastl::declval<eastl::array<Throwing, 0>&>(), eastl::declval<eastl::array<Throwing, 0>&>())), "swap of empty arrays is noexcept");
+
+	// Filling an empty array does nothing, whatever the element type is.
+	static_assert(noexcept(eastl::declval<eastl::array<Throwing, 0>&>().fill(eastl::declval<const Throwing&>())), "array<T, 0>::fill is noexcept");
+	static_assert(!noexcept(eastl::declval<eastl::array<Throwing, 3>&>().fill(eastl::declval<const Throwing&>())), "array<T, N>::fill may throw");
 }
 
 

@@ -100,7 +100,7 @@ namespace eastl
 				static_assert(Extent == 0, "impossible to default construct a span with a fixed Extent different than 0");
 			}
 
-			EA_CONSTEXPR SpanStorage(T* ptr, eastl_size_t size)
+			EA_CONSTEXPR SpanStorage(T* ptr, eastl_size_t size) EA_NOEXCEPT
 				: mpData(ptr)
 			{
 				EA_UNUSED(size);
@@ -115,7 +115,7 @@ namespace eastl
 			eastl_size_t mnSize = 0;
 
 			EA_CONSTEXPR SpanStorage() EA_NOEXCEPT = default;
-			EA_CONSTEXPR SpanStorage(T* ptr, eastl_size_t size) : mpData(ptr), mnSize(size) {}
+			EA_CONSTEXPR SpanStorage(T* ptr, eastl_size_t size) EA_NOEXCEPT : mpData(ptr), mnSize(size) {}
 		};
 	}
 
@@ -187,19 +187,19 @@ namespace eastl
 
 		// generic container conversion constructors
 		template <typename Container, typename = SfinaeForGenericContainers<Container>, size_t E = Extent, enable_if_t<E == eastl::dynamic_extent, int> = 0>
-		EA_CONSTEXPR span(Container& cont)
+		EA_CONSTEXPR span(Container& cont) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::data(cont)) && EA_NOEXCEPT_EXPR(eastl::size(cont)))
 			: span(static_cast<pointer>(eastl::data(cont)), static_cast<index_type>(eastl::size(cont))) {}
 
 		template <typename Container, typename = SfinaeForGenericContainers<Container>, size_t E = Extent, enable_if_t<E != eastl::dynamic_extent, int> = 0>
-		EA_CONSTEXPR explicit span(Container& cont)
+		EA_CONSTEXPR explicit span(Container& cont) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::data(cont)) && EA_NOEXCEPT_EXPR(eastl::size(cont)))
 			: span(static_cast<pointer>(eastl::data(cont)), static_cast<index_type>(eastl::size(cont))) {}
 
 		template <typename Container, typename = SfinaeForGenericContainers<const Container>, size_t E = Extent, enable_if_t<E == eastl::dynamic_extent, int> = 0>
-		EA_CONSTEXPR span(const Container& cont)
+		EA_CONSTEXPR span(const Container& cont) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::data(cont)) && EA_NOEXCEPT_EXPR(eastl::size(cont)))
 			: span(static_cast<pointer>(eastl::data(cont)), static_cast<index_type>(eastl::size(cont))) {}
 
 		template <typename Container, typename = SfinaeForGenericContainers<const Container>, size_t E = Extent, enable_if_t<E != eastl::dynamic_extent, int> = 0>
-		EA_CONSTEXPR explicit span(const Container& cont)
+		EA_CONSTEXPR explicit span(const Container& cont) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::data(cont)) && EA_NOEXCEPT_EXPR(eastl::size(cont)))
 			: span(static_cast<pointer>(eastl::data(cont)), static_cast<index_type>(eastl::size(cont))) {}
 
 		// From another span: explicit when this extent is static and the other's is dynamic, as in std.

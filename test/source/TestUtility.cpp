@@ -113,6 +113,15 @@ namespace NoexceptUtilityTest
 	static_assert(!noexcept(eastl::exchange(eastl::declval<Throwing&>(), eastl::declval<Throwing>())), "exchange may throw when the move may");
 	static_assert(!noexcept(eastl::exchange(eastl::declval<CopyThrowing&>(), eastl::declval<const CopyThrowing&>())), "exchange may throw when the assignment may");
 	static_assert(noexcept(eastl::exchange(eastl::declval<CopyThrowing&>(), eastl::declval<CopyThrowing>())), "exchange is noexcept when the move and the move assignment are");
+
+	// Functions that cannot throw whatever the element types are: they only return references to members.
+	static_assert(noexcept(eastl::use_self<ThrowingPair>()(eastl::declval<const ThrowingPair&>())), "use_self::operator() is noexcept");
+	static_assert(noexcept(eastl::use_first<ThrowingPair>()(eastl::declval<const ThrowingPair&>())), "use_first::operator() is noexcept");
+	static_assert(noexcept(eastl::use_second<ThrowingPair>()(eastl::declval<const ThrowingPair&>())), "use_second::operator() is noexcept");
+	static_assert(noexcept(eastl::internal::GetPair<0>::get(eastl::declval<ThrowingPair&>())) && noexcept(eastl::internal::GetPair<1>::get(eastl::declval<ThrowingPair&>())), "GetPair::get(pair&) is noexcept");
+	static_assert(noexcept(eastl::internal::GetPair<0>::get(eastl::declval<const ThrowingPair&>())) && noexcept(eastl::internal::GetPair<1>::get(eastl::declval<const ThrowingPair&>())), "GetPair::get(const pair&) is noexcept");
+	static_assert(noexcept(eastl::internal::GetPair<0>::get(eastl::declval<ThrowingPair>())) && noexcept(eastl::internal::GetPair<1>::get(eastl::declval<ThrowingPair>())), "GetPair::get(pair&&) is noexcept");
+	static_assert(noexcept(eastl::internal::GetPair<0>::get(eastl::declval<const ThrowingPair>())) && noexcept(eastl::internal::GetPair<1>::get(eastl::declval<const ThrowingPair>())), "GetPair::get(const pair&&) is noexcept");
 }
 
 struct BasicObject

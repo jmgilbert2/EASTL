@@ -932,7 +932,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		Container* container;
 
 	public:
-		explicit front_insert_iterator(Container& x) : container(eastl::addressof(x)) {}
+		explicit front_insert_iterator(Container& x) EA_NOEXCEPT : container(eastl::addressof(x)) {}
 
 		front_insert_iterator(const front_insert_iterator&) = default;
 		front_insert_iterator& operator=(const front_insert_iterator&) = default;
@@ -940,13 +940,13 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 		front_insert_iterator& operator=(const typename Container::value_type& value)
 			{ container->push_front(value); return *this; }
 
-		front_insert_iterator& operator*()
+		front_insert_iterator& operator*() EA_NOEXCEPT
 			{ return *this; }
 
-		front_insert_iterator& operator++()
+		front_insert_iterator& operator++() EA_NOEXCEPT
 			{ return *this; } // This is by design.
 
-		front_insert_iterator operator++(int)
+		front_insert_iterator operator++(int) EA_NOEXCEPT
 			{ return *this; } // This is by design.
 	};
 
@@ -957,7 +957,7 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 	///
 	template <typename Container>
 	inline front_insert_iterator<Container>
-	front_inserter(Container& x)
+	front_inserter(Container& x) EA_NOEXCEPT
 		{ return front_insert_iterator<Container>(x); }
 
 
@@ -1010,13 +1010,13 @@ EASTL_INTERNAL_RESTORE_DEPRECATED()
 			return *this;
 		}
 
-		insert_iterator& operator*()
+		insert_iterator& operator*() EA_NOEXCEPT
 			{ return *this; }
 
-		insert_iterator& operator++()
+		insert_iterator& operator++() EA_NOEXCEPT
 			{ return *this; } // This is by design.
 
-		insert_iterator& operator++(int)
+		insert_iterator& operator++(int) EA_NOEXCEPT
 			{ return *this; } // This is by design.
 
 	}; // insert_iterator

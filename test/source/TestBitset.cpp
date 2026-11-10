@@ -69,6 +69,11 @@ namespace NoexceptBitsetTest
 	static_assert(!noexcept(eastl::declval<const eastl::bitset<100>&>().to_ullong_assert_convertible()), "bitset<100>::to_ullong_assert_convertible may throw");
 	static_assert(!noexcept(eastl::declval<const eastl::bitset<65>&>().to_uint64_no_assert_convertible()), "bitset<65>::to_uint64_no_assert_convertible may throw");
 	static_assert(!noexcept(eastl::declval<const eastl::bitset<33>&>().to_uint32()), "bitset<33>::to_uint32 may throw");
+
+	// The bit scanning helpers only do arithmetic on one word.
+	static_assert(noexcept(eastl::BitsetCountBits(uint8_t(1))) && noexcept(eastl::BitsetCountBits(uint16_t(1))) && noexcept(eastl::BitsetCountBits(uint32_t(1))) && noexcept(eastl::BitsetCountBits(uint64_t(1))), "BitsetCountBits is noexcept");
+	static_assert(noexcept(eastl::GetFirstBit(uint8_t(1))) && noexcept(eastl::GetFirstBit(uint16_t(1))) && noexcept(eastl::GetFirstBit(uint32_t(1))) && noexcept(eastl::GetFirstBit(uint64_t(1))), "GetFirstBit is noexcept");
+	static_assert(noexcept(eastl::GetLastBit(uint8_t(1))) && noexcept(eastl::GetLastBit(uint16_t(1))) && noexcept(eastl::GetLastBit(uint32_t(1))) && noexcept(eastl::GetLastBit(uint64_t(1))), "GetLastBit is noexcept");
 }
 
 #ifdef _MSC_VER

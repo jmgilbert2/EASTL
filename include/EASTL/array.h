@@ -147,7 +147,7 @@ namespace eastl
 
 		// We intentionally provide no constructor, destructor, or assignment operator.
 
-		void fill(const value_type&) {}
+		void fill(const value_type&) EA_NOEXCEPT {}
 
 		// Unlike the swap function for other containers, array::swap takes linear time,
 		// may exit via an exception, and does not cause iterators to become associated with the other container.

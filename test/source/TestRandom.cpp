@@ -40,6 +40,9 @@ namespace NoexceptRandomTest
 	EASTL_TEST_NOEXCEPT_UNIFORM_INT_DISTRIBUTION(long long)
 	EASTL_TEST_NOEXCEPT_UNIFORM_INT_DISTRIBUTION(short)
 	#undef EASTL_TEST_NOEXCEPT_UNIFORM_INT_DISTRIBUTION
+
+	// The 64x64->128 bit multiplication helper only does arithmetic.
+	static_assert(noexcept(eastl::Internal::urng_mul128(1u, 2u, eastl::declval<uint64_t&>())), "urng_mul128 is noexcept");
 }
 
 #ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
