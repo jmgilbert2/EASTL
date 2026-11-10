@@ -65,6 +65,7 @@ namespace
 		// Conditional on the comparator, as in the standard library.
 		static_assert(noexcept(eastl::declval<S&>() = eastl::declval<S&&>()) == kNothrowCompare, "set::operator=(set&&)");
 		static_assert(noexcept(eastl::declval<S&>().swap(eastl::declval<S&>())) == kNothrowCompare, "set::swap");
+		static_assert(noexcept(eastl::swap(eastl::declval<S&>(), eastl::declval<S&>())) == kNothrowCompare, "swap(set&, set&)");
 		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<const typename S::key_type&>())) == kNothrowCompare, "set::erase(const key_type&)");
 
 		static_assert(noexcept(eastl::declval<S&>().clear()), "set::clear must be noexcept");
@@ -173,6 +174,20 @@ struct EA_REMOVE_AT_2025_OCT LessNonTransparent
 int TestSet()
 {
 	int nErrorCount = 0;
+
+	{   // eastl::swap(set&, set&) and eastl::swap(multiset&, multiset&) exchange the contents.
+		eastl::set<int> a, b;
+		a.insert(1); a.insert(2); b.insert(3);
+		eastl::swap(a, b);
+		EATEST_VERIFY(a.size() == 1 && a.count(3) == 1);
+		EATEST_VERIFY(b.size() == 2 && b.count(1) == 1 && b.count(2) == 1);
+
+		eastl::multiset<int> ma, mb;
+		ma.insert(1); ma.insert(1); mb.insert(3);
+		eastl::swap(ma, mb);
+		EATEST_VERIFY(ma.size() == 1 && ma.count(3) == 1);
+		EATEST_VERIFY(mb.size() == 2 && mb.count(1) == 2);
+	}
 
 	#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
 		{   // Test construction

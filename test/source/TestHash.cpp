@@ -80,6 +80,7 @@ namespace
 		// Conditional on the hasher and the key equality, as in the standard library.
 		static_assert(noexcept(eastl::declval<C&>() = eastl::declval<C&&>()) == kNothrowMoveSwap, "hash container::operator=(container&&)");
 		static_assert(noexcept(eastl::declval<C&>().swap(eastl::declval<C&>())) == kNothrowMoveSwap, "hash container::swap");
+		static_assert(noexcept(eastl::swap(eastl::declval<C&>(), eastl::declval<C&>())) == kNothrowMoveSwap, "swap(hash container&, hash container&)");
 		static_assert(noexcept(eastl::declval<C&>().erase(eastl::declval<const typename C::key_type&>())) == kNothrowErase, "hash container::erase(const key_type&)");
 
 		static_assert(noexcept(eastl::declval<C&>().clear()), "hash container::clear must be noexcept");
@@ -326,6 +327,42 @@ int TestHash()
 	TestHashTable_MT();
 
 	int nErrorCount = 0;
+
+	{  // eastl::swap on hash_map, hash_multimap, hash_set, hash_multiset and the unordered_* aliases exchanges the contents.
+		eastl::hash_map<int, int> a, b;
+		a[1] = 10; a[2] = 20; b[3] = 30;
+		eastl::swap(a, b);
+		EATEST_VERIFY(a.size() == 1 && a.at(3) == 30);
+		EATEST_VERIFY(b.size() == 2 && b.at(1) == 10 && b.at(2) == 20);
+
+		eastl::hash_multimap<int, int> ma, mb;
+		ma.insert(eastl::make_pair(1, 10)); ma.insert(eastl::make_pair(1, 11)); mb.insert(eastl::make_pair(3, 30));
+		eastl::swap(ma, mb);
+		EATEST_VERIFY(ma.size() == 1 && ma.count(3) == 1);
+		EATEST_VERIFY(mb.size() == 2 && mb.count(1) == 2);
+
+		eastl::hash_set<int> sa, sb;
+		sa.insert(1); sa.insert(2); sb.insert(3);
+		eastl::swap(sa, sb);
+		EATEST_VERIFY(sa.size() == 1 && sa.count(3) == 1);
+		EATEST_VERIFY(sb.size() == 2 && sb.count(1) == 1 && sb.count(2) == 1);
+
+		eastl::hash_multiset<int> msa, msb;
+		msa.insert(1); msa.insert(1); msb.insert(3);
+		eastl::swap(msa, msb);
+		EATEST_VERIFY(msa.size() == 1 && msa.count(3) == 1);
+		EATEST_VERIFY(msb.size() == 2 && msb.count(1) == 2);
+
+		eastl::unordered_map<int, int> ua, ub;
+		ua[1] = 10; ub[2] = 20; ub[3] = 30;
+		eastl::swap(ua, ub);
+		EATEST_VERIFY(ua.size() == 2 && ub.size() == 1 && ub.at(1) == 10);
+
+		eastl::unordered_set<int> usa, usb;
+		usa.insert(1); usb.insert(2); usb.insert(3);
+		eastl::swap(usa, usb);
+		EATEST_VERIFY(usa.size() == 2 && usb.size() == 1 && usb.count(1) == 1);
+	}
 
 	{  // Test declarations
 		hash_set<int>           hashSet;

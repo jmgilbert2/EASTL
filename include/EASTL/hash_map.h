@@ -433,6 +433,12 @@ namespace eastl
 		}
 	}; // hash_map
 
+	template <typename Key, typename T, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
+	inline void swap(hash_map<Key, T, Hash, Predicate, Allocator, bCacheHashCode>& a, hash_map<Key, T, Hash, Predicate, Allocator, bCacheHashCode>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
+	{
+		a.swap(b);
+	}
+
 	/// hash_map erase_if
 	///
 	/// https://en.cppreference.com/w/cpp/container/unordered_map/erase_if
@@ -641,6 +647,12 @@ namespace eastl
 		}
 
 	}; // hash_multimap
+
+	template <typename Key, typename T, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
+	inline void swap(hash_multimap<Key, T, Hash, Predicate, Allocator, bCacheHashCode>& a, hash_multimap<Key, T, Hash, Predicate, Allocator, bCacheHashCode>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
+	{
+		a.swap(b);
+	}
 
 	/// hash_multimap erase_if
 	///

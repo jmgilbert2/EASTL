@@ -554,6 +554,12 @@ namespace eastl
 		return oldSize - c.size();
 	}
 
+	template <typename Key, typename Compare, typename Allocator>
+	inline void swap(set<Key, Compare, Allocator>& a, set<Key, Compare, Allocator>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
+	{
+		a.swap(b);
+	}
+
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	template <class Key, class Compare, class Allocator>
 	synth_three_way_result<Key> operator<=>(const set<Key, Compare, Allocator>& a, const set<Key, Compare, Allocator>& b)
@@ -793,6 +799,12 @@ namespace eastl
 			}
 		}
 		return oldSize - c.size();
+	}
+
+	template <typename Key, typename Compare, typename Allocator>
+	inline void swap(multiset<Key, Compare, Allocator>& a, multiset<Key, Compare, Allocator>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
+	{
+		a.swap(b);
 	}
 
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)

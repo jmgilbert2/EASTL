@@ -3193,8 +3193,8 @@ namespace eastl
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-	inline void swap(const hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>& a, 
-					 const hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>& b)
+	inline void swap(hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>& a,
+					 hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
 	{
 		a.swap(b);
 	}

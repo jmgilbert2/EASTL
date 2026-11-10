@@ -575,6 +575,12 @@ namespace eastl
 		//return it->second;
 	}
 
+	template <typename Key, typename T, typename Compare, typename Allocator>
+	inline void swap(map<Key, T, Compare, Allocator>& a, map<Key, T, Compare, Allocator>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
+	{
+		a.swap(b);
+	}
+
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	template <typename Key, typename T, typename Compare, typename Allocator>
 	inline synth_three_way_result<eastl::pair<const Key, T>> operator<=>(const map<Key, T, Compare, Allocator>& a, 
@@ -907,6 +913,12 @@ namespace eastl
 			}
 		}
 		return oldSize - c.size();
+	}
+
+	template <typename Key, typename T, typename Compare, typename Allocator>
+	inline void swap(multimap<Key, T, Compare, Allocator>& a, multimap<Key, T, Compare, Allocator>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
+	{
+		a.swap(b);
 	}
 
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)

@@ -67,6 +67,7 @@ namespace
 		// Conditional on the comparator, as in the standard library.
 		static_assert(noexcept(eastl::declval<M&>() = eastl::declval<M&&>()) == kNothrowCompare, "map::operator=(map&&)");
 		static_assert(noexcept(eastl::declval<M&>().swap(eastl::declval<M&>())) == kNothrowCompare, "map::swap");
+		static_assert(noexcept(eastl::swap(eastl::declval<M&>(), eastl::declval<M&>())) == kNothrowCompare, "swap(map&, map&)");
 		static_assert(noexcept(eastl::declval<M&>().erase(eastl::declval<const typename M::key_type&>())) == kNothrowCompare, "map::erase(const key_type&)");
 
 		static_assert(noexcept(eastl::declval<M&>().clear()), "map::clear must be noexcept");
@@ -132,6 +133,20 @@ typedef eastl::multimap<Align64, Align64> VMM7;
 int TestMap()
 {
 	int nErrorCount = 0;
+
+	{   // eastl::swap(map&, map&) and eastl::swap(multimap&, multimap&) exchange the contents.
+		eastl::map<int, int> a, b;
+		a[1] = 10; a[2] = 20; b[3] = 30;
+		eastl::swap(a, b);
+		EATEST_VERIFY(a.size() == 1 && a.at(3) == 30);
+		EATEST_VERIFY(b.size() == 2 && b.at(1) == 10 && b.at(2) == 20);
+
+		eastl::multimap<int, int> ma, mb;
+		ma.insert(eastl::make_pair(1, 10)); ma.insert(eastl::make_pair(1, 11)); mb.insert(eastl::make_pair(3, 30));
+		eastl::swap(ma, mb);
+		EATEST_VERIFY(ma.size() == 1 && ma.count(3) == 1);
+		EATEST_VERIFY(mb.size() == 2 && mb.count(1) == 2);
+	}
 
 	#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
 		{   // Test construction
