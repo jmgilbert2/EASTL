@@ -42,7 +42,9 @@ static_assert(false, "Building with char8_t tests enabled, but EA_CHAR8_UNIQUE e
 
 ///////////////////////////////////////////////////////////////////////////////
 // Exception specifications: basic_string is at least as noexcept as MSVC STL's basic_string.
-// (swap and move assignment compare allocators and copy for unequal ones, so they are not noexcept.)
+// EASTL has no allocator_traits and behaves as if propagate_on_container_move_assignment
+// and propagate_on_container_swap were true (the allocator is moved/swapped with the string),
+// so move assignment and swap are unconditionally noexcept.
 namespace
 {
 	template <typename S>
@@ -53,6 +55,11 @@ namespace
 		typedef typename S::const_iterator          CI;
 		typedef typename S::reverse_iterator        RI;
 		typedef typename S::view_type               V;
+
+		static_assert(noexcept(eastl::declval<S&>() = eastl::declval<S&&>()), "basic_string::operator=(basic_string&&) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().assign(eastl::declval<S&&>())), "basic_string::assign(basic_string&&) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().swap(eastl::declval<S&>())), "basic_string::swap must be noexcept");
+		static_assert(noexcept(eastl::swap(eastl::declval<S&>(), eastl::declval<S&>())), "swap(basic_string&, basic_string&) must be noexcept");
 
 		static_assert(noexcept(eastl::declval<S&>()[0]), "basic_string::operator[] must be noexcept");
 		static_assert(noexcept(eastl::declval<const S&>()[0]), "basic_string::operator[] const must be noexcept");
@@ -118,9 +125,83 @@ namespace
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+// swap and move assignment with unequal allocators: like vector, the allocators are exchanged along with
+// the strings, no character is copied (a heap buffer is traded, not reallocated), and every heap block is
+// still freed by the allocator that allocated it. Both the heap and the SSO (small string) cases are tested.
+namespace
+{
+	typedef eastl::basic_string<char, InstanceAllocator> UnequalAllocatorString;
+
+	int TestStringUnequalAllocatorsCase(const char* pA, const char* pB, bool bHeapA, bool bHeapB)
+	{
+		int nErrorCount = 0;
+
+		{   // swap
+			UnequalAllocatorString a(pA, InstanceAllocator(1));
+			UnequalAllocatorString b(pB, InstanceAllocator(2));
+			const char* const dataA = a.data();
+			const char* const dataB = b.data();
+
+			a.swap(b);
+			EATEST_VERIFY(a == pB && b == pA);
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 2 && b.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(a.validate() && b.validate());
+			EATEST_VERIFY(!bHeapB || a.data() == dataB); // A heap buffer is traded, not copied.
+			EATEST_VERIFY(!bHeapA || b.data() == dataA);
+
+			eastl::swap(a, b);
+			EATEST_VERIFY(a == pA && b == pB);
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 1 && b.get_allocator().mInstanceId == 2);
+		}
+
+		{   // move assignment and assign(basic_string&&)
+			UnequalAllocatorString a(pA, InstanceAllocator(1));
+			UnequalAllocatorString b(pB, InstanceAllocator(2));
+			const char* const dataB = b.data();
+
+			a = eastl::move(b);
+			EATEST_VERIFY(a == pB);
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 2);
+			EATEST_VERIFY(a.validate() && b.validate());
+			EATEST_VERIFY(!bHeapB || a.data() == dataB);
+
+			UnequalAllocatorString c(pA, InstanceAllocator(3));
+			a.assign(eastl::move(c));
+			EATEST_VERIFY(a == pA);
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 3);
+			EATEST_VERIFY(a.validate() && c.validate());
+		}
+
+		EATEST_VERIFY_MSG(InstanceAllocator::reset_all(), "string heap blocks should be deallocated by the allocator that allocated them.");
+
+		return nErrorCount;
+	}
+
+	int TestStringUnequalAllocators()
+	{
+		int nErrorCount = 0;
+
+		const char* const kSmall1 = "abc";
+		const char* const kSmall2 = "defgh";
+		const char* const kHeap1  = "0123456789012345678901234567890123456789012345678901234567890123456789"; // Longer than any small string buffer.
+		const char* const kHeap2  = "abcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghijabcdefghij";
+
+		nErrorCount += TestStringUnequalAllocatorsCase(kSmall1, kSmall2, false, false);
+		nErrorCount += TestStringUnequalAllocatorsCase(kHeap1, kHeap2, true, true);
+		nErrorCount += TestStringUnequalAllocatorsCase(kSmall1, kHeap2, false, true);
+		nErrorCount += TestStringUnequalAllocatorsCase(kHeap1, kSmall2, true, false);
+
+		return nErrorCount;
+	}
+}
+
+
 int TestString()
 {
 	int nErrorCount = 0;
+
+	nErrorCount += TestStringUnequalAllocators();
 
 	nErrorCount += TestBasicString<eastl::basic_string<char, StompDetectAllocator>>();
 	nErrorCount += TestBasicString<eastl::string>();

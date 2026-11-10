@@ -543,7 +543,7 @@ namespace eastl
 		this_type& operator=(value_type c);
 		this_type& operator=(std::initializer_list<value_type> ilist);
 		this_type& operator=(view_type v);
-		this_type& operator=(this_type&& x); // TODO(c++17): noexcept(allocator_traits<Allocator>::propagate_on_container_move_assignment::value || allocator_traits<Allocator>::is_always_equal::value);
+		this_type& operator=(this_type&& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_move_assignment were true (see swap).
 
 		#if EASTL_OPERATOR_EQUALS_OTHER_ENABLED
 			this_type& operator=(value_type* p) { return operator=((const value_type*)p); } // We need this because otherwise the const value_type* version can collide with the const OtherStringType& version below.
@@ -555,7 +555,7 @@ namespace eastl
 			this_type& operator=(const OtherStringType& x);
 		#endif
 
-		void swap(this_type& x); // TODO(c++17): noexcept(allocator_traits<Allocator>::propagate_on_container_swap::value || allocator_traits<Allocator>::is_always_equal::value);
+		void swap(this_type& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_swap were true: the allocator is swapped along with the string.
 
 		// Assignment operations
 		this_type& assign(const this_type& x);
@@ -564,7 +564,7 @@ namespace eastl
 		this_type& assign(const value_type* p);
 		this_type& assign(size_type n, value_type c);
 		this_type& assign(const value_type* pBegin, const value_type* pEnd);
-		this_type& assign(this_type&& x); // TODO(c++17): noexcept(allocator_traits<Allocator>::propagate_on_container_move_assignment::value || allocator_traits<Allocator>::is_always_equal::value);
+		this_type& assign(this_type&& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_move_assignment were true (see swap).
 		this_type& assign(std::initializer_list<value_type>);
 
 		template <typename OtherCharType>
@@ -1302,7 +1302,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline typename basic_string<T, Allocator>::this_type& basic_string<T, Allocator>::operator=(this_type&& x)
+	inline typename basic_string<T, Allocator>::this_type& basic_string<T, Allocator>::operator=(this_type&& x) EA_NOEXCEPT
 	{
 		return assign(eastl::move(x));
 	}
@@ -1975,14 +1975,10 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline basic_string<T, Allocator>& basic_string<T, Allocator>::assign(this_type&& x)
+	inline basic_string<T, Allocator>& basic_string<T, Allocator>::assign(this_type&& x) EA_NOEXCEPT
 	{
-		if(get_allocator() == x.get_allocator())
-		{
-			eastl::swap(internalLayout(), x.internalLayout());
-		}
-		else
-			assign(x.internalLayout().BeginPtr(), x.internalLayout().EndPtr());
+		if(this != &x)
+			swap(x); // swap exchanges the allocators along with the strings.
 
 		return *this;
 	}
@@ -2615,20 +2611,17 @@ namespace eastl
 	}
 
 
+	// swap exchanges the contents of two strings in O(1), without copying any character.
+	// With respect to the strings allocators, the C++11 Standard (23.2.1/7) states that the behavior of a call to
+	// a container's swap function is undefined unless the objects being swapped have allocators that compare equal or
+	// allocator_traits<allocator_type>::propagate_on_container_swap::value is true. EASTL doesn't have allocator_traits
+	// but has the effective behavior of propagate_on_container_swap = true for all allocators: the allocators are
+	// exchanged along with the layouts, so every heap block is still freed by the allocator that allocated it.
 	template <typename T, typename Allocator>
-	void basic_string<T, Allocator>::swap(this_type& x)
+	void basic_string<T, Allocator>::swap(this_type& x) EA_NOEXCEPT
 	{
-		if(get_allocator() == x.get_allocator() || (internalLayout().IsSSO() && x.internalLayout().IsSSO())) // If allocators are equivalent...
-		{
-			// We leave mAllocator as-is.
-			eastl::swap(internalLayout(), x.internalLayout());
-		}
-		else // else swap the contents.
-		{
-			const this_type temp(*this); // Can't call eastl::swap because that would
-			*this = x;                   // itself call this member swap function.
-			x     = temp;
-		}
+		eastl::swap(internalLayout(), x.internalLayout());
+		eastl::swap(internalAllocator(), x.internalAllocator());
 	}
 
 
@@ -3834,7 +3827,7 @@ namespace eastl
 #endif
 
 	template <typename T, typename Allocator>
-	inline void swap(basic_string<T, Allocator>& a, basic_string<T, Allocator>& b)
+	inline void swap(basic_string<T, Allocator>& a, basic_string<T, Allocator>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
 	{
 		a.swap(b);
 	}

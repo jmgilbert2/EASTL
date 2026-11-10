@@ -14,7 +14,9 @@ using namespace eastl;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Exception specifications: slist (and SListIterator) are at least as noexcept as MSVC STL's forward_list.
-// (swap and move assignment compare allocators and copy for unequal ones, so they are not noexcept.)
+// EASTL has no allocator_traits and behaves as if propagate_on_container_move_assignment
+// and propagate_on_container_swap were true (the allocator is moved/swapped with the nodes),
+// so move assignment and swap are unconditionally noexcept.
 namespace
 {
 	struct SListNoexceptThrowing // Copy and move operations may throw.
@@ -55,6 +57,11 @@ namespace
 		static_assert(noexcept(S(eastl::declval<const typename S::allocator_type&>())), "slist(const allocator_type&) must be noexcept");
 		static_assert(noexcept(SNA()), "slist() must be noexcept when the allocator can be default-named without throwing");
 		static_assert(noexcept(SNA(eastl::declval<const SListNothrowAllocator&>())), "slist(const allocator_type&) must be noexcept");
+
+		static_assert(noexcept(eastl::declval<S&>() = eastl::declval<S&&>()), "slist::operator=(slist&&) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().swap(eastl::declval<S&>())), "slist::swap must be noexcept");
+		static_assert(noexcept(eastl::swap(eastl::declval<S&>(), eastl::declval<S&>())), "swap(slist&, slist&) must be noexcept");
+		static_assert(noexcept(S(eastl::declval<S&&>())), "slist(slist&&) must be noexcept");
 
 		static_assert(noexcept(eastl::declval<S&>().front()), "slist::front must be noexcept");
 		static_assert(noexcept(eastl::declval<const S&>().front()), "slist::front const must be noexcept");
@@ -127,9 +134,84 @@ struct TestObj
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TestSList
+///////////////////////////////////////////////////////////////////////////////
+// swap and move assignment with unequal allocators: like vector, the allocators are exchanged along with
+// the nodes, no element is copied, and every node is still freed by the allocator that allocated it.
+namespace
+{
+	struct SListCopyCounted
+	{
+		SListCopyCounted(int i = 0) : mI(i) {}
+		SListCopyCounted(const SListCopyCounted& x) : mI(x.mI) { ++sCopies; }
+		SListCopyCounted(SListCopyCounted&& x) noexcept : mI(x.mI) {}
+		SListCopyCounted& operator=(const SListCopyCounted& x) { mI = x.mI; ++sCopies; return *this; }
+		SListCopyCounted& operator=(SListCopyCounted&& x) noexcept { mI = x.mI; return *this; }
+
+		int        mI;
+		static int sCopies;
+	};
+	int SListCopyCounted::sCopies = 0;
+
+	typedef eastl::slist<SListCopyCounted, InstanceAllocator> UnequalAllocatorSList;
+
+	bool SListHolds(const UnequalAllocatorSList& l, std::initializer_list<int> expected)
+	{
+		if(l.size() != expected.size())
+			return false;
+		UnequalAllocatorSList::const_iterator it = l.begin();
+		for(int e : expected)
+		{
+			if((it++)->mI != e)
+				return false;
+		}
+		return true;
+	}
+
+	int TestSListUnequalAllocators()
+	{
+		int nErrorCount = 0;
+
+		{   // swap
+			UnequalAllocatorSList a({ 1, 2, 3 }, InstanceAllocator(1));
+			UnequalAllocatorSList b({ 4, 5 }, InstanceAllocator(2));
+			SListCopyCounted::sCopies = 0;
+
+			a.swap(b);
+			EATEST_VERIFY(SListHolds(a, { 4, 5 }) && SListHolds(b, { 1, 2, 3 }));
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 2 && b.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(a.validate() && b.validate());
+
+			eastl::swap(a, b);
+			EATEST_VERIFY(SListHolds(a, { 1, 2, 3 }) && SListHolds(b, { 4, 5 }));
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 1 && b.get_allocator().mInstanceId == 2);
+
+			EATEST_VERIFY(SListCopyCounted::sCopies == 0); // No element was copied.
+		}
+
+		{   // move assignment
+			UnequalAllocatorSList a({ 1, 2, 3 }, InstanceAllocator(1));
+			UnequalAllocatorSList b({ 4, 5 }, InstanceAllocator(2));
+			SListCopyCounted::sCopies = 0;
+
+			a = eastl::move(b);
+			EATEST_VERIFY(SListHolds(a, { 4, 5 }));
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 2);
+			EATEST_VERIFY(a.validate() && b.validate());
+			EATEST_VERIFY(SListCopyCounted::sCopies == 0); // No element was copied.
+		}
+
+		EATEST_VERIFY_MSG(InstanceAllocator::reset_all(), "slist nodes should be deallocated by the allocator that allocated them.");
+
+		return nErrorCount;
+	}
+}
+
+
 int TestSList()
 {
 	int nErrorCount = 0;
+
+	nErrorCount += TestSListUnequalAllocators();
 
 	// slist();
 	{

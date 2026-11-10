@@ -322,6 +322,9 @@ namespace
 
 	template struct QueueNoexceptChecks<eastl::queue<int, AdaptorDeque> >;
 	template struct QueueNoexceptChecks<eastl::queue<int, AdaptorList> >;
+	static_assert(noexcept(eastl::declval<eastl::queue<int, AdaptorList>&>().swap(eastl::declval<eastl::queue<int, AdaptorList>&>())), "queue<list>::swap must be noexcept");
+	static_assert(noexcept(eastl::swap(eastl::declval<eastl::queue<int, AdaptorList>&>(), eastl::declval<eastl::queue<int, AdaptorList>&>())), "swap(queue<list>&, queue<list>&) must be noexcept");
+	static_assert(noexcept(eastl::declval<eastl::queue<int, AdaptorList>&>() = eastl::declval<eastl::queue<int, AdaptorList>&&>()), "queue<list>::operator=(queue&&) must be noexcept");
 
 	// The container operations are noexcept, so these follow the (nothrow) container.
 	static_assert(noexcept(eastl::declval<eastl::queue<int, AdaptorDeque>&>().swap(eastl::declval<eastl::queue<int, AdaptorDeque>&>())), "queue::swap must be noexcept when the container's swap is");

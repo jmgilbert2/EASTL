@@ -294,11 +294,9 @@ namespace eastl
 
 		this_type& operator=(const this_type& x);
 		this_type& operator=(std::initializer_list<value_type> ilist);
-		this_type& operator=(this_type&& x);
+		this_type& operator=(this_type&& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_move_assignment were true (see swap).
 
-		// In the case that the two containers' allocators are unequal, swap copies elements instead
-		// of replacing them in place. In this case swap is an O(n) operation instead of O(1).
-		void swap(this_type& x);
+		void swap(this_type& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_swap were true: the allocator is swapped along with the nodes.
 
 		void assign(size_type n, const value_type& value);
 
@@ -838,7 +836,13 @@ namespace eastl
 	inline list<T, Allocator>::list(this_type&& x, const allocator_type& allocator)
 		: base_type(allocator)
 	{
-		swap(x); // member swap handles the case that x has a different allocator than our allocator by doing a copy.
+		if(internalAllocator() == x.internalAllocator()) // If we can borrow from x...
+			DoSwap(x);
+		else // else copy x's elements and leave x empty.
+		{
+			DoInsert(&internalNode(), const_iterator(x.internalNode().mpNext), const_iterator(&x.internalNode()), false_type());
+			x.clear();
+		}
 	}
 
 
@@ -1087,12 +1091,12 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename list<T, Allocator>::this_type&
-	list<T, Allocator>::operator=(this_type&& x)
+	list<T, Allocator>::operator=(this_type&& x) EA_NOEXCEPT
 	{
 		if(this != &x)
 		{
 			clear();        // To consider: Are we really required to clear here? x is going away soon and will clear itself in its dtor.
-			swap(x);        // member swap handles the case that x has a different allocator than our allocator by doing a copy.
+			swap(x);        // member swap exchanges the allocators along with the nodes.
 		}
 		return *this;
 	}
@@ -1587,19 +1591,16 @@ namespace eastl
 	}
 
 
-	// does not propagate allocators on swap.
-	// in addition, requires T be copy constructible and copy assignable, which isn't required by the standard.
+	// swap exchanges the contents of two containers in O(1), without copying or moving any element.
+	// With respect to the containers allocators, the C++11 Standard (23.2.1/7) states that the behavior of a call to
+	// a container's swap function is undefined unless the objects being swapped have allocators that compare equal or
+	// allocator_traits<allocator_type>::propagate_on_container_swap::value is true. EASTL doesn't have allocator_traits
+	// but has the effective behavior of propagate_on_container_swap = true for all allocators: the allocators are
+	// exchanged along with the nodes, so every node is still freed by the allocator that allocated it.
 	template <typename T, typename Allocator>
-	inline void list<T, Allocator>::swap(this_type& x)
+	inline void list<T, Allocator>::swap(this_type& x) EA_NOEXCEPT
 	{
-		if(internalAllocator() == x.internalAllocator()) // If allocators are equivalent...
-			DoSwap(x);
-		else // else swap the contents.
-		{
-			const this_type temp(*this); // Can't call eastl::swap because that would
-			*this = x;                   // itself call this member swap function.
-			x     = temp;
-		}
+		DoSwap(x);
 	}
 
 
@@ -2156,7 +2157,7 @@ namespace eastl
 	}
 #endif
 	template <typename T, typename Allocator>
-	void swap(list<T, Allocator>& a, list<T, Allocator>& b)
+	void swap(list<T, Allocator>& a, list<T, Allocator>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
 	{
 		a.swap(b);
 	}

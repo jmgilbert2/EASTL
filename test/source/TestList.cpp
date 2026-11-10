@@ -20,7 +20,9 @@ template class eastl::list<TestObject>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Exception specifications: list is at least as noexcept as MSVC STL's list.
-// (swap and move assignment compare allocators and copy for unequal ones, so they are not noexcept.)
+// EASTL has no allocator_traits and behaves as if propagate_on_container_move_assignment
+// and propagate_on_container_swap were true (the allocator is moved/swapped with the nodes),
+// so move assignment and swap are unconditionally noexcept.
 namespace
 {
 	struct ListNoexceptThrowing // Copy and move operations may throw.
@@ -38,6 +40,10 @@ namespace
 		typedef eastl::list<T>                       L;
 		typedef typename L::const_iterator           CI;
 		typedef typename L::const_reverse_iterator   CRI;
+
+		static_assert(noexcept(eastl::declval<L&>() = eastl::declval<L&&>()), "list::operator=(list&&) must be noexcept");
+		static_assert(noexcept(eastl::declval<L&>().swap(eastl::declval<L&>())), "list::swap must be noexcept");
+		static_assert(noexcept(eastl::swap(eastl::declval<L&>(), eastl::declval<L&>())), "swap(list&, list&) must be noexcept");
 
 		static_assert(noexcept(eastl::declval<L&>().front()), "list::front must be noexcept");
 		static_assert(noexcept(eastl::declval<const L&>().front()), "list::front const must be noexcept");
@@ -60,9 +66,84 @@ namespace
 // template class eastl::list<eastl::unique_ptr<int>>;
 
 
+///////////////////////////////////////////////////////////////////////////////
+// swap and move assignment with unequal allocators: like vector, the allocators are exchanged along with
+// the nodes, no element is copied, and every node is still freed by the allocator that allocated it.
+namespace
+{
+	struct ListCopyCounted
+	{
+		ListCopyCounted(int i = 0) : mI(i) {}
+		ListCopyCounted(const ListCopyCounted& x) : mI(x.mI) { ++sCopies; }
+		ListCopyCounted(ListCopyCounted&& x) noexcept : mI(x.mI) {}
+		ListCopyCounted& operator=(const ListCopyCounted& x) { mI = x.mI; ++sCopies; return *this; }
+		ListCopyCounted& operator=(ListCopyCounted&& x) noexcept { mI = x.mI; return *this; }
+
+		int        mI;
+		static int sCopies;
+	};
+	int ListCopyCounted::sCopies = 0;
+
+	typedef eastl::list<ListCopyCounted, InstanceAllocator> UnequalAllocatorList;
+
+	bool ListHolds(const UnequalAllocatorList& l, std::initializer_list<int> expected)
+	{
+		if(l.size() != expected.size())
+			return false;
+		UnequalAllocatorList::const_iterator it = l.begin();
+		for(int e : expected)
+		{
+			if((it++)->mI != e)
+				return false;
+		}
+		return true;
+	}
+
+	int TestListUnequalAllocators()
+	{
+		int nErrorCount = 0;
+
+		{   // swap
+			UnequalAllocatorList a({ 1, 2, 3 }, InstanceAllocator(1));
+			UnequalAllocatorList b({ 4, 5 }, InstanceAllocator(2));
+			ListCopyCounted::sCopies = 0;
+
+			a.swap(b);
+			EATEST_VERIFY(ListHolds(a, { 4, 5 }) && ListHolds(b, { 1, 2, 3 }));
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 2 && b.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(a.validate() && b.validate());
+
+			eastl::swap(a, b);
+			EATEST_VERIFY(ListHolds(a, { 1, 2, 3 }) && ListHolds(b, { 4, 5 }));
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 1 && b.get_allocator().mInstanceId == 2);
+
+			EATEST_VERIFY(ListCopyCounted::sCopies == 0); // No element was copied.
+		}
+
+		{   // move assignment
+			UnequalAllocatorList a({ 1, 2, 3 }, InstanceAllocator(1));
+			UnequalAllocatorList b({ 4, 5 }, InstanceAllocator(2));
+			ListCopyCounted::sCopies = 0;
+
+			a = eastl::move(b);
+			EATEST_VERIFY(ListHolds(a, { 4, 5 }));
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 2);
+			EATEST_VERIFY(a.validate() && b.validate());
+			EATEST_VERIFY(ListCopyCounted::sCopies == 0); // No element was copied.
+		}
+
+		EATEST_VERIFY_MSG(InstanceAllocator::reset_all(), "list nodes should be deallocated by the allocator that allocated them.");
+
+		return nErrorCount;
+	}
+}
+
+
 int TestList()
 {
 	int nErrorCount = 0;
+
+	nErrorCount += TestListUnequalAllocators();
 
 	// list();
 	{
