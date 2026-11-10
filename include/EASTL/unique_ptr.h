@@ -247,7 +247,7 @@ namespace eastl
 		/// Example usage:
 		///    unique_ptr<int> ptr(new int(3));
 		///    int x = *ptr;
-		typename add_lvalue_reference<T>::type operator*() const // Not noexcept, because the pointer may be NULL.
+		typename add_lvalue_reference<T>::type operator*() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(*eastl::declval<pointer>())) // Like std: dereferencing a NULL pointer is undefined behavior, not an exception.
 		{
 			return *mPair.first();
 		}
@@ -461,7 +461,7 @@ namespace eastl
 		/// Example usage:
 		///    unique_ptr<int> ptr(new int[6]);
 		///    int x = ptr[2];
-		typename add_lvalue_reference<T>::type operator[](ptrdiff_t i) const
+		typename add_lvalue_reference<T>::type operator[](ptrdiff_t i) const EA_NOEXCEPT
 		{
 			// assert(mpArray && (i >= 0));
 			return mPair.first()[i];

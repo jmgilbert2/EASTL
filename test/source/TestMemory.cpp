@@ -12,6 +12,52 @@
 #include <EAStdC/EAAlignment.h>
 
 
+///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: construct_at is noexcept if the constructor is; destroy_at, destruct, align and
+// align_advance are noexcept.
+//
+namespace NoexceptMemoryTest
+{
+	// Constructors may throw unless Nothrow. Only declared: used in unevaluated operands.
+	template <bool Nothrow>
+	struct Elem
+	{
+		Elem() EA_NOEXCEPT_IF(Nothrow);
+		Elem(const Elem&) EA_NOEXCEPT_IF(Nothrow);
+		Elem(Elem&&) EA_NOEXCEPT_IF(Nothrow);
+		explicit Elem(int) EA_NOEXCEPT_IF(Nothrow);
+		explicit Elem(int, int) EA_NOEXCEPT_IF(Nothrow);
+	};
+
+	struct ThrowingDestructor
+	{
+		~ThrowingDestructor() EA_NOEXCEPT_IF(false);
+	};
+
+	using eastl::declval;
+	typedef Elem<true>  N;
+	typedef Elem<false> T;
+
+	static_assert( noexcept(eastl::construct_at(declval<N*>())), "construct_at is noexcept if the constructor is");
+	static_assert(!noexcept(eastl::construct_at(declval<T*>())), "construct_at may throw if the constructor may");
+	static_assert( noexcept(eastl::construct_at(declval<N*>(), declval<N>())), "construct_at is noexcept if the move constructor is");
+	static_assert(!noexcept(eastl::construct_at(declval<T*>(), declval<T>())), "construct_at may throw if the move constructor may");
+	static_assert( noexcept(eastl::construct_at(declval<N*>(), declval<const N&>())), "construct_at is noexcept if the copy constructor is");
+	static_assert(!noexcept(eastl::construct_at(declval<T*>(), declval<const T&>())), "construct_at may throw if the copy constructor may");
+	static_assert( noexcept(eastl::construct_at(declval<N*>(), 1, 2)), "construct_at is noexcept if the constructor is, for several arguments");
+	static_assert(!noexcept(eastl::construct_at(declval<T*>(), 1, 2)), "construct_at may throw if the constructor may, for several arguments");
+
+	static_assert(noexcept(eastl::destroy_at(declval<int*>())), "destroy_at is noexcept");
+	static_assert(noexcept(eastl::destroy_at(declval<N*>())), "destroy_at is noexcept for a class");
+	static_assert(noexcept(eastl::destroy_at(declval<ThrowingDestructor*>())), "destroy_at is noexcept whatever the destructor");
+	static_assert(noexcept(eastl::destruct(declval<int*>())), "destruct is noexcept");
+	static_assert(noexcept(eastl::destruct(declval<ThrowingDestructor*>())), "destruct is noexcept whatever the destructor");
+
+	static_assert(noexcept(eastl::align(declval<size_t>(), declval<size_t>(), declval<void*&>(), declval<size_t&>())), "align is noexcept");
+	static_assert(noexcept(eastl::align_advance(declval<size_t>(), declval<size_t>(), declval<void*>(), declval<size_t>())), "align_advance is noexcept");
+}
+
+
 // Regression for user reported operator new problem (12/8/2009):
 class AssetHandler
 {

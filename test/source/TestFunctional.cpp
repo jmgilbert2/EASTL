@@ -117,6 +117,25 @@ namespace InvokeTest
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: like std::function, the move constructor, the move assignment and the swap of
+// eastl::function are noexcept. (Moving a callable with a throwing move constructor out of the local buffer terminates:
+// the manager's MoveFunctor is noexcept.)
+//
+namespace NoexceptFunctionTest
+{
+	using eastl::declval;
+	typedef eastl::function<void()>     VoidFunction;
+	typedef eastl::function<int(int, int)> IntFunction;
+
+	static_assert(noexcept(VoidFunction(declval<VoidFunction>())), "function(function&&) is noexcept");
+	static_assert(noexcept(IntFunction(declval<IntFunction>())), "function(function&&) is noexcept for any signature");
+	static_assert(noexcept(declval<VoidFunction&>() = declval<VoidFunction>()), "function::operator=(function&&) is noexcept");
+	static_assert(noexcept(declval<IntFunction&>() = declval<IntFunction>()), "function::operator=(function&&) is noexcept for any signature");
+	static_assert(noexcept(eastl::swap(declval<VoidFunction&>(), declval<VoidFunction&>())), "swap(function&, function&) is noexcept");
+	static_assert(noexcept(eastl::swap(declval<IntFunction&>(), declval<IntFunction&>())), "swap(function&, function&) is noexcept for any signature");
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // TestFunctional
 //
 int TestFunctional()

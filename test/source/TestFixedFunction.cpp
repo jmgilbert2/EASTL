@@ -18,6 +18,29 @@ EA_RESTORE_ALL_VC_WARNINGS()
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: like eastl::function (and std::function), the move constructors, the move assignments and
+// the swap of fixed_function are noexcept. (Moving a callable with a throwing move constructor out of the local buffer
+// terminates: the manager's MoveFunctor is noexcept.)
+//
+namespace NoexceptFixedFunctionTest
+{
+	using eastl::declval;
+	typedef eastl::fixed_function<32, void()>     SmallFunction;
+	typedef eastl::fixed_function<64, void()>     LargeFunction;
+	typedef eastl::fixed_function<32, int(int, int)> IntFunction;
+
+	static_assert(noexcept(SmallFunction(declval<SmallFunction>())), "fixed_function(fixed_function&&) is noexcept");
+	static_assert(noexcept(IntFunction(declval<IntFunction>())), "fixed_function(fixed_function&&) is noexcept for any signature");
+	static_assert(noexcept(LargeFunction(declval<SmallFunction>())), "fixed_function(fixed_function<OtherSize>&&) is noexcept");
+	static_assert(noexcept(declval<SmallFunction&>() = declval<SmallFunction>()), "fixed_function::operator=(fixed_function&&) is noexcept");
+	static_assert(noexcept(declval<IntFunction&>() = declval<IntFunction>()), "fixed_function::operator=(fixed_function&&) is noexcept for any signature");
+	static_assert(noexcept(declval<LargeFunction&>() = declval<SmallFunction>()), "fixed_function::operator=(fixed_function<OtherSize>&&) is noexcept");
+	static_assert(noexcept(eastl::swap(declval<SmallFunction&>(), declval<SmallFunction&>())), "swap(fixed_function&, fixed_function&) is noexcept");
+	static_assert(noexcept(eastl::swap(declval<IntFunction&>(), declval<IntFunction&>())), "swap(fixed_function&, fixed_function&) is noexcept for any signature");
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 // TestFixedFunctionDtor
 //
 int TestFixedFunctionDtor()

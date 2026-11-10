@@ -31,6 +31,32 @@
 #include <EAStdC/EAAlignment.h>
 
 
+///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: like std::allocator, everything but allocate of eastl::allocator is noexcept (it only keeps
+// a name and calls the noexcept operator delete). dummy_allocator does nothing, so it is the same.
+//
+namespace NoexceptAllocatorTest
+{
+	using eastl::declval;
+
+	#define EASTL_TEST_ALLOCATOR_NOEXCEPT(Allocator) \
+		static_assert(noexcept(Allocator()), #Allocator " default constructor is noexcept"); \
+		static_assert(noexcept(Allocator("name")), #Allocator " name constructor is noexcept"); \
+		static_assert(noexcept(Allocator(declval<const Allocator&>())), #Allocator " copy constructor is noexcept"); \
+		static_assert(noexcept(Allocator(declval<const Allocator&>(), "name")), #Allocator " copy constructor with a name is noexcept"); \
+		static_assert(noexcept(declval<Allocator&>() = declval<const Allocator&>()), #Allocator " copy assignment is noexcept"); \
+		static_assert(noexcept(declval<Allocator&>().deallocate(declval<void*>(), declval<size_t>())), #Allocator "::deallocate is noexcept"); \
+		static_assert(noexcept(declval<const Allocator&>().get_name()), #Allocator "::get_name is noexcept"); \
+		static_assert(noexcept(declval<Allocator&>().set_name("name")), #Allocator "::set_name is noexcept"); \
+		static_assert(noexcept(declval<const Allocator&>() == declval<const Allocator&>()), #Allocator " operator== is noexcept"); \
+		static_assert(noexcept(declval<const Allocator&>() != declval<const Allocator&>()), #Allocator " operator!= is noexcept");
+
+	EASTL_TEST_ALLOCATOR_NOEXCEPT(eastl::allocator)
+	EASTL_TEST_ALLOCATOR_NOEXCEPT(eastl::dummy_allocator)
+	#undef EASTL_TEST_ALLOCATOR_NOEXCEPT
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // fixed_pool_reference

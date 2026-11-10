@@ -48,7 +48,7 @@ namespace eastl
 		{
 		}
 
-		function(function&& other)
+		function(function&& other) EA_NOEXCEPT
 			: Base(eastl::move(other))
 		{
 		}
@@ -67,7 +67,7 @@ namespace eastl
 			return *this;
 		}
 
-		function& operator=(function&& other)
+		function& operator=(function&& other) EA_NOEXCEPT
 		{
 			Base::operator=(eastl::move(other));
 			return *this;
@@ -153,7 +153,7 @@ namespace eastl
 	}
 #endif
 	template <typename R, typename... Args>
-	void swap(function<R(Args...)>& lhs, function<R(Args...)>& rhs)
+	void swap(function<R(Args...)>& lhs, function<R(Args...)>& rhs) EA_NOEXCEPT
 	{
 		lhs.swap(rhs);
 	}
