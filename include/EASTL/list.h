@@ -294,11 +294,9 @@ namespace eastl
 
 		this_type& operator=(const this_type& x);
 		this_type& operator=(std::initializer_list<value_type> ilist);
-		this_type& operator=(this_type&& x);
+		this_type& operator=(this_type&& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_move_assignment were true (see swap).
 
-		// In the case that the two containers' allocators are unequal, swap copies elements instead
-		// of replacing them in place. In this case swap is an O(n) operation instead of O(1).
-		void swap(this_type& x);
+		void swap(this_type& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_swap were true: the allocator is swapped along with the nodes.
 
 		void assign(size_type n, const value_type& value);
 
@@ -329,11 +327,11 @@ namespace eastl
 		void resize(size_type n, const value_type& value);
 		void resize(size_type n);
 
-		reference       front();
-		const_reference front() const;
+		reference       front() EA_NOEXCEPT;
+		const_reference front() const EA_NOEXCEPT;
 
-		reference       back();
-		const_reference back() const;
+		reference       back() EA_NOEXCEPT;
+		const_reference back() const EA_NOEXCEPT;
 
 		template <typename... Args>
 		reference emplace_front(Args&&... args);
@@ -351,8 +349,8 @@ namespace eastl
 		reference push_back();
 		void*     push_back_uninitialized();
 
-		void pop_front();
-		void pop_back();
+		void pop_front() EA_NOEXCEPT;
+		void pop_back() EA_NOEXCEPT;
 
 		template <typename... Args>
 		iterator emplace(const_iterator position, Args&&... args);
@@ -366,11 +364,11 @@ namespace eastl
 		template <typename InputIterator>
 		iterator insert(const_iterator position, InputIterator first, InputIterator last);
 
-		iterator erase(const_iterator position);
-		iterator erase(const_iterator first, const_iterator last);
+		iterator erase(const_iterator position) EA_NOEXCEPT;
+		iterator erase(const_iterator first, const_iterator last) EA_NOEXCEPT;
 
-		reverse_iterator erase(const_reverse_iterator position);
-		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last);
+		reverse_iterator erase(const_reverse_iterator position) EA_NOEXCEPT;
+		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT;
 
 		void clear() EA_NOEXCEPT;
 		void reset_lose_memory() EA_NOEXCEPT;    // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
@@ -419,8 +417,8 @@ namespace eastl
 		void sort(Compare compare);
 
 	public:
-		bool validate() const;
-		int  validate_iterator(const_iterator i) const;
+		bool validate() const EA_NOEXCEPT;
+		int  validate_iterator(const_iterator i) const EA_NOEXCEPT;
 
 	protected:
 		node_type* DoCreateNode();
@@ -838,7 +836,20 @@ namespace eastl
 	inline list<T, Allocator>::list(this_type&& x, const allocator_type& allocator)
 		: base_type(allocator)
 	{
-		swap(x); // member swap handles the case that x has a different allocator than our allocator by doing a copy.
+		if(internalAllocator() == x.internalAllocator()) // If we can borrow from x...
+		{
+			// Take x's nodes and keep the given allocator.
+			ListNodeBase::swap((ListNodeBase&)internalNode(), (ListNodeBase&)x.internalNode());
+			#if EASTL_LIST_SIZE_CACHE
+				eastl::swap(mSize, x.mSize);
+			#endif
+		}
+		else // else move x's elements one by one into nodes from the given allocator and leave x empty.
+		{
+			for(iterator it(x.begin()), itEnd(x.end()); it != itEnd; ++it)
+				push_back(eastl::move(*it));
+			x.clear();
+		}
 	}
 
 
@@ -958,7 +969,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::reference
-	list<T, Allocator>::front()
+	list<T, Allocator>::front() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -973,7 +984,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::const_reference
-	list<T, Allocator>::front() const
+	list<T, Allocator>::front() const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -988,7 +999,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::reference
-	list<T, Allocator>::back()
+	list<T, Allocator>::back() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -1003,7 +1014,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::const_reference
-	list<T, Allocator>::back() const
+	list<T, Allocator>::back() const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -1087,12 +1098,12 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename list<T, Allocator>::this_type&
-	list<T, Allocator>::operator=(this_type&& x)
+	list<T, Allocator>::operator=(this_type&& x) EA_NOEXCEPT
 	{
 		if(this != &x)
 		{
 			clear();        // To consider: Are we really required to clear here? x is going away soon and will clear itself in its dtor.
-			swap(x);        // member swap handles the case that x has a different allocator than our allocator by doing a copy.
+			swap(x);        // member swap exchanges the allocators along with the nodes.
 		}
 		return *this;
 	}
@@ -1250,7 +1261,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline void list<T, Allocator>::pop_front()
+	inline void list<T, Allocator>::pop_front() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -1301,7 +1312,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline void list<T, Allocator>::pop_back()
+	inline void list<T, Allocator>::pop_back() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(static_cast<node_type*>(internalNode().mpNext) == &internalNode()))
@@ -1391,7 +1402,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::iterator
-	list<T, Allocator>::erase(const_iterator position)
+	list<T, Allocator>::erase(const_iterator position) EA_NOEXCEPT
 	{
 		++position;
 		DoErase(position.mpNode->mpPrev);
@@ -1401,7 +1412,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename list<T, Allocator>::iterator
-	list<T, Allocator>::erase(const_iterator first, const_iterator last)
+	list<T, Allocator>::erase(const_iterator first, const_iterator last) EA_NOEXCEPT
 	{
 		while(first != last)
 			first = erase(first);
@@ -1411,7 +1422,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename list<T, Allocator>::reverse_iterator
-	list<T, Allocator>::erase(const_reverse_iterator position)
+	list<T, Allocator>::erase(const_reverse_iterator position) EA_NOEXCEPT
 	{
 		return reverse_iterator(erase((++position).base()));
 	}
@@ -1419,7 +1430,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename list<T, Allocator>::reverse_iterator
-	list<T, Allocator>::erase(const_reverse_iterator first, const_reverse_iterator last)
+	list<T, Allocator>::erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT
 	{
 		// Version which erases in order from first to last.
 		// difference_type i(first.base() - last.base());
@@ -1587,19 +1598,16 @@ namespace eastl
 	}
 
 
-	// does not propagate allocators on swap.
-	// in addition, requires T be copy constructible and copy assignable, which isn't required by the standard.
+	// swap exchanges the contents of two containers in O(1), without copying or moving any element.
+	// With respect to the containers allocators, the C++11 Standard (23.2.1/7) states that the behavior of a call to
+	// a container's swap function is undefined unless the objects being swapped have allocators that compare equal or
+	// allocator_traits<allocator_type>::propagate_on_container_swap::value is true. EASTL doesn't have allocator_traits
+	// but has the effective behavior of propagate_on_container_swap = true for all allocators: the allocators are
+	// exchanged along with the nodes, so every node is still freed by the allocator that allocated it.
 	template <typename T, typename Allocator>
-	inline void list<T, Allocator>::swap(this_type& x)
+	inline void list<T, Allocator>::swap(this_type& x) EA_NOEXCEPT
 	{
-		if(internalAllocator() == x.internalAllocator()) // If allocators are equivalent...
-			DoSwap(x);
-		else // else swap the contents.
-		{
-			const this_type temp(*this); // Can't call eastl::swap because that would
-			*this = x;                   // itself call this member swap function.
-			x     = temp;
-		}
+		DoSwap(x);
 	}
 
 
@@ -2048,7 +2056,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool list<T, Allocator>::validate() const
+	inline bool list<T, Allocator>::validate() const EA_NOEXCEPT
 	{
 		#if EASTL_LIST_SIZE_CACHE
 			size_type n = 0;
@@ -2066,7 +2074,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline int list<T, Allocator>::validate_iterator(const_iterator i) const
+	inline int list<T, Allocator>::validate_iterator(const_iterator i) const EA_NOEXCEPT
 	{
 		// To do: Come up with a more efficient mechanism of doing this.
 
@@ -2156,7 +2164,7 @@ namespace eastl
 	}
 #endif
 	template <typename T, typename Allocator>
-	void swap(list<T, Allocator>& a, list<T, Allocator>& b)
+	void swap(list<T, Allocator>& a, list<T, Allocator>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
 	{
 		a.swap(b);
 	}

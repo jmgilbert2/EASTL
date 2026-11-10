@@ -114,21 +114,21 @@ namespace eastl
 		base_node_type* mpNode;
 
 	public:
-		SListIterator();
-		SListIterator(const SListNodeBase* pNode);
+		SListIterator() EA_NOEXCEPT;
+		SListIterator(const SListNodeBase* pNode) EA_NOEXCEPT;
 		
 		template <typename This = this_type, enable_if_t<!is_same_v<This, iterator>, bool> = true>
-		inline SListIterator(const iterator& x)
+		inline SListIterator(const iterator& x) EA_NOEXCEPT
 			: mpNode(x.mpNode)
 		{
 			// Empty
 		}
 
-		reference operator*() const;
-		pointer   operator->() const;
+		reference operator*() const EA_NOEXCEPT;
+		pointer   operator->() const EA_NOEXCEPT;
 
-		this_type& operator++();
-		this_type  operator++(int);
+		this_type& operator++() EA_NOEXCEPT;
+		this_type  operator++(int) EA_NOEXCEPT;
 	};
 
 
@@ -242,13 +242,13 @@ namespace eastl
 		static_assert(!is_volatile<value_type>::value, "slist<T> value_type must be non-volatile.");
 
 	public:
-		slist();
-		explicit slist(const allocator_type& allocator);
+		slist() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(EASTL_SLIST_DEFAULT_ALLOCATOR));
+		explicit slist(const allocator_type& allocator) EA_NOEXCEPT;
 		explicit slist(size_type n, const allocator_type& allocator = EASTL_SLIST_DEFAULT_ALLOCATOR);
 		slist(size_type n, const value_type& value, const allocator_type& allocator = EASTL_SLIST_DEFAULT_ALLOCATOR);
 		slist(const this_type& x);
 		slist(std::initializer_list<value_type> ilist, const allocator_type& allocator = EASTL_SLIST_DEFAULT_ALLOCATOR);
-		slist(this_type&& x);
+		slist(this_type&& x) EA_NOEXCEPT;
 		slist(this_type&& x, const allocator_type& allocator);
 
 		template <typename InputIterator>
@@ -256,9 +256,9 @@ namespace eastl
 
 		this_type& operator=(const this_type& x);
 		this_type& operator=(std::initializer_list<value_type>);
-		this_type& operator=(this_type&& x);
+		this_type& operator=(this_type&& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_move_assignment were true (see swap).
 
-		void swap(this_type& x);
+		void swap(this_type& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_swap were true: the allocator is swapped along with the nodes.
 
 		void assign(size_type n, const value_type& value);
 		void assign(std::initializer_list<value_type> ilist);
@@ -278,11 +278,11 @@ namespace eastl
 		const_iterator before_begin() const EA_NOEXCEPT;
 		const_iterator cbefore_begin() const EA_NOEXCEPT;
 
-		iterator        previous(const_iterator position);
-		const_iterator  previous(const_iterator position) const;
+		iterator        previous(const_iterator position) EA_NOEXCEPT;
+		const_iterator  previous(const_iterator position) const EA_NOEXCEPT;
 
-		reference       front();
-		const_reference front() const;
+		reference       front() EA_NOEXCEPT;
+		const_reference front() const EA_NOEXCEPT;
 
 		template <class... Args>
 		reference emplace_front(Args&&... args);
@@ -291,7 +291,7 @@ namespace eastl
 		reference push_front();
 		void      push_front(value_type&& value);
 
-		void      pop_front();
+		void      pop_front() EA_NOEXCEPT;
 
 		bool      empty() const EA_NOEXCEPT;
 		size_type size() const EA_NOEXCEPT;
@@ -319,11 +319,11 @@ namespace eastl
 		template <typename InputIterator>
 		iterator insert_after(const_iterator position, InputIterator first, InputIterator last);
 
-		iterator erase(const_iterator position);
-		iterator erase(const_iterator first, const_iterator last);
+		iterator erase(const_iterator position) EA_NOEXCEPT;
+		iterator erase(const_iterator first, const_iterator last) EA_NOEXCEPT;
 
-		iterator erase_after(const_iterator position);
-		iterator erase_after(const_iterator before_first, const_iterator last);
+		iterator erase_after(const_iterator position) EA_NOEXCEPT;
+		iterator erase_after(const_iterator before_first, const_iterator last) EA_NOEXCEPT;
 
 		void clear() EA_NOEXCEPT;
 		void reset_lose_memory() EA_NOEXCEPT;    // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
@@ -375,8 +375,8 @@ namespace eastl
 		// void merge(this_type&& x, Compare compare);
 		// If these get implemented then make sure to override them in fixed_slist.
 
-		bool validate() const;
-		int  validate_iterator(const_iterator i) const;
+		bool validate() const EA_NOEXCEPT;
+		int  validate_iterator(const_iterator i) const EA_NOEXCEPT;
 
 	protected:
 		node_type* DoCreateNode();
@@ -504,7 +504,7 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template <typename T, typename Pointer, typename Reference>
-	inline SListIterator<T, Pointer, Reference>::SListIterator()
+	inline SListIterator<T, Pointer, Reference>::SListIterator() EA_NOEXCEPT
 		: mpNode(NULL)
 	{
 		// Empty
@@ -512,7 +512,7 @@ namespace eastl
 
 
 	template <typename T, typename Pointer, typename Reference>
-	inline SListIterator<T, Pointer, Reference>::SListIterator(const SListNodeBase* pNode)
+	inline SListIterator<T, Pointer, Reference>::SListIterator(const SListNodeBase* pNode) EA_NOEXCEPT
 		: mpNode(const_cast<base_node_type*>(pNode))
 	{
 		// Empty
@@ -521,7 +521,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference>
 	inline typename SListIterator<T, Pointer, Reference>::reference
-	SListIterator<T, Pointer, Reference>::operator*() const
+	SListIterator<T, Pointer, Reference>::operator*() const EA_NOEXCEPT
 	{
 		return static_cast<node_type*>(mpNode)->mValue;
 	}
@@ -529,7 +529,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference>
 	inline typename SListIterator<T, Pointer, Reference>::pointer
-	SListIterator<T, Pointer, Reference>::operator->() const
+	SListIterator<T, Pointer, Reference>::operator->() const EA_NOEXCEPT
 	{
 		return &static_cast<node_type*>(mpNode)->mValue;
 	}
@@ -537,7 +537,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference>
 	inline typename SListIterator<T, Pointer, Reference>::this_type&
-	SListIterator<T, Pointer, Reference>::operator++()
+	SListIterator<T, Pointer, Reference>::operator++() EA_NOEXCEPT
 	{
 		mpNode = mpNode->mpNext;
 		return *this;
@@ -546,7 +546,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference>
 	inline typename SListIterator<T, Pointer, Reference>::this_type
-	SListIterator<T, Pointer, Reference>::operator++(int)
+	SListIterator<T, Pointer, Reference>::operator++(int) EA_NOEXCEPT
 	{
 		this_type temp(*this);
 		mpNode = mpNode->mpNext;
@@ -558,7 +558,7 @@ namespace eastl
 	// require us to support comparisons between reverse_iterators and const_reverse_iterators.
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB>
 	inline bool operator==(const SListIterator<T, PointerA, ReferenceA>& a, 
-						   const SListIterator<T, PointerB, ReferenceB>& b)
+						   const SListIterator<T, PointerB, ReferenceB>& b) EA_NOEXCEPT
 	{
 		return a.mpNode == b.mpNode;
 	}
@@ -566,7 +566,7 @@ namespace eastl
 
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB>
 	inline bool operator!=(const SListIterator<T, PointerA, ReferenceA>& a, 
-						   const SListIterator<T, PointerB, ReferenceB>& b)
+						   const SListIterator<T, PointerB, ReferenceB>& b) EA_NOEXCEPT
 	{
 		return a.mpNode != b.mpNode;
 	}
@@ -576,7 +576,7 @@ namespace eastl
 	// same type. This helps prevent ambiguity errors in the presence of rel_ops.
 	template <typename T, typename Pointer, typename Reference>
 	inline bool operator!=(const SListIterator<T, Pointer, Reference>& a, 
-						   const SListIterator<T, Pointer, Reference>& b)
+						   const SListIterator<T, Pointer, Reference>& b) EA_NOEXCEPT
 	{
 		return a.mpNode != b.mpNode;
 	}
@@ -701,7 +701,7 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template <typename T, typename Allocator>
-	inline slist<T, Allocator>::slist()
+	inline slist<T, Allocator>::slist() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(EASTL_SLIST_DEFAULT_ALLOCATOR))
 		: base_type()
 	{
 		// Empty
@@ -709,7 +709,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline slist<T, Allocator>::slist(const allocator_type& allocator)
+	inline slist<T, Allocator>::slist(const allocator_type& allocator) EA_NOEXCEPT
 		: base_type(allocator)
 	{
 		// Empty
@@ -741,7 +741,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	slist<T, Allocator>::slist(this_type&& x)
+	slist<T, Allocator>::slist(this_type&& x) EA_NOEXCEPT
 		: base_type(x.internalAllocator())
 	{
 		swap(x);
@@ -751,7 +751,21 @@ namespace eastl
 	slist<T, Allocator>::slist(this_type&& x, const allocator_type& allocator)
 		: base_type(allocator)
 	{
-		swap(x); // member swap handles the case that x has a different allocator than our allocator by doing a copy.
+		if(internalAllocator() == x.internalAllocator()) // If we can borrow from x...
+		{
+			// Take x's nodes and keep the given allocator.
+			eastl::swap(internalNode().mpNext, x.internalNode().mpNext);
+			#if EASTL_SLIST_SIZE_CACHE
+				eastl::swap(mSize, x.mSize);
+			#endif
+		}
+		else // else move x's elements one by one into nodes from the given allocator and leave x empty.
+		{
+			iterator itLast(before_begin());
+			for(iterator it(x.begin()), itEnd(x.end()); it != itEnd; ++it)
+				itLast = insert_after(itLast, eastl::move(*it));
+			x.clear();
+		}
 	}
 
 
@@ -846,7 +860,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename slist<T, Allocator>::iterator
-	slist<T, Allocator>::previous(const_iterator position)
+	slist<T, Allocator>::previous(const_iterator position) EA_NOEXCEPT
 	{
 		return iterator(SListNodeGetPrevious(&internalNode(), position.mpNode));
 	}
@@ -854,7 +868,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename slist<T, Allocator>::const_iterator
-	slist<T, Allocator>::previous(const_iterator position) const
+	slist<T, Allocator>::previous(const_iterator position) const EA_NOEXCEPT
 	{
 		return const_iterator(SListNodeGetPrevious(&internalNode(), position.mpNode));
 	}
@@ -862,7 +876,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename slist<T, Allocator>::reference
-	slist<T, Allocator>::front()
+	slist<T, Allocator>::front() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(internalNode().mpNext == NULL))
@@ -877,7 +891,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename slist<T, Allocator>::const_reference
-	slist<T, Allocator>::front() const
+	slist<T, Allocator>::front() const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(internalNode().mpNext == NULL))
@@ -928,7 +942,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	void slist<T, Allocator>::pop_front()
+	void slist<T, Allocator>::pop_front() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(internalNode().mpNext == NULL))
@@ -981,12 +995,12 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	typename slist<T, Allocator>::this_type& slist<T, Allocator>::operator=(this_type&& x)
+	typename slist<T, Allocator>::this_type& slist<T, Allocator>::operator=(this_type&& x) EA_NOEXCEPT
 	{
 		if(this != &x)
 		{
 			clear();        // To consider: Are we really required to clear here? x is going away soon and will clear itself in its dtor.
-			swap(x);        // member swap handles the case that x has a different allocator than our allocator by doing a copy.
+			swap(x);        // member swap exchanges the allocators along with the nodes.
 		}
 		return *this;
 	}
@@ -1023,19 +1037,16 @@ namespace eastl
 	}
 
 	
-	// does not propagate allocators on swap.
-	// in addition, requires T be copy constructible and copy assignable, which isn't required by the standard.
+	// swap exchanges the contents of two containers in O(1), without copying or moving any element.
+	// With respect to the containers allocators, the C++11 Standard (23.2.1/7) states that the behavior of a call to
+	// a container's swap function is undefined unless the objects being swapped have allocators that compare equal or
+	// allocator_traits<allocator_type>::propagate_on_container_swap::value is true. EASTL doesn't have allocator_traits
+	// but has the effective behavior of propagate_on_container_swap = true for all allocators: the allocators are
+	// exchanged along with the nodes, so every node is still freed by the allocator that allocated it.
 	template <typename T, typename Allocator>
-	inline void slist<T, Allocator>::swap(this_type& x)
+	inline void slist<T, Allocator>::swap(this_type& x) EA_NOEXCEPT
 	{
-		if(internalAllocator() == x.internalAllocator()) // If allocators are equivalent...
-			DoSwap(x);
-		else // else swap the contents.
-		{
-			const this_type temp(*this); // Can't call eastl::swap because that would
-			*this = x;                   // itself call this member swap function.
-			x     = temp;
-		}
+		DoSwap(x);
 	}
 
 
@@ -1197,7 +1208,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename slist<T, Allocator>::iterator
-	slist<T, Allocator>::erase(const_iterator position)
+	slist<T, Allocator>::erase(const_iterator position) EA_NOEXCEPT
 	{
 		return DoEraseAfter(SListNodeGetPrevious(&internalNode(), position.mpNode));
 	}
@@ -1205,7 +1216,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename slist<T, Allocator>::iterator
-	slist<T, Allocator>::erase(const_iterator first, const_iterator last)
+	slist<T, Allocator>::erase(const_iterator first, const_iterator last) EA_NOEXCEPT
 	{
 		return DoEraseAfter(SListNodeGetPrevious(&internalNode(), first.mpNode), last.mpNode);
 	}
@@ -1213,7 +1224,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename slist<T, Allocator>::iterator
-	slist<T, Allocator>::erase_after(const_iterator position)
+	slist<T, Allocator>::erase_after(const_iterator position) EA_NOEXCEPT
 	{
 		return iterator(DoEraseAfter(position.mpNode));
 	}
@@ -1221,7 +1232,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename slist<T, Allocator>::iterator
-	slist<T, Allocator>::erase_after(const_iterator before_first, const_iterator last)
+	slist<T, Allocator>::erase_after(const_iterator before_first, const_iterator last) EA_NOEXCEPT
 	{
 		return iterator(DoEraseAfter(before_first.mpNode, last.mpNode));
 	}
@@ -1737,7 +1748,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool slist<T, Allocator>::validate() const
+	inline bool slist<T, Allocator>::validate() const EA_NOEXCEPT
 	{
 		#if EASTL_SLIST_SIZE_CACHE
 			size_type n = 0;
@@ -1755,7 +1766,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline int slist<T, Allocator>::validate_iterator(const_iterator i) const
+	inline int slist<T, Allocator>::validate_iterator(const_iterator i) const EA_NOEXCEPT
 	{
 		// To do: Come up with a more efficient mechanism of doing this.
 
@@ -1849,7 +1860,7 @@ namespace eastl
 #endif
 
 	template <typename T, typename Allocator>
-	inline void swap(slist<T, Allocator>& a, slist<T, Allocator>& b)
+	inline void swap(slist<T, Allocator>& a, slist<T, Allocator>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
 	{
 		a.swap(b);
 	}

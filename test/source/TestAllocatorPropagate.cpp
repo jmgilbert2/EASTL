@@ -146,9 +146,8 @@ int TestAllocatorPropagate()
 	nErrorCount += TestPropagateOnContainerCopyAssignment<fixed_hash_multiset<int, 8, 9, true, hash<int>, equal_to<int>, true, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "fixed_hash_multiset");
 	nErrorCount += TestPropagateOnContainerCopyAssignment<fixed_string<char, 8, true, InstanceAllocator>>({ 'a', 'b', 'c' }, { 'd', 'e', 'f' }, "fixed_string");
 
-	// commenting out containers with irregular propagation behaviour:
-	// nErrorCount += TestPropagateOnContainerMoveAssignment<list<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "list");
-	// nErrorCount += TestPropagateOnContainerMoveAssignment<slist<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "slist");
+	nErrorCount += TestPropagateOnContainerMoveAssignment<list<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "list");
+	nErrorCount += TestPropagateOnContainerMoveAssignment<slist<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "slist");
 	nErrorCount += TestPropagateOnContainerMoveAssignment<vector<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "vector");
 	nErrorCount += TestPropagateOnContainerMoveAssignment<deque<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "deque");
 	nErrorCount += TestPropagateOnContainerMoveAssignment<segmented_vector<int, 32, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "segmented_vector");
@@ -160,7 +159,8 @@ int TestAllocatorPropagate()
 	nErrorCount += TestPropagateOnContainerMoveAssignment<hash_multimap<int, int, hash<int>, equal_to<int>, InstanceAllocator>>({ pair<const int, int>(1, 1) }, { pair<const int, int>(2, 2) }, "hash_multimap");
 	nErrorCount += TestPropagateOnContainerMoveAssignment<hash_set<int, hash<int>, equal_to<int>, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "hash_set");
 	nErrorCount += TestPropagateOnContainerMoveAssignment<hash_multiset<int, hash<int>, equal_to<int>, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "hash_multiset");
-	// nErrorCount += TestPropagateOnContainerMoveAssignment<basic_string<char, InstanceAllocator>>({ 'a', 'b', 'c' }, { 'd', 'e', 'f' }, "basic_string");
+	nErrorCount += TestPropagateOnContainerMoveAssignment<basic_string<char, InstanceAllocator>>({ 'a', 'b', 'c' }, { 'd', 'e', 'f' }, "basic_string");
+	// commenting out containers with irregular propagation behaviour (the fixed containers copy instead of trading storage):
 	//nErrorCount += TestPropagateOnContainerMoveAssignment<fixed_list<int, 8, true, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "fixed_list");
 	//nErrorCount += TestPropagateOnContainerMoveAssignment<fixed_slist<int, 8, true, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "fixed_slist");
 	//nErrorCount += TestPropagateOnContainerMoveAssignment<fixed_vector<int, 8, true, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "fixed_vector");
@@ -174,8 +174,8 @@ int TestAllocatorPropagate()
 	//nErrorCount += TestPropagateOnContainerMoveAssignment<fixed_hash_multiset<int, 8, 9, true, hash<int>, equal_to<int>, true, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "fixed_hash_multiset");
 	//nErrorCount += TestPropagateOnContainerMoveAssignment<fixed_string<char, 8, true, InstanceAllocator>>({ 'a', 'b', 'c' }, { 'd', 'e', 'f' }, "fixed_string");
 
-	// nErrorCount += TestPropagateOnContainerSwap<list<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "list");
-	// nErrorCount += TestPropagateOnContainerSwap<slist<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "slist");
+	nErrorCount += TestPropagateOnContainerSwap<list<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "list");
+	nErrorCount += TestPropagateOnContainerSwap<slist<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "slist");
 	nErrorCount += TestPropagateOnContainerSwap<vector<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "vector");
 	nErrorCount += TestPropagateOnContainerSwap<deque<int, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "deque");
 	nErrorCount += TestPropagateOnContainerSwap<segmented_vector<int, 32, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "segmented_vector");
@@ -187,7 +187,7 @@ int TestAllocatorPropagate()
 	nErrorCount += TestPropagateOnContainerSwap<hash_multimap<int, int, hash<int>, equal_to<int>, InstanceAllocator>>({ pair<const int, int>(1, 1) }, { pair<const int, int>(2, 2) }, "hash_multimap");
 	nErrorCount += TestPropagateOnContainerSwap<hash_set<int, hash<int>, equal_to<int>, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "hash_set");
 	nErrorCount += TestPropagateOnContainerSwap<hash_multiset<int, hash<int>, equal_to<int>, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "hash_multiset");
-	// nErrorCount += TestPropagateOnContainerSwap<basic_string<char, InstanceAllocator>>({ 'a', 'b', 'c' }, { 'd', 'e', 'f' }, "basic_string");
+	nErrorCount += TestPropagateOnContainerSwap<basic_string<char, InstanceAllocator>>({ 'a', 'b', 'c' }, { 'd', 'e', 'f' }, "basic_string");
 	//nErrorCount += TestPropagateOnContainerSwap<fixed_list<int, 8, true, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "fixed_list");
 	//nErrorCount += TestPropagateOnContainerSwap<fixed_slist<int, 8, true, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "fixed_slist");
 	//nErrorCount += TestPropagateOnContainerSwap<fixed_vector<int, 8, true, InstanceAllocator>>({ 1, 2, 3 }, { 4, 5, 6 }, "fixed_vector");

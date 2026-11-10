@@ -72,13 +72,14 @@ namespace eastl
 		container_type c; // The C++ standard specifies that you declare a protected member variable of type Container called 'c'.
 
 	public:
-		stack();
+		stack() EA_NOEXCEPT_IF(eastl::is_nothrow_default_constructible_v<container_type>);
 
 		// Allocator is templated here because we aren't allowed to infer the allocator_type from the Container, as some containers (e.g. array) don't 
 		// have allocators. For containers that don't have allocator types, you could use void or char as the Allocator template type.
 
 		template <class Allocator>                      
 		explicit stack(const Allocator& allocator, typename eastl::enable_if<eastl::uses_allocator<container_type, Allocator>::value>::type* = NULL)
+		  EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<container_type, const Allocator&>))
 		  : c(allocator)
 		{
 		}    
@@ -91,12 +92,13 @@ namespace eastl
 
 		template <class Allocator>
 		stack(this_type&& x, const Allocator& allocator, typename eastl::enable_if<eastl::uses_allocator<container_type, Allocator>::value>::type* = NULL)
+		  EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<container_type, container_type, const Allocator&>))
 		  : c(eastl::move(x.c), allocator)
 		{
 		}
 
 		explicit stack(const container_type& x);
-		explicit stack(container_type&& x);
+		explicit stack(container_type&& x) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible_v<container_type>);
 
 		// Additional C++11 support to consider:
 		//
@@ -114,11 +116,11 @@ namespace eastl
 
 		stack(std::initializer_list<value_type> ilist); // The first item in the initializer list is pushed first. C++11 doesn't specify that std::stack has initializer list support.
 
-		bool      empty() const;
-		size_type size() const;
+		bool      empty() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.empty()));
+		size_type size() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.size()));
 
-		reference       top();
-		const_reference top() const;
+		reference       top() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.back()));
+		const_reference top() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.back()));
 
 		void push(const value_type& value);
 		void push(value_type&& x);
@@ -126,10 +128,10 @@ namespace eastl
 		template <class... Args> EASTL_REMOVE_AT_2024_SEPT void emplace_back(Args&&... args); // use emplace() instead. they are equivalent.
 		template <class... Args> decltype(auto) emplace(Args&&... args);
 
-		void pop();
+		void pop() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.pop_back()));
 
-		container_type&       get_container();
-		const container_type& get_container() const;
+		container_type&       get_container() EA_NOEXCEPT;
+		const container_type& get_container() const EA_NOEXCEPT;
 
 		void swap(this_type& x) EA_NOEXCEPT_IF(eastl::is_nothrow_swappable<this_type::container_type>::value);
 
@@ -146,7 +148,7 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template <typename T, typename Container>
-	inline stack<T, Container>::stack()
+	inline stack<T, Container>::stack() EA_NOEXCEPT_IF(eastl::is_nothrow_default_constructible_v<container_type>)
 		: c() // To consider: use c(EASTL_STACK_DEFAULT_ALLOCATOR) here, though that would add the requirement that the user supplied container support this.
 	{
 		// Empty
@@ -162,7 +164,7 @@ namespace eastl
 
 
 	template <typename T, typename Container>
-	inline stack<T, Container>::stack(Container&& x)
+	inline stack<T, Container>::stack(Container&& x) EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible_v<container_type>)
 		: c(eastl::move(x))
 	{
 		// Empty
@@ -184,7 +186,7 @@ namespace eastl
 	}
 
 	template <typename T, typename Container>
-	inline bool stack<T, Container>::empty() const
+	inline bool stack<T, Container>::empty() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.empty()))
 	{
 		return c.empty();
 	}
@@ -192,7 +194,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline typename stack<T, Container>::size_type
-	stack<T, Container>::size() const
+	stack<T, Container>::size() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.size()))
 	{
 		return c.size();
 	}
@@ -200,7 +202,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline typename stack<T, Container>::reference
-	stack<T, Container>::top()
+	stack<T, Container>::top() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.back()))
 	{
 #if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 		if (EASTL_UNLIKELY(c.empty()))
@@ -213,7 +215,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline typename stack<T, Container>::const_reference
-	stack<T, Container>::top() const
+	stack<T, Container>::top() const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.back()))
 	{
 #if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 		if (EASTL_UNLIKELY(c.empty()))
@@ -255,7 +257,7 @@ namespace eastl
 
 
 	template <typename T, typename Container>
-	inline void stack<T, Container>::pop()
+	inline void stack<T, Container>::pop() EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(c.pop_back()))
 	{
 #if EASTL_ASSERT_ENABLED
 		if (EASTL_UNLIKELY(c.empty()))
@@ -268,7 +270,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline typename stack<T, Container>::container_type&
-	stack<T, Container>::get_container()
+	stack<T, Container>::get_container() EA_NOEXCEPT
 	{
 		return c;
 	}
@@ -276,7 +278,7 @@ namespace eastl
 
 	template <typename T, typename Container>
 	inline const typename stack<T, Container>::container_type&
-	stack<T, Container>::get_container() const
+	stack<T, Container>::get_container() const EA_NOEXCEPT
 	{
 		return c;
 	}

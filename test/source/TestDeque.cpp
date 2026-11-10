@@ -31,6 +31,88 @@ template class eastl::deque<int>;
 template class eastl::deque<TestObject>;
 
 
+///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: deque (and DequeIterator) are at least as noexcept as MSVC STL's.
+// EASTL has no allocator_traits and behaves as if propagate_on_container_move_assignment
+// and propagate_on_container_swap were true, so move assignment and swap are unconditionally noexcept.
+namespace
+{
+	struct DequeNoexceptThrowing // Copy and move operations may throw.
+	{
+		DequeNoexceptThrowing() {}
+		DequeNoexceptThrowing(const DequeNoexceptThrowing&) {}
+		DequeNoexceptThrowing(DequeNoexceptThrowing&&) noexcept(false) {}
+		DequeNoexceptThrowing& operator=(const DequeNoexceptThrowing&) { return *this; }
+		DequeNoexceptThrowing& operator=(DequeNoexceptThrowing&&) noexcept(false) { return *this; }
+	};
+
+	template <typename T, bool kNothrowMoveAssign>
+	struct DequeNoexceptChecks
+	{
+		typedef eastl::deque<T>                     D;
+		typedef typename D::iterator                I;
+		typedef typename D::const_iterator          CI;
+		typedef typename D::reverse_iterator        RI;
+
+		static_assert(noexcept(eastl::declval<D&>() = eastl::declval<D&&>()), "deque::operator=(deque&&) must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().swap(eastl::declval<D&>())), "deque::swap must be noexcept");
+		static_assert(noexcept(eastl::swap(eastl::declval<D&>(), eastl::declval<D&>())), "swap(deque&, deque&) must be noexcept");
+
+		static_assert(noexcept(eastl::declval<D&>()[0]), "deque::operator[] must be noexcept");
+		static_assert(noexcept(eastl::declval<const D&>()[0]), "deque::operator[] const must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().front()), "deque::front must be noexcept");
+		static_assert(noexcept(eastl::declval<const D&>().front()), "deque::front const must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().back()), "deque::back must be noexcept");
+		static_assert(noexcept(eastl::declval<const D&>().back()), "deque::back const must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().pop_front()), "deque::pop_front must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().pop_back()), "deque::pop_back must be noexcept");
+		static_assert(noexcept(eastl::declval<D&>().clear()), "deque::clear must be noexcept");
+		static_assert(noexcept(eastl::declval<const D&>().validate()), "deque::validate must be noexcept");
+		static_assert(noexcept(eastl::declval<const D&>().validate_iterator(eastl::declval<CI>())), "deque::validate_iterator must be noexcept");
+
+		// erase is conditional on is_nothrow_move_assignable_v<value_type>, as in the standard library.
+		static_assert(noexcept(eastl::declval<D&>().erase(eastl::declval<CI>())) == kNothrowMoveAssign, "deque::erase(const_iterator)");
+		static_assert(noexcept(eastl::declval<D&>().erase(eastl::declval<CI>(), eastl::declval<CI>())) == kNothrowMoveAssign, "deque::erase(const_iterator, const_iterator)");
+		static_assert(noexcept(eastl::declval<D&>().erase(eastl::declval<RI>())) == kNothrowMoveAssign, "deque::erase(reverse_iterator)");
+		static_assert(noexcept(eastl::declval<D&>().erase(eastl::declval<RI>(), eastl::declval<RI>())) == kNothrowMoveAssign, "deque::erase(reverse_iterator, reverse_iterator)");
+
+		// DequeIterator
+		static_assert(noexcept(I()), "DequeIterator() must be noexcept");
+		static_assert(noexcept(CI()), "DequeIterator() must be noexcept");
+		static_assert(noexcept(I(eastl::declval<const I&>())), "DequeIterator(const iterator&) must be noexcept");
+		static_assert(noexcept(CI(eastl::declval<const I&>())), "const_iterator(const iterator&) must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>() = eastl::declval<const I&>()), "DequeIterator::operator=(const iterator&) must be noexcept");
+		static_assert(noexcept(eastl::declval<CI&>() = eastl::declval<const I&>()), "const_iterator::operator=(const iterator&) must be noexcept");
+		static_assert(noexcept(*eastl::declval<const I&>()), "DequeIterator::operator* must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>().operator->()), "DequeIterator::operator-> must be noexcept");
+		static_assert(noexcept(++eastl::declval<I&>()), "DequeIterator::operator++() must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>()++), "DequeIterator::operator++(int) must be noexcept");
+		static_assert(noexcept(--eastl::declval<I&>()), "DequeIterator::operator--() must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>()--), "DequeIterator::operator--(int) must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>() += 1), "DequeIterator::operator+= must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>() -= 1), "DequeIterator::operator-= must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() + 1), "DequeIterator::operator+ must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() - 1), "DequeIterator::operator- must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>()[1]), "DequeIterator::operator[] must be noexcept");
+		static_assert(noexcept(1 + eastl::declval<const I&>()), "operator+(n, DequeIterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() - eastl::declval<const I&>()), "operator-(DequeIterator, DequeIterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() - eastl::declval<const CI&>()), "operator-(iterator, const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() == eastl::declval<const I&>()), "DequeIterator operator== must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() != eastl::declval<const I&>()), "DequeIterator operator!= must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() == eastl::declval<const CI&>()), "iterator == const_iterator must be noexcept");
+		static_assert(noexcept(eastl::declval<const CI&>() != eastl::declval<const I&>()), "const_iterator != iterator must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() < eastl::declval<const I&>()), "DequeIterator operator< must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() > eastl::declval<const I&>()), "DequeIterator operator> must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() <= eastl::declval<const I&>()), "DequeIterator operator<= must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() >= eastl::declval<const CI&>()), "DequeIterator operator>= must be noexcept");
+	};
+
+	template struct DequeNoexceptChecks<int, true>;
+	template struct DequeNoexceptChecks<DequeNoexceptThrowing, false>;
+}
+
+
+
 // Test compiler issue that appeared in VS2012 relating to deque::kAlignment.
 struct StructWithContainerOfStructs
 {
@@ -594,9 +676,79 @@ int TestDequeEmptyInsert()
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+// deque(deque&&, const allocator_type&) constructs with the given allocator. With equal allocators it takes x's
+// storage; with unequal allocators it moves x's elements one by one into storage from the given allocator and
+// leaves x empty and valid.
+// deque::operator=(deque&&) is allocation free: it clears and then swaps (and so propagates the allocator).
+namespace
+{
+	struct DequeMoveCounted
+	{
+		DequeMoveCounted(int i = 0) : mI(i) {}
+		DequeMoveCounted(const DequeMoveCounted& x) : mI(x.mI) { ++sCopies; }
+		DequeMoveCounted(DequeMoveCounted&& x) noexcept : mI(x.mI) {}
+		DequeMoveCounted& operator=(const DequeMoveCounted& x) { mI = x.mI; ++sCopies; return *this; }
+		DequeMoveCounted& operator=(DequeMoveCounted&& x) noexcept { mI = x.mI; return *this; }
+
+		int        mI;
+		static int sCopies;
+	};
+	int DequeMoveCounted::sCopies = 0;
+
+	int TestDequeAllocatorExtendedMoveConstructor()
+	{
+		int nErrorCount = 0;
+		typedef eastl::deque<DequeMoveCounted, InstanceAllocator> D;
+
+		{   // Unequal allocators: the elements are moved (not copied) into storage allocated by the given allocator.
+			D x({ 1, 2, 3 }, InstanceAllocator(1));
+			DequeMoveCounted::sCopies = 0;
+
+			D y(eastl::move(x), InstanceAllocator(2));
+			EATEST_VERIFY(y.size() == 3 && y[0].mI == 1 && y[1].mI == 2 && y[2].mI == 3);
+			EATEST_VERIFY(y.get_allocator().mInstanceId == 2);
+			EATEST_VERIFY(x.empty() && x.validate() && y.validate());
+			EATEST_VERIFY(x.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(DequeMoveCounted::sCopies == 0);
+		}
+
+		{   // Equal allocators: x's storage is taken, no element is moved or copied.
+			D x({ 1, 2, 3 }, InstanceAllocator(1));
+			const DequeMoveCounted* const p = &x.front();
+			DequeMoveCounted::sCopies = 0;
+
+			D y(eastl::move(x), InstanceAllocator(1));
+			EATEST_VERIFY(y.size() == 3 && y[0].mI == 1 && y[2].mI == 3);
+			EATEST_VERIFY(&y.front() == p);
+			EATEST_VERIFY(y.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(x.empty() && x.validate() && y.validate());
+			EATEST_VERIFY(DequeMoveCounted::sCopies == 0);
+		}
+
+		{   // Move assignment with unequal allocators: nothing is copied and the allocator is propagated.
+			D a({ 1, 2, 3 }, InstanceAllocator(1));
+			D b({ 4, 5 }, InstanceAllocator(2));
+			DequeMoveCounted::sCopies = 0;
+
+			a = eastl::move(b);
+			EATEST_VERIFY(a.size() == 2 && a[0].mI == 4 && a[1].mI == 5);
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 2);
+			EATEST_VERIFY(a.validate() && b.validate() && b.empty());
+			EATEST_VERIFY(DequeMoveCounted::sCopies == 0);
+		}
+
+		EATEST_VERIFY_MSG(InstanceAllocator::reset_all(), "deque storage should be deallocated by the allocator that allocated it.");
+
+		return nErrorCount;
+	}
+}
+
+
 int TestDeque()
 {
 	int nErrorCount = 0;
+	nErrorCount += TestDequeAllocatorExtendedMoveConstructor();
 	nErrorCount += TestDequeEmptyInsert();
 
 	{   // Test construction

@@ -260,7 +260,7 @@ namespace eastl
 		}
 
 
-		this_type& operator=(this_type&& x)
+		this_type& operator=(this_type&& x) EA_NOEXCEPT_IF((eastl::is_nothrow_move_assignable_v<Hash> && eastl::is_nothrow_move_assignable_v<Predicate>))
 		{
 			return static_cast<this_type&>(base_type::operator=(eastl::move(x)));
 		}
@@ -299,6 +299,12 @@ namespace eastl
 		}
 
 	}; // hash_set
+
+	template <typename Value, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
+	inline void swap(hash_set<Value, Hash, Predicate, Allocator, bCacheHashCode>& a, hash_set<Value, Hash, Predicate, Allocator, bCacheHashCode>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
+	{
+		a.swap(b);
+	}
 
 	/// hash_set erase_if
 	///
@@ -469,7 +475,7 @@ namespace eastl
 		}
 
 
-		this_type& operator=(this_type&& x)
+		this_type& operator=(this_type&& x) EA_NOEXCEPT_IF((eastl::is_nothrow_move_assignable_v<Hash> && eastl::is_nothrow_move_assignable_v<Predicate>))
 		{
 			return static_cast<this_type&>(base_type::operator=(eastl::move(x)));
 		}
@@ -484,6 +490,12 @@ namespace eastl
 		}
 
 	}; // hash_multiset
+
+	template <typename Value, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
+	inline void swap(hash_multiset<Value, Hash, Predicate, Allocator, bCacheHashCode>& a, hash_multiset<Value, Hash, Predicate, Allocator, bCacheHashCode>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
+	{
+		a.swap(b);
+	}
 
 	/// hash_multiset erase_if
 	///

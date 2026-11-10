@@ -72,16 +72,23 @@ int TestContainerBehaviour()
 	EATEST_VERIFY(TestObject::Reset());
 
 	{ // move constructor with allocator
-		// only correct because it has incorrect propagate on swap behaviour, see TestAllocatorPropagate
-		nErrorCount += TestContainerCtorMoveWithAllocator<list<TestObject, InstanceAllocator>>(false, { TestObject{1}, TestObject{2}, TestObject{3} }, "list", false, true);
+		nErrorCount += TestContainerCtorMoveWithAllocator<list<TestObject, InstanceAllocator>>(false, { TestObject{1}, TestObject{2}, TestObject{3} }, "list", true, false);
 		EATEST_VERIFY(TestObject::Reset());
-		// only correct because it has incorrect propagate on swap behaviour, see TestAllocatorPropagate
-		nErrorCount += TestContainerCtorMoveWithAllocator<slist<TestObject, InstanceAllocator>>(false, { TestObject{1}, TestObject{2}, TestObject{3} }, "slist", false, true);
+		nErrorCount += TestContainerCtorMoveWithAllocator<slist<TestObject, InstanceAllocator>>(false, { TestObject{1}, TestObject{2}, TestObject{3} }, "slist", true, false);
 		EATEST_VERIFY(TestObject::Reset());
-		//nErrorCount += TestContainerCtorMoveWithAllocator<vector<TestObject, InstanceAllocator>>(false, { TestObject{1}, TestObject{2}, TestObject{3} }, "vector", true, false);
-		//EATEST_VERIFY(TestObject::Reset());
-		//nErrorCount += TestContainerCtorMoveWithAllocator<deque<TestObject, InstanceAllocator>>(false, { TestObject{1}, TestObject{2}, TestObject{3} }, "deque", true, false);
-		//EATEST_VERIFY(TestObject::Reset());
+		nErrorCount += TestContainerCtorMoveWithAllocator<vector<TestObject, InstanceAllocator>>(false, { TestObject{1}, TestObject{2}, TestObject{3} }, "vector", true, false);
+		EATEST_VERIFY(TestObject::Reset());
+		nErrorCount += TestContainerCtorMoveWithAllocator<deque<TestObject, InstanceAllocator>>(false, { TestObject{1}, TestObject{2}, TestObject{3} }, "deque", true, false);
+		EATEST_VERIFY(TestObject::Reset());
+		// equal allocators: the storage is taken and no element is moved or copied.
+		nErrorCount += TestContainerCtorMoveWithAllocator<list<TestObject, InstanceAllocator>>(true, { TestObject{1}, TestObject{2}, TestObject{3} }, "list (equal allocators)", false, false);
+		EATEST_VERIFY(TestObject::Reset());
+		nErrorCount += TestContainerCtorMoveWithAllocator<slist<TestObject, InstanceAllocator>>(true, { TestObject{1}, TestObject{2}, TestObject{3} }, "slist (equal allocators)", false, false);
+		EATEST_VERIFY(TestObject::Reset());
+		nErrorCount += TestContainerCtorMoveWithAllocator<vector<TestObject, InstanceAllocator>>(true, { TestObject{1}, TestObject{2}, TestObject{3} }, "vector (equal allocators)", false, false);
+		EATEST_VERIFY(TestObject::Reset());
+		nErrorCount += TestContainerCtorMoveWithAllocator<deque<TestObject, InstanceAllocator>>(true, { TestObject{1}, TestObject{2}, TestObject{3} }, "deque (equal allocators)", false, false);
+		EATEST_VERIFY(TestObject::Reset());
 		//nErrorCount += TestContainerCtorMoveWithAllocator<map<TestObject, int, less<TestObject>, InstanceAllocator>>(false, { pair<const TestObject, int>(1, 1) }, "map", false, true);
 		//EATEST_VERIFY(TestObject::Reset());
 		//nErrorCount += TestContainerCtorMoveWithAllocator<multimap<TestObject, int, less<TestObject>, InstanceAllocator>>(false, { pair<const TestObject, int>(1, 1) }, "multimap", false, true);
@@ -98,7 +105,7 @@ int TestContainerBehaviour()
 		//EATEST_VERIFY(TestObject::Reset());
 		//nErrorCount += TestContainerCtorMoveWithAllocator<hash_multiset<TestObject, hash<TestObject>, equal_to<TestObject>, InstanceAllocator>>(false, { TestObject{1}, TestObject{2}, TestObject{3} }, "hash_multiset", true, false);
 		//EATEST_VERIFY(TestObject::Reset());
-		//nErrorCount += TestContainerCtorMoveWithAllocator<basic_string<char, InstanceAllocator>>(false, { 'a', 'b', 'c' }, "basic_string", false, false);
+		nErrorCount += TestContainerCtorMoveWithAllocator<basic_string<char, InstanceAllocator>>(false, { 'a', 'b', 'c' }, "basic_string", false, false);
 
 		// fixed types with overflow, but all elements fit in the fixed portion of the container:
 		//nErrorCount += TestContainerCtorMoveWithAllocator<fixed_list<TestObject, 8, true, InstanceAllocator>>(false, { TestObject{1}, TestObject{2}, TestObject{3} }, "fixed_list (no overflow)", true, false);

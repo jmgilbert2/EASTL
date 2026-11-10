@@ -35,6 +35,72 @@ template class eastl::multiset<TestObject>;
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: set and multiset are at least as noexcept as MSVC STL's.
+// EASTL has no allocator_traits and behaves as if propagate_on_container_move_assignment
+// and propagate_on_container_swap were true, so only the comparator matters for move assignment and swap.
+namespace
+{
+	struct SetNothrowCompare
+	{
+		bool operator()(int a, int b) const noexcept { return a < b; }
+	};
+
+	struct SetThrowingCompare // Copying, moving, swapping and comparing may throw.
+	{
+		SetThrowingCompare() {}
+		SetThrowingCompare(const SetThrowingCompare&) noexcept(false) {}
+		SetThrowingCompare(SetThrowingCompare&&) noexcept(false) {}
+		SetThrowingCompare& operator=(const SetThrowingCompare&) noexcept(false) { return *this; }
+		SetThrowingCompare& operator=(SetThrowingCompare&&) noexcept(false) { return *this; }
+		bool operator()(int a, int b) const noexcept(false) { return a < b; }
+	};
+
+	template <typename S, bool kNothrowCompare>
+	struct SetNoexceptChecks
+	{
+		typedef typename S::iterator                 I;
+		typedef typename S::const_iterator           CI;
+		typedef typename S::const_reverse_iterator   CRI;
+
+		// Conditional on the comparator, as in the standard library.
+		static_assert(noexcept(eastl::declval<S&>() = eastl::declval<S&&>()) == kNothrowCompare, "set::operator=(set&&)");
+		static_assert(noexcept(eastl::declval<S&>().swap(eastl::declval<S&>())) == kNothrowCompare, "set::swap");
+		static_assert(noexcept(eastl::swap(eastl::declval<S&>(), eastl::declval<S&>())) == kNothrowCompare, "swap(set&, set&)");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<const typename S::key_type&>())) == kNothrowCompare, "set::erase(const key_type&)");
+
+		static_assert(noexcept(eastl::declval<S&>().clear()), "set::clear must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().reset_lose_memory()), "set::reset_lose_memory must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<I>())), "set::erase(iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<CI>())), "set::erase(const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<CI>(), eastl::declval<CI>())), "set::erase(const_iterator, const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<CRI>())), "set::erase(const_reverse_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().erase(eastl::declval<CRI>(), eastl::declval<CRI>())), "set::erase(const_reverse_iterator, const_reverse_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().validate()), "set::validate must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().validate_iterator(eastl::declval<CI>())), "set::validate_iterator must be noexcept");
+
+		// rbtree_iterator
+		static_assert(noexcept(I()), "rbtree_iterator() must be noexcept");
+		static_assert(noexcept(I(eastl::declval<const I&>())), "rbtree_iterator(const iterator&) must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>() = eastl::declval<const I&>()), "rbtree_iterator::operator= must be noexcept");
+		static_assert(noexcept(*eastl::declval<const I&>()), "rbtree_iterator::operator* must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>().operator->()), "rbtree_iterator::operator-> must be noexcept");
+		static_assert(noexcept(++eastl::declval<I&>()), "rbtree_iterator::operator++() must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>()++), "rbtree_iterator::operator++(int) must be noexcept");
+		static_assert(noexcept(--eastl::declval<I&>()), "rbtree_iterator::operator--() must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>()--), "rbtree_iterator::operator--(int) must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() == eastl::declval<const CI&>()), "rbtree_iterator operator== must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() != eastl::declval<const CI&>()), "rbtree_iterator operator!= must be noexcept");
+	};
+
+	template struct SetNoexceptChecks<eastl::set<int, SetNothrowCompare>, true>;
+	template struct SetNoexceptChecks<eastl::multiset<int, SetNothrowCompare>, true>;
+	template struct SetNoexceptChecks<eastl::set<int, SetThrowingCompare>, false>;
+	template struct SetNoexceptChecks<eastl::multiset<int, SetThrowingCompare>, false>;
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
 // typedefs
 //
 typedef eastl::set<int> VS1;
@@ -108,6 +174,20 @@ struct EA_REMOVE_AT_2025_OCT LessNonTransparent
 int TestSet()
 {
 	int nErrorCount = 0;
+
+	{   // eastl::swap(set&, set&) and eastl::swap(multiset&, multiset&) exchange the contents.
+		eastl::set<int> a, b;
+		a.insert(1); a.insert(2); b.insert(3);
+		eastl::swap(a, b);
+		EATEST_VERIFY(a.size() == 1 && a.count(3) == 1);
+		EATEST_VERIFY(b.size() == 2 && b.count(1) == 1 && b.count(2) == 1);
+
+		eastl::multiset<int> ma, mb;
+		ma.insert(1); ma.insert(1); mb.insert(3);
+		eastl::swap(ma, mb);
+		EATEST_VERIFY(ma.size() == 1 && ma.count(3) == 1);
+		EATEST_VERIFY(mb.size() == 2 && mb.count(1) == 2);
+	}
 
 	#ifndef EA_COMPILER_NO_STANDARD_CPP_LIBRARY
 		{   // Test construction

@@ -543,7 +543,7 @@ namespace eastl
 		this_type& operator=(value_type c);
 		this_type& operator=(std::initializer_list<value_type> ilist);
 		this_type& operator=(view_type v);
-		this_type& operator=(this_type&& x); // TODO(c++17): noexcept(allocator_traits<Allocator>::propagate_on_container_move_assignment::value || allocator_traits<Allocator>::is_always_equal::value);
+		this_type& operator=(this_type&& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_move_assignment were true (see swap).
 
 		#if EASTL_OPERATOR_EQUALS_OTHER_ENABLED
 			this_type& operator=(value_type* p) { return operator=((const value_type*)p); } // We need this because otherwise the const value_type* version can collide with the const OtherStringType& version below.
@@ -555,7 +555,7 @@ namespace eastl
 			this_type& operator=(const OtherStringType& x);
 		#endif
 
-		void swap(this_type& x); // TODO(c++17): noexcept(allocator_traits<Allocator>::propagate_on_container_swap::value || allocator_traits<Allocator>::is_always_equal::value);
+		void swap(this_type& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_swap were true: the allocator is swapped along with the string.
 
 		// Assignment operations
 		this_type& assign(const this_type& x);
@@ -564,7 +564,7 @@ namespace eastl
 		this_type& assign(const value_type* p);
 		this_type& assign(size_type n, value_type c);
 		this_type& assign(const value_type* pBegin, const value_type* pEnd);
-		this_type& assign(this_type&& x); // TODO(c++17): noexcept(allocator_traits<Allocator>::propagate_on_container_move_assignment::value || allocator_traits<Allocator>::is_always_equal::value);
+		this_type& assign(this_type&& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_move_assignment were true (see swap).
 		this_type& assign(std::initializer_list<value_type>);
 
 		template <typename OtherCharType>
@@ -613,14 +613,14 @@ namespace eastl
 		const value_type* c_str() const EA_NOEXCEPT;
 
 		// Element access
-		reference       operator[](size_type n);
-		const_reference operator[](size_type n) const;
+		reference       operator[](size_type n) EA_NOEXCEPT;
+		const_reference operator[](size_type n) const EA_NOEXCEPT;
 		reference       at(size_type n);
 		const_reference at(size_type n) const;
-		reference       front();
-		const_reference front() const;
-		reference       back();
-		const_reference back() const;
+		reference       front() EA_NOEXCEPT;
+		const_reference front() const EA_NOEXCEPT;
+		reference       back() EA_NOEXCEPT;
+		const_reference back() const EA_NOEXCEPT;
 
 		// Append operations
 		this_type& operator+=(const this_type& x);
@@ -647,7 +647,7 @@ namespace eastl
 		this_type& append_convert(const OtherStringType& x);
 
 		void push_back(value_type c);
-		void pop_back();
+		void pop_back() EA_NOEXCEPT;
 
 		// Insertion operations
 		this_type& insert(size_type position, const this_type& x);
@@ -662,10 +662,10 @@ namespace eastl
 
 		// Erase operations
 		this_type&       erase(size_type position = 0, size_type n = npos);
-		iterator         erase(const_iterator p);
-		iterator         erase(const_iterator pBegin, const_iterator pEnd);
-		reverse_iterator erase(reverse_iterator position);
-		reverse_iterator erase(reverse_iterator first, reverse_iterator last);
+		iterator         erase(const_iterator p) EA_NOEXCEPT;
+		iterator         erase(const_iterator pBegin, const_iterator pEnd) EA_NOEXCEPT;
+		reverse_iterator erase(reverse_iterator position) EA_NOEXCEPT;
+		reverse_iterator erase(reverse_iterator first, reverse_iterator last) EA_NOEXCEPT;
 		void             clear() EA_NOEXCEPT;
 
 		// Detach memory
@@ -686,38 +686,38 @@ namespace eastl
 
 		// Find operations
 		size_type find(const this_type& x,  size_type position = 0) const EA_NOEXCEPT;
-		size_type find(const value_type* p, size_type position = 0) const;
-		size_type find(const value_type* p, size_type position, size_type n) const;
+		size_type find(const value_type* p, size_type position = 0) const EA_NOEXCEPT;
+		size_type find(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT;
 		size_type find(value_type c, size_type position = 0) const EA_NOEXCEPT;
 
 		// Reverse find operations
 		size_type rfind(const this_type& x,  size_type position = npos) const EA_NOEXCEPT;
-		size_type rfind(const value_type* p, size_type position = npos) const;
-		size_type rfind(const value_type* p, size_type position, size_type n) const;
+		size_type rfind(const value_type* p, size_type position = npos) const EA_NOEXCEPT;
+		size_type rfind(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT;
 		size_type rfind(value_type c, size_type position = npos) const EA_NOEXCEPT;
 
 		// Find first-of operations
 		size_type find_first_of(const this_type& x, size_type position = 0) const EA_NOEXCEPT;
-		size_type find_first_of(const value_type* p, size_type position = 0) const;
-		size_type find_first_of(const value_type* p, size_type position, size_type n) const;
+		size_type find_first_of(const value_type* p, size_type position = 0) const EA_NOEXCEPT;
+		size_type find_first_of(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT;
 		size_type find_first_of(value_type c, size_type position = 0) const EA_NOEXCEPT;
 
 		// Find last-of operations
 		size_type find_last_of(const this_type& x, size_type position = npos) const EA_NOEXCEPT;
-		size_type find_last_of(const value_type* p, size_type position = npos) const;
-		size_type find_last_of(const value_type* p, size_type position, size_type n) const;
+		size_type find_last_of(const value_type* p, size_type position = npos) const EA_NOEXCEPT;
+		size_type find_last_of(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT;
 		size_type find_last_of(value_type c, size_type position = npos) const EA_NOEXCEPT;
 
 		// Find first not-of operations
 		size_type find_first_not_of(const this_type& x, size_type position = 0) const EA_NOEXCEPT;
-		size_type find_first_not_of(const value_type* p, size_type position = 0) const;
-		size_type find_first_not_of(const value_type* p, size_type position, size_type n) const;
+		size_type find_first_not_of(const value_type* p, size_type position = 0) const EA_NOEXCEPT;
+		size_type find_first_not_of(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT;
 		size_type find_first_not_of(value_type c, size_type position = 0) const EA_NOEXCEPT;
 
 		// Find last not-of operations
 		size_type find_last_not_of(const this_type& x,  size_type position = npos) const EA_NOEXCEPT;
-		size_type find_last_not_of(const value_type* p, size_type position = npos) const;
-		size_type find_last_not_of(const value_type* p, size_type position, size_type n) const;
+		size_type find_last_not_of(const value_type* p, size_type position = npos) const EA_NOEXCEPT;
+		size_type find_last_not_of(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT;
 		size_type find_last_not_of(value_type c, size_type position = npos) const EA_NOEXCEPT;
 
 		// Substring functionality
@@ -727,19 +727,19 @@ namespace eastl
 		int        compare(const this_type& x) const EA_NOEXCEPT;
 		int        compare(size_type pos1, size_type n1, const this_type& x) const;
 		int        compare(size_type pos1, size_type n1, const this_type& x, size_type pos2, size_type n2) const;
-		int        compare(const value_type* p) const;
+		int        compare(const value_type* p) const EA_NOEXCEPT;
 		int        compare(size_type pos1, size_type n1, const value_type* p) const;
 		int        compare(size_type pos1, size_type n1, const value_type* p, size_type n2) const;
-		static int compare(const value_type* pBegin1, const value_type* pEnd1, const value_type* pBegin2, const value_type* pEnd2);
+		static int compare(const value_type* pBegin1, const value_type* pEnd1, const value_type* pBegin2, const value_type* pEnd2) EA_NOEXCEPT;
 
 		// Case-insensitive comparison functions. Not part of C++ this_type. Only ASCII-level locale functionality is supported. Thus this is not suitable for localization purposes.
 		int        comparei(const this_type& x) const EA_NOEXCEPT;
-		int        comparei(const value_type* p) const;
-		static int comparei(const value_type* pBegin1, const value_type* pEnd1, const value_type* pBegin2, const value_type* pEnd2);
+		int        comparei(const value_type* p) const EA_NOEXCEPT;
+		static int comparei(const value_type* pBegin1, const value_type* pEnd1, const value_type* pBegin2, const value_type* pEnd2) EA_NOEXCEPT;
 
 		// Misc functionality, not part of C++ this_type.
-		void         make_lower();
-		void         make_upper();
+		void         make_lower() EA_NOEXCEPT;
+		void         make_upper() EA_NOEXCEPT;
 		void         ltrim();
 		void         rtrim();
 		void         trim();
@@ -981,7 +981,7 @@ namespace eastl
 		else if(x.internalLayout().BeginPtr())
 		{
 			RangeInitialize(x.internalLayout().BeginPtr(), x.internalLayout().EndPtr());
-			// Let x destruct its own items.
+			x.clear(); // The characters were moved, leave x empty.
 		}
 	}
 
@@ -1188,7 +1188,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::const_reference
-	basic_string<T, Allocator>::operator[](size_type n) const
+	basic_string<T, Allocator>::operator[](size_type n) const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED // We allow the user to reference the trailing 0 char without asserting. Perhaps we shouldn't.
 			if(EASTL_UNLIKELY(n > internalLayout().GetSize()))
@@ -1201,7 +1201,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::reference
-	basic_string<T, Allocator>::operator[](size_type n)
+	basic_string<T, Allocator>::operator[](size_type n) EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED // We allow the user to reference the trailing 0 char without asserting. Perhaps we shouldn't.
 			if(EASTL_UNLIKELY(n > internalLayout().GetSize()))
@@ -1302,7 +1302,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline typename basic_string<T, Allocator>::this_type& basic_string<T, Allocator>::operator=(this_type&& x)
+	inline typename basic_string<T, Allocator>::this_type& basic_string<T, Allocator>::operator=(this_type&& x) EA_NOEXCEPT
 	{
 		return assign(eastl::move(x));
 	}
@@ -1524,7 +1524,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::reference
-	basic_string<T, Allocator>::front()
+	basic_string<T, Allocator>::front() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(internalLayout().GetSize() == 0)) // We assert if the user references the trailing 0 char.
@@ -1539,7 +1539,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::const_reference
-	basic_string<T, Allocator>::front() const
+	basic_string<T, Allocator>::front() const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(internalLayout().GetSize() == 0)) // We assert if the user references the trailing 0 char.
@@ -1554,7 +1554,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::reference
-	basic_string<T, Allocator>::back()
+	basic_string<T, Allocator>::back() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(internalLayout().GetSize() == 0)) // We assert if the user references the trailing 0 char.
@@ -1569,7 +1569,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::const_reference
-	basic_string<T, Allocator>::back() const
+	basic_string<T, Allocator>::back() const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(internalLayout().GetSize() == 0)) // We assert if the user references the trailing 0 char.
@@ -1882,7 +1882,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline void basic_string<T, Allocator>::pop_back()
+	inline void basic_string<T, Allocator>::pop_back() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(internalLayout().GetSize() <= 0))
@@ -1975,14 +1975,10 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline basic_string<T, Allocator>& basic_string<T, Allocator>::assign(this_type&& x)
+	inline basic_string<T, Allocator>& basic_string<T, Allocator>::assign(this_type&& x) EA_NOEXCEPT
 	{
-		if(get_allocator() == x.get_allocator())
-		{
-			eastl::swap(internalLayout(), x.internalLayout());
-		}
-		else
-			assign(x.internalLayout().BeginPtr(), x.internalLayout().EndPtr());
+		if(this != &x)
+			swap(x); // swap exchanges the allocators along with the strings.
 
 		return *this;
 	}
@@ -2343,7 +2339,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::iterator
-	basic_string<T, Allocator>::erase(const_iterator p)
+	basic_string<T, Allocator>::erase(const_iterator p) EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY((p < internalLayout().BeginPtr()) || (p >= internalLayout().EndPtr())))
@@ -2358,7 +2354,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename basic_string<T, Allocator>::iterator
-	basic_string<T, Allocator>::erase(const_iterator pBegin, const_iterator pEnd)
+	basic_string<T, Allocator>::erase(const_iterator pBegin, const_iterator pEnd) EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if (EASTL_UNLIKELY((pBegin < internalLayout().BeginPtr()) || (pBegin > internalLayout().EndPtr()) ||
@@ -2385,7 +2381,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::reverse_iterator
-	basic_string<T, Allocator>::erase(reverse_iterator position)
+	basic_string<T, Allocator>::erase(reverse_iterator position) EA_NOEXCEPT
 	{
 		return reverse_iterator(erase((++position).base()));
 	}
@@ -2393,7 +2389,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename basic_string<T, Allocator>::reverse_iterator
-	basic_string<T, Allocator>::erase(reverse_iterator first, reverse_iterator last)
+	basic_string<T, Allocator>::erase(reverse_iterator first, reverse_iterator last) EA_NOEXCEPT
 	{
 		return reverse_iterator(erase((++last).base(), (++first).base()));
 	}
@@ -2615,20 +2611,17 @@ namespace eastl
 	}
 
 
+	// swap exchanges the contents of two strings in O(1), without copying any character.
+	// With respect to the strings allocators, the C++11 Standard (23.2.1/7) states that the behavior of a call to
+	// a container's swap function is undefined unless the objects being swapped have allocators that compare equal or
+	// allocator_traits<allocator_type>::propagate_on_container_swap::value is true. EASTL doesn't have allocator_traits
+	// but has the effective behavior of propagate_on_container_swap = true for all allocators: the allocators are
+	// exchanged along with the layouts, so every heap block is still freed by the allocator that allocated it.
 	template <typename T, typename Allocator>
-	void basic_string<T, Allocator>::swap(this_type& x)
+	void basic_string<T, Allocator>::swap(this_type& x) EA_NOEXCEPT
 	{
-		if(get_allocator() == x.get_allocator() || (internalLayout().IsSSO() && x.internalLayout().IsSSO())) // If allocators are equivalent...
-		{
-			// We leave mAllocator as-is.
-			eastl::swap(internalLayout(), x.internalLayout());
-		}
-		else // else swap the contents.
-		{
-			const this_type temp(*this); // Can't call eastl::swap because that would
-			*this = x;                   // itself call this member swap function.
-			x     = temp;
-		}
+		eastl::swap(internalLayout(), x.internalLayout());
+		eastl::swap(internalAllocator(), x.internalAllocator());
 	}
 
 
@@ -2642,7 +2635,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::find(const value_type* p, size_type position) const
+	basic_string<T, Allocator>::find(const value_type* p, size_type position) const EA_NOEXCEPT
 	{
 		return find(p, position, (size_type)CharStrlen(p));
 	}
@@ -2650,7 +2643,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::find(const value_type* p, size_type position, size_type n) const
+	basic_string<T, Allocator>::find(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT
 	{
 		// It is not clear what the requirements are for position, but since the C++ standard
 		// appears to be silent it is assumed for now that position can be any value.
@@ -2702,7 +2695,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::rfind(const value_type* p, size_type position) const
+	basic_string<T, Allocator>::rfind(const value_type* p, size_type position) const EA_NOEXCEPT
 	{
 		return rfind(p, position, (size_type)CharStrlen(p));
 	}
@@ -2710,7 +2703,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::rfind(const value_type* p, size_type position, size_type n) const
+	basic_string<T, Allocator>::rfind(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT
 	{
 		// Disabled because it's not clear what values are valid for position.
 		// It is documented that npos is a valid value, though. We return npos and
@@ -2773,7 +2766,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::find_first_of(const value_type* p, size_type position) const
+	basic_string<T, Allocator>::find_first_of(const value_type* p, size_type position) const EA_NOEXCEPT
 	{
 		return find_first_of(p, position, (size_type)CharStrlen(p));
 	}
@@ -2781,7 +2774,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::find_first_of(const value_type* p, size_type position, size_type n) const
+	basic_string<T, Allocator>::find_first_of(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT
 	{
 		// If position is >= size, we return npos.
 		if(EASTL_LIKELY((position < internalLayout().GetSize())))
@@ -2814,7 +2807,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::find_last_of(const value_type* p, size_type position) const
+	basic_string<T, Allocator>::find_last_of(const value_type* p, size_type position) const EA_NOEXCEPT
 	{
 		return find_last_of(p, position, (size_type)CharStrlen(p));
 	}
@@ -2822,7 +2815,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::find_last_of(const value_type* p, size_type position, size_type n) const
+	basic_string<T, Allocator>::find_last_of(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT
 	{
 		// If n is zero or position is >= size, we return npos.
 		const size_type nLength = internalLayout().GetSize();
@@ -2857,7 +2850,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::find_first_not_of(const value_type* p, size_type position) const
+	basic_string<T, Allocator>::find_first_not_of(const value_type* p, size_type position) const EA_NOEXCEPT
 	{
 		return find_first_not_of(p, position, (size_type)CharStrlen(p));
 	}
@@ -2865,7 +2858,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::find_first_not_of(const value_type* p, size_type position, size_type n) const
+	basic_string<T, Allocator>::find_first_not_of(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT
 	{
 		if(EASTL_LIKELY(position <= internalLayout().GetSize()))
 		{
@@ -2906,7 +2899,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	inline typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::find_last_not_of(const value_type* p, size_type position) const
+	basic_string<T, Allocator>::find_last_not_of(const value_type* p, size_type position) const EA_NOEXCEPT
 	{
 		return find_last_not_of(p, position, (size_type)CharStrlen(p));
 	}
@@ -2914,7 +2907,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	typename basic_string<T, Allocator>::size_type
-	basic_string<T, Allocator>::find_last_not_of(const value_type* p, size_type position, size_type n) const
+	basic_string<T, Allocator>::find_last_not_of(const value_type* p, size_type position, size_type n) const EA_NOEXCEPT
 	{
 		const size_type nLength = internalLayout().GetSize();
 
@@ -3007,7 +3000,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline int basic_string<T, Allocator>::compare(const value_type* p) const
+	inline int basic_string<T, Allocator>::compare(const value_type* p) const EA_NOEXCEPT
 	{
 		return compare(internalLayout().BeginPtr(), internalLayout().EndPtr(), p, p + CharStrlen(p));
 	}
@@ -3047,7 +3040,7 @@ namespace eastl
 	// This is a very simple ASCII-only case conversion function
 	// Anything more complicated should use a more powerful separate library.
 	template <typename T, typename Allocator>
-	inline void basic_string<T, Allocator>::make_lower()
+	inline void basic_string<T, Allocator>::make_lower() EA_NOEXCEPT
 	{
 		for(pointer p = internalLayout().BeginPtr(); p < internalLayout().EndPtr(); ++p)
 			*p = (value_type)CharToLower(*p);
@@ -3058,7 +3051,7 @@ namespace eastl
 	// This is a very simple ASCII-only case conversion function
 	// Anything more complicated should use a more powerful separate library.
 	template <typename T, typename Allocator>
-	inline void basic_string<T, Allocator>::make_upper()
+	inline void basic_string<T, Allocator>::make_upper() EA_NOEXCEPT
 	{
 		for(pointer p = internalLayout().BeginPtr(); p < internalLayout().EndPtr(); ++p)
 			*p = (value_type)CharToUpper(*p);
@@ -3159,7 +3152,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	int basic_string<T, Allocator>::compare(const value_type* pBegin1, const value_type* pEnd1,
-											const value_type* pBegin2, const value_type* pEnd2)
+											const value_type* pBegin2, const value_type* pEnd2) EA_NOEXCEPT
 	{
 		const difference_type n1   = pEnd1 - pBegin1;
 		const difference_type n2   = pEnd2 - pBegin2;
@@ -3172,7 +3165,7 @@ namespace eastl
 
 	template <typename T, typename Allocator>
 	int basic_string<T, Allocator>::comparei(const value_type* pBegin1, const value_type* pEnd1,
-											 const value_type* pBegin2, const value_type* pEnd2)
+											 const value_type* pBegin2, const value_type* pEnd2) EA_NOEXCEPT
 	{
 		const difference_type n1   = pEnd1 - pBegin1;
 		const difference_type n2   = pEnd2 - pBegin2;
@@ -3191,7 +3184,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline int basic_string<T, Allocator>::comparei(const value_type* p) const
+	inline int basic_string<T, Allocator>::comparei(const value_type* p) const EA_NOEXCEPT
 	{
 		return comparei(internalLayout().BeginPtr(), internalLayout().EndPtr(), p, p + CharStrlen(p));
 	}
@@ -3543,14 +3536,14 @@ namespace eastl
 
 	// Operator== and operator!=
 	template <typename T, typename Allocator>
-	inline bool operator==(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b)
+	inline bool operator==(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		return ((a.size() == b.size()) && (Compare(a.data(), b.data(), (size_t)a.size()) == 0));
 	}
 
 #if !defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	template <typename T, typename Allocator>
-	inline bool operator==(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b)
+	inline bool operator==(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		typedef typename basic_string<T, Allocator>::size_type string_size_type;
 		const string_size_type n = (string_size_type)CharStrlen(p);
@@ -3559,7 +3552,7 @@ namespace eastl
 #endif
 
 	template <typename T, typename Allocator>
-	inline bool operator==(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p)
+	inline bool operator==(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p) EA_NOEXCEPT
 	{
 		typedef typename basic_string<T, Allocator>::size_type string_size_type;
 		const string_size_type n = (string_size_type)CharStrlen(p);
@@ -3568,13 +3561,13 @@ namespace eastl
 	
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	template <typename T, typename Allocator>
-	inline auto operator<=>(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b)
+	inline auto operator<=>(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		return basic_string<T, Allocator>::compare(a.begin(), a.end(), b.begin(), b.end()) <=> 0;
 	}
 
 	template <typename T, typename Allocator>
-	inline auto operator<=>(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p)
+	inline auto operator<=>(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p) EA_NOEXCEPT
 	{
 		typedef typename basic_string<T, Allocator>::size_type string_size_type;
 		const string_size_type n = (string_size_type)CharStrlen(p);
@@ -3582,7 +3575,7 @@ namespace eastl
 	}
 	
 	template <typename T, typename Allocator>
-	inline auto operator<=>(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v)
+	inline auto operator<=>(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v) EA_NOEXCEPT
 	{
 		typedef typename basic_string<T, Allocator>::view_type view_type;
 		return static_cast<view_type>(a) <=> v;
@@ -3591,7 +3584,7 @@ namespace eastl
 #else
 
 	template <typename T, typename Allocator>
-	inline bool operator==(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b)
+	inline bool operator==(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3602,7 +3595,7 @@ namespace eastl
 	}
 
 	template <typename T, typename Allocator>
-	inline bool operator==(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v)
+	inline bool operator==(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3614,27 +3607,27 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool operator!=(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b)
+	inline bool operator!=(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		return !(a == b);
 	}
 
 	template <typename T, typename Allocator>
-	inline bool operator!=(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b)
+	inline bool operator!=(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		return !(p == b);
 	}
 
 
 	template <typename T, typename Allocator>
-	inline bool operator!=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p)
+	inline bool operator!=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p) EA_NOEXCEPT
 	{
 		return !(a == p);
 	}
 	
 	
 	template <typename T, typename Allocator>
-	inline bool operator!=(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b)
+	inline bool operator!=(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3645,7 +3638,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool operator!=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v)
+	inline bool operator!=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3657,13 +3650,13 @@ namespace eastl
 
 	// Operator< (and also >, <=, and >=).
 	template <typename T, typename Allocator>
-	inline bool operator<(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b)
+	inline bool operator<(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		return basic_string<T, Allocator>::compare(a.begin(), a.end(), b.begin(), b.end()) < 0; }
 
 
 	template <typename T, typename Allocator>
-	inline bool operator<(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b)
+	inline bool operator<(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		typedef typename basic_string<T, Allocator>::size_type string_size_type;
 		const string_size_type n = (string_size_type)CharStrlen(p);
@@ -3672,7 +3665,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool operator<(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p)
+	inline bool operator<(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p) EA_NOEXCEPT
 	{
 		typedef typename basic_string<T, Allocator>::size_type string_size_type;
 		const string_size_type n = (string_size_type)CharStrlen(p);
@@ -3681,7 +3674,7 @@ namespace eastl
 	
 	
 	template <typename T, typename Allocator>
-	inline bool operator<(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b)
+	inline bool operator<(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3693,7 +3686,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool operator<(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v)
+	inline bool operator<(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3705,28 +3698,28 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool operator>(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b)
+	inline bool operator>(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		return b < a;
 	}
 
 
 	template <typename T, typename Allocator>
-	inline bool operator>(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b)
+	inline bool operator>(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		return b < p;
 	}
 
 
 	template <typename T, typename Allocator>
-	inline bool operator>(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p)
+	inline bool operator>(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p) EA_NOEXCEPT
 	{
 		return p < a;
 	}
 	
 	
 	template <typename T, typename Allocator>
-	inline bool operator>(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b)
+	inline bool operator>(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3737,7 +3730,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool operator>(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v)
+	inline bool operator>(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3748,28 +3741,28 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool operator<=(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b)
+	inline bool operator<=(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		return !(b < a);
 	}
 
 
 	template <typename T, typename Allocator>
-	inline bool operator<=(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b)
+	inline bool operator<=(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		return !(b < p);
 	}
 
 
 	template <typename T, typename Allocator>
-	inline bool operator<=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p)
+	inline bool operator<=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p) EA_NOEXCEPT
 	{
 		return !(p < a);
 	}
 	
 	
 	template <typename T, typename Allocator>
-	inline bool operator<=(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b)
+	inline bool operator<=(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3780,7 +3773,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool operator<=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v)
+	inline bool operator<=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3791,28 +3784,28 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool operator>=(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b)
+	inline bool operator>=(const basic_string<T, Allocator>& a, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		return !(a < b);
 	}
 
 
 	template <typename T, typename Allocator>
-	inline bool operator>=(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b)
+	inline bool operator>=(const typename basic_string<T, Allocator>::value_type* p, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		return !(p < b);
 	}
 
 
 	template <typename T, typename Allocator>
-	inline bool operator>=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p)
+	inline bool operator>=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::value_type* p) EA_NOEXCEPT
 	{
 		return !(a < p);
 	}
 	
 	
 	template <typename T, typename Allocator>
-	inline bool operator>=(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b)
+	inline bool operator>=(const typename basic_string<T, Allocator>::view_type v, const basic_string<T, Allocator>& b) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3823,7 +3816,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline bool operator>=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v)
+	inline bool operator>=(const basic_string<T, Allocator>& a, const typename basic_string<T, Allocator>::view_type v) EA_NOEXCEPT
 	{
 		// Workaround for basic_string_view comparisons that require conversions,
 		// since they are causing an internal compiler error when compiled using
@@ -3834,7 +3827,7 @@ namespace eastl
 #endif
 
 	template <typename T, typename Allocator>
-	inline void swap(basic_string<T, Allocator>& a, basic_string<T, Allocator>& b)
+	inline void swap(basic_string<T, Allocator>& a, basic_string<T, Allocator>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
 	{
 		a.swap(b);
 	}
@@ -3868,7 +3861,7 @@ namespace eastl
 	template <typename Allocator>
 	struct hash<basic_string<char, Allocator>>
 	{
-		size_t operator()(const basic_string<char, Allocator>& x) const
+		size_t operator()(const basic_string<char, Allocator>& x) const EA_NOEXCEPT
 		{
 			const unsigned char* p = (const unsigned char*)x.c_str(); // To consider: limit p to at most 256 chars.
 			const unsigned char* const pEnd = p + x.size(); // Hash all size() characters, including embedded NULs, like hash<string_view>.
@@ -3883,7 +3876,7 @@ namespace eastl
 		template <typename Allocator>
 		struct hash<basic_string<char8_t, Allocator>>
 		{
-			size_t operator()(const basic_string<char8_t, Allocator>& x) const
+			size_t operator()(const basic_string<char8_t, Allocator>& x) const EA_NOEXCEPT
 			{
 				const char8_t* p = (const char8_t*)x.c_str();
 				const char8_t* const pEnd = p + x.size();
@@ -3898,7 +3891,7 @@ namespace eastl
 	template <typename Allocator>
 	struct hash<basic_string<char16_t, Allocator>>
 	{
-		size_t operator()(const basic_string<char16_t, Allocator>& x) const
+		size_t operator()(const basic_string<char16_t, Allocator>& x) const EA_NOEXCEPT
 		{
 			const char16_t* p = x.c_str();
 			const char16_t* const pEnd = p + x.size();
@@ -3912,7 +3905,7 @@ namespace eastl
 	template <typename Allocator>
 	struct hash<basic_string<char32_t, Allocator>>
 	{
-		size_t operator()(const basic_string<char32_t, Allocator>& x) const
+		size_t operator()(const basic_string<char32_t, Allocator>& x) const EA_NOEXCEPT
 		{
 			const char32_t* p = x.c_str();
 			const char32_t* const pEnd = p + x.size();
@@ -3927,7 +3920,7 @@ namespace eastl
 		template <typename Allocator>
 		struct hash<basic_string<wchar_t, Allocator>>
 		{
-			size_t operator()(const basic_string<wchar_t, Allocator>& x) const
+			size_t operator()(const basic_string<wchar_t, Allocator>& x) const EA_NOEXCEPT
 			{
 				const wchar_t* p = x.c_str();
 				const wchar_t* const pEnd = p + x.size();

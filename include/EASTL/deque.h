@@ -157,26 +157,26 @@ namespace eastl
 		typedef Reference                                                 reference;
 
 	public:
-		DequeIterator();
-		DequeIterator(const iterator& x);
-		DequeIterator& operator=(const iterator& x);
+		DequeIterator() EA_NOEXCEPT;
+		DequeIterator(const iterator& x) EA_NOEXCEPT;
+		DequeIterator& operator=(const iterator& x) EA_NOEXCEPT;
 
-		pointer   operator->() const;
-		reference operator*() const;
+		pointer   operator->() const EA_NOEXCEPT;
+		reference operator*() const EA_NOEXCEPT;
 
-		this_type& operator++();
-		this_type  operator++(int);
+		this_type& operator++() EA_NOEXCEPT;
+		this_type  operator++(int) EA_NOEXCEPT;
 
-		this_type& operator--();
-		this_type  operator--(int);
+		this_type& operator--() EA_NOEXCEPT;
+		this_type  operator--(int) EA_NOEXCEPT;
 
-		this_type& operator+=(difference_type n);
-		this_type& operator-=(difference_type n);
+		this_type& operator+=(difference_type n) EA_NOEXCEPT;
+		this_type& operator-=(difference_type n) EA_NOEXCEPT;
 
-		this_type operator+(difference_type n) const;
-		this_type operator-(difference_type n) const;
+		this_type operator+(difference_type n) const EA_NOEXCEPT;
+		this_type operator-(difference_type n) const EA_NOEXCEPT;
 
-		reference operator[](difference_type n) const;
+		reference operator[](difference_type n) const EA_NOEXCEPT;
 
 	protected:
 		template <typename, typename, typename, unsigned>
@@ -190,36 +190,36 @@ namespace eastl
 
 		template <typename U, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySizeU>
 		friend bool operator==(const DequeIterator<U, PointerA, ReferenceA, kDequeSubarraySizeU>&, 
-							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&);
+							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&) EA_NOEXCEPT;
 
 		template <typename U, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySizeU>
 		friend bool operator!=(const DequeIterator<U, PointerA, ReferenceA, kDequeSubarraySizeU>&, 
-							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&);
+							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&) EA_NOEXCEPT;
 
 		template <typename U, typename PointerU, typename ReferenceU, unsigned kDequeSubarraySizeU>
 		friend bool operator!=(const DequeIterator<U, PointerU, ReferenceU, kDequeSubarraySizeU>& a, 
-							   const DequeIterator<U, PointerU, ReferenceU, kDequeSubarraySizeU>& b);
+							   const DequeIterator<U, PointerU, ReferenceU, kDequeSubarraySizeU>& b) EA_NOEXCEPT;
 
 		template <typename U, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySizeU>
 		friend bool operator< (const DequeIterator<U, PointerA, ReferenceA, kDequeSubarraySizeU>&, 
-							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&);
+							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&) EA_NOEXCEPT;
 
 		template <typename U, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySizeU>
 		friend bool operator> (const DequeIterator<U, PointerA, ReferenceA, kDequeSubarraySizeU>&, 
-							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&);
+							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&) EA_NOEXCEPT;
 
 		template <typename U, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySizeU>
 		friend bool operator<=(const DequeIterator<U, PointerA, ReferenceA, kDequeSubarraySizeU>&, 
-							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&);
+							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&) EA_NOEXCEPT;
 
 		template <typename U, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySizeU>
 		friend bool operator>=(const DequeIterator<U, PointerA, ReferenceA, kDequeSubarraySizeU>&, 
-							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&);
+							   const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>&) EA_NOEXCEPT;
 
 		template <typename U, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySizeU>
 		friend typename DequeIterator<U, PointerA, ReferenceA, kDequeSubarraySizeU>::difference_type
 		operator-(const DequeIterator<U, PointerA, ReferenceA, kDequeSubarraySizeU>& a,
-				  const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>& b);
+				  const DequeIterator<U, PointerB, ReferenceB, kDequeSubarraySizeU>& b) EA_NOEXCEPT;
 
 	protected:
 		T*  mpCurrent;          // Where we currently point. Declared first because it's used most often.
@@ -392,9 +392,9 @@ namespace eastl
 
 		this_type& operator=(const this_type& x);
 		this_type& operator=(std::initializer_list<value_type> ilist);
-		this_type& operator=(this_type&& x);
+		this_type& operator=(this_type&& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_move_assignment were true (see swap).
 
-		void swap(this_type& x);
+		void swap(this_type& x) EA_NOEXCEPT; // EASTL behaves as if propagate_on_container_swap were true: the allocator is swapped along with the storage.
 
 		void assign(size_type n, const value_type& value);
 		void assign(std::initializer_list<value_type> ilist);
@@ -429,17 +429,17 @@ namespace eastl
 		void shrink_to_fit();
 		void set_capacity(size_type n = base_type::npos);
 
-		reference       operator[](size_type n);
-		const_reference operator[](size_type n) const;
+		reference       operator[](size_type n) EA_NOEXCEPT;
+		const_reference operator[](size_type n) const EA_NOEXCEPT;
 
 		reference       at(size_type n);
 		const_reference at(size_type n) const;
 
-		reference       front();
-		const_reference front() const;
+		reference       front() EA_NOEXCEPT;
+		const_reference front() const EA_NOEXCEPT;
 
-		reference       back();
-		const_reference back() const;
+		reference       back() EA_NOEXCEPT;
+		const_reference back() const EA_NOEXCEPT;
 
 		void      push_front(const value_type& value);
 		reference push_front();
@@ -449,8 +449,8 @@ namespace eastl
 		reference push_back();
 		void      push_back(value_type&& value);
 
-		void pop_front();
-		void pop_back();
+		void pop_front() EA_NOEXCEPT;
+		void pop_back() EA_NOEXCEPT;
 
 		template<class... Args>
 		iterator emplace(const_iterator position, Args&&... args);
@@ -472,16 +472,16 @@ namespace eastl
 		template <typename InputIterator>
 		iterator insert(const_iterator position, InputIterator first, InputIterator last);
 
-		iterator         erase(const_iterator position);
-		iterator         erase(const_iterator first, const_iterator last);
-		reverse_iterator erase(reverse_iterator position);
-		reverse_iterator erase(reverse_iterator first, reverse_iterator last);
+		iterator         erase(const_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>);
+		iterator         erase(const_iterator first, const_iterator last) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>);
+		reverse_iterator erase(reverse_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>);
+		reverse_iterator erase(reverse_iterator first, reverse_iterator last) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>);
 
-		void clear();
+		void clear() EA_NOEXCEPT;
 		//void reset_lose_memory(); // Disabled until it can be implemented efficiently and cleanly.  // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
 
-		bool validate() const;
-		int  validate_iterator(const_iterator i) const;
+		bool validate() const EA_NOEXCEPT;
+		int  validate_iterator(const_iterator i) const EA_NOEXCEPT;
 
 	protected:
 		template <typename Integer>
@@ -903,7 +903,7 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::DequeIterator()
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::DequeIterator() EA_NOEXCEPT
 		: mpCurrent(NULL), mpBegin(NULL), mpEnd(NULL), mpCurrentArrayPtr(NULL)
 	{
 		// Empty
@@ -919,14 +919,14 @@ namespace eastl
 
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::DequeIterator(const iterator& x)
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::DequeIterator(const iterator& x) EA_NOEXCEPT
 		: mpCurrent(x.mpCurrent), mpBegin(x.mpBegin), mpEnd(x.mpEnd), mpCurrentArrayPtr(x.mpCurrentArrayPtr)
 	{
 		// Empty
 	}
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>& DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator=(const iterator& x)
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>& DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator=(const iterator& x) EA_NOEXCEPT
 	{
 		mpCurrent = x.mpCurrent;
 		mpBegin = x.mpBegin;
@@ -955,7 +955,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::pointer
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator->() const
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator->() const EA_NOEXCEPT
 	{
 		return mpCurrent;
 	}
@@ -963,7 +963,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::reference
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator*() const
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator*() const EA_NOEXCEPT
 	{
 		return *mpCurrent;
 	}
@@ -971,7 +971,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::this_type&
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator++()
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator++() EA_NOEXCEPT
 	{
 		if(EASTL_UNLIKELY(++mpCurrent == mpEnd))
 		{
@@ -985,7 +985,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::this_type
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator++(int)
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator++(int) EA_NOEXCEPT
 	{
 		const this_type temp(*this);
 		operator++();
@@ -995,7 +995,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::this_type&
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator--()
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator--() EA_NOEXCEPT
 	{
 		if(EASTL_UNLIKELY(mpCurrent == mpBegin))
 		{
@@ -1010,7 +1010,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::this_type
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator--(int)
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator--(int) EA_NOEXCEPT
 	{
 		const this_type temp(*this);
 		operator--();
@@ -1020,7 +1020,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::this_type&
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator+=(difference_type n)
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator+=(difference_type n) EA_NOEXCEPT
 	{
 		const difference_type subarrayPosition = (mpCurrent - mpBegin) + n;
 
@@ -1049,7 +1049,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::this_type&
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator-=(difference_type n)
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator-=(difference_type n) EA_NOEXCEPT
 	{
 		return (*this).operator+=(-n);
 	}
@@ -1057,7 +1057,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::this_type
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator+(difference_type n) const
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator+(difference_type n) const EA_NOEXCEPT
 	{
 		return this_type(*this).operator+=(n);
 	}
@@ -1065,7 +1065,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::this_type
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator-(difference_type n) const
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator-(difference_type n) const EA_NOEXCEPT
 	{
 		return this_type(*this).operator+=(-n);
 	}
@@ -1073,7 +1073,7 @@ namespace eastl
 
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	typename DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::reference
-	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator[](difference_type n) const
+	DequeIterator<T, Pointer, Reference, kDequeSubarraySize>::operator[](difference_type n) const EA_NOEXCEPT
 	{
 		return *(*this + n);
 	}
@@ -1135,7 +1135,7 @@ namespace eastl
 	// require us to support comparisons between reverse_iterators and const_reverse_iterators.
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySize>
 	inline bool operator==(const DequeIterator<T, PointerA, ReferenceA, kDequeSubarraySize>& a, 
-						   const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b)
+						   const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b) EA_NOEXCEPT
 	{
 		return a.mpCurrent == b.mpCurrent;
 	}
@@ -1143,7 +1143,7 @@ namespace eastl
 
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySize>
 	inline bool operator!=(const DequeIterator<T, PointerA, ReferenceA, kDequeSubarraySize>& a, 
-						   const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b)
+						   const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b) EA_NOEXCEPT
 	{
 		return a.mpCurrent != b.mpCurrent;
 	}
@@ -1153,7 +1153,7 @@ namespace eastl
 	// same type. This helps prevent ambiguity errors in the presence of rel_ops.
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	inline bool operator!=(const DequeIterator<T, Pointer, Reference, kDequeSubarraySize>& a, 
-						   const DequeIterator<T, Pointer, Reference, kDequeSubarraySize>& b)
+						   const DequeIterator<T, Pointer, Reference, kDequeSubarraySize>& b) EA_NOEXCEPT
 	{
 		return a.mpCurrent != b.mpCurrent;
 	}
@@ -1161,7 +1161,7 @@ namespace eastl
 
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySize>
 	inline bool operator<(const DequeIterator<T, PointerA, ReferenceA, kDequeSubarraySize>& a, 
-						  const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b)
+						  const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b) EA_NOEXCEPT
 	{
 		return (a.mpCurrentArrayPtr == b.mpCurrentArrayPtr) ? (a.mpCurrent < b.mpCurrent) : (a.mpCurrentArrayPtr < b.mpCurrentArrayPtr);
 	}
@@ -1169,7 +1169,7 @@ namespace eastl
 
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySize>
 	inline bool operator>(const DequeIterator<T, PointerA, ReferenceA, kDequeSubarraySize>& a, 
-						  const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b)
+						  const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b) EA_NOEXCEPT
 	{
 		return (a.mpCurrentArrayPtr == b.mpCurrentArrayPtr) ? (a.mpCurrent > b.mpCurrent) : (a.mpCurrentArrayPtr > b.mpCurrentArrayPtr);
 	}
@@ -1177,7 +1177,7 @@ namespace eastl
 
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySize>
 	inline bool operator<=(const DequeIterator<T, PointerA, ReferenceA, kDequeSubarraySize>& a, 
-						   const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b)
+						   const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b) EA_NOEXCEPT
 	{
 		return (a.mpCurrentArrayPtr == b.mpCurrentArrayPtr) ? (a.mpCurrent <= b.mpCurrent) : (a.mpCurrentArrayPtr <= b.mpCurrentArrayPtr);
 	}
@@ -1185,7 +1185,7 @@ namespace eastl
 
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySize>
 	inline bool operator>=(const DequeIterator<T, PointerA, ReferenceA, kDequeSubarraySize>& a, 
-						   const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b)
+						   const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b) EA_NOEXCEPT
 	{
 		return (a.mpCurrentArrayPtr == b.mpCurrentArrayPtr) ? (a.mpCurrent >= b.mpCurrent) : (a.mpCurrentArrayPtr >= b.mpCurrentArrayPtr);
 	}
@@ -1195,7 +1195,7 @@ namespace eastl
 	// You can only add an integer to an iterator, and you cannot add two iterators.
 	template <typename T, typename Pointer, typename Reference, unsigned kDequeSubarraySize>
 	inline DequeIterator<T, Pointer, Reference, kDequeSubarraySize>
-	operator+(ptrdiff_t n, const DequeIterator<T, Pointer, Reference, kDequeSubarraySize>& x)
+	operator+(ptrdiff_t n, const DequeIterator<T, Pointer, Reference, kDequeSubarraySize>& x) EA_NOEXCEPT
 	{
 		return x + n; // Implement (n + x) in terms of (x + n).
 	}
@@ -1207,7 +1207,7 @@ namespace eastl
 	template <typename T, typename PointerA, typename ReferenceA, typename PointerB, typename ReferenceB, unsigned kDequeSubarraySize>
 	inline typename DequeIterator<T, PointerA, ReferenceA, kDequeSubarraySize>::difference_type
 	operator-(const DequeIterator<T, PointerA, ReferenceA, kDequeSubarraySize>& a,
-			  const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b)
+			  const DequeIterator<T, PointerB, ReferenceB, kDequeSubarraySize>& b) EA_NOEXCEPT
 	{
 		// This is a fairly clever algorithm that has been used in STL deque implementations since the original HP STL:
 		typedef typename DequeIterator<T, PointerA, ReferenceA, kDequeSubarraySize>::difference_type difference_type;
@@ -1274,7 +1274,20 @@ namespace eastl
 	inline deque<T, Allocator, kDequeSubarraySize>::deque(this_type&& x, const allocator_type& allocator)
 	  : base_type((size_type)0, allocator)
 	{
-		swap(x); // member swap handles the case that x has a different allocator than our allocator by doing a copy.
+		if(mAllocator == x.mAllocator) // If we can borrow from x...
+		{
+			// Take x's storage and keep the given allocator.
+			eastl::swap(mpPtrArray,     x.mpPtrArray);
+			eastl::swap(mnPtrArraySize, x.mnPtrArraySize);
+			eastl::swap(mItBegin,       x.mItBegin);
+			eastl::swap(mItEnd,         x.mItEnd);
+		}
+		else // else move x's elements one by one into subarrays from the given allocator and leave x empty.
+		{
+			for(iterator it(x.begin()), itEnd(x.end()); it != itEnd; ++it)
+				push_back(eastl::move(*it));
+			x.clear();
+		}
 	}
 
 
@@ -1341,13 +1354,12 @@ namespace eastl
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	inline typename deque<T, Allocator, kDequeSubarraySize>::this_type& 
-	deque<T, Allocator, kDequeSubarraySize>::operator=(this_type&& x)
+	deque<T, Allocator, kDequeSubarraySize>::operator=(this_type&& x) EA_NOEXCEPT
 	{
 		if(this != &x)
 		{
-			this_type temp(mAllocator);
-			swap(temp);
-			swap(x);         // member swap handles the case that x has a different allocator than our allocator by doing a copy.
+			clear();         // clear doesn't free the one subarray that an empty deque keeps, so nothing is allocated here.
+			swap(x);         // member swap exchanges the allocators along with the storage.
 		}
 		return *this; 
 	}
@@ -1582,7 +1594,7 @@ namespace eastl
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	typename deque<T, Allocator, kDequeSubarraySize>::reference
-	deque<T, Allocator, kDequeSubarraySize>::operator[](size_type n)
+	deque<T, Allocator, kDequeSubarraySize>::operator[](size_type n) EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(n >= (size_type)(mItEnd - mItBegin)))
@@ -1605,7 +1617,7 @@ namespace eastl
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	typename deque<T, Allocator, kDequeSubarraySize>::const_reference
-	deque<T, Allocator, kDequeSubarraySize>::operator[](size_type n) const
+	deque<T, Allocator, kDequeSubarraySize>::operator[](size_type n) const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY(n >= (size_type)(mItEnd - mItBegin)))
@@ -1658,7 +1670,7 @@ namespace eastl
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	typename deque<T, Allocator, kDequeSubarraySize>::reference
-	deque<T, Allocator, kDequeSubarraySize>::front()
+	deque<T, Allocator, kDequeSubarraySize>::front() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY((size_type)(mItEnd == mItBegin)))
@@ -1673,7 +1685,7 @@ namespace eastl
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	typename deque<T, Allocator, kDequeSubarraySize>::const_reference
-	deque<T, Allocator, kDequeSubarraySize>::front() const
+	deque<T, Allocator, kDequeSubarraySize>::front() const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
 			if (EASTL_UNLIKELY((size_type)(mItEnd == mItBegin)))
@@ -1688,7 +1700,7 @@ namespace eastl
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	typename deque<T, Allocator, kDequeSubarraySize>::reference
-	deque<T, Allocator, kDequeSubarraySize>::back()
+	deque<T, Allocator, kDequeSubarraySize>::back() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			// Decrementing an iterator with an empty container will result in undefined behaviour.
@@ -1703,7 +1715,7 @@ namespace eastl
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	typename deque<T, Allocator, kDequeSubarraySize>::const_reference
-	deque<T, Allocator, kDequeSubarraySize>::back() const
+	deque<T, Allocator, kDequeSubarraySize>::back() const EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			// Decrementing an iterator with an empty container will result in undefined behaviour.
@@ -1763,7 +1775,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
-	void deque<T, Allocator, kDequeSubarraySize>::pop_front()
+	void deque<T, Allocator, kDequeSubarraySize>::pop_front() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY((size_type)(mItEnd == mItBegin)))
@@ -1793,7 +1805,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
-	void deque<T, Allocator, kDequeSubarraySize>::pop_back()
+	void deque<T, Allocator, kDequeSubarraySize>::pop_back() EA_NOEXCEPT
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY((size_type)(mItEnd == mItBegin)))
@@ -2001,7 +2013,7 @@ namespace eastl
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	typename deque<T, Allocator, kDequeSubarraySize>::iterator
-	deque<T, Allocator, kDequeSubarraySize>::erase(const_iterator position)
+	deque<T, Allocator, kDequeSubarraySize>::erase(const_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>)
 	{
 		#if EASTL_ASSERT_ENABLED
 			if(EASTL_UNLIKELY(!(validate_iterator(position) & isf_valid)))
@@ -2032,7 +2044,7 @@ namespace eastl
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	typename deque<T, Allocator, kDequeSubarraySize>::iterator
-	deque<T, Allocator, kDequeSubarraySize>::erase(const_iterator first, const_iterator last)
+	deque<T, Allocator, kDequeSubarraySize>::erase(const_iterator first, const_iterator last) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>)
 	{
 		iterator itFirst(first, typename iterator::FromConst());
 		iterator itLast(last, typename iterator::FromConst());
@@ -2088,7 +2100,7 @@ namespace eastl
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	typename deque<T, Allocator, kDequeSubarraySize>::reverse_iterator
-	deque<T, Allocator, kDequeSubarraySize>::erase(reverse_iterator position)
+	deque<T, Allocator, kDequeSubarraySize>::erase(reverse_iterator position) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>)
 	{
 		return reverse_iterator(erase((++position).base()));
 	}
@@ -2096,7 +2108,7 @@ namespace eastl
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	typename deque<T, Allocator, kDequeSubarraySize>::reverse_iterator
-	deque<T, Allocator, kDequeSubarraySize>::erase(reverse_iterator first, reverse_iterator last)
+	deque<T, Allocator, kDequeSubarraySize>::erase(reverse_iterator first, reverse_iterator last) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<value_type>)
 	{
 		// Version which erases in order from first to last.
 		// difference_type i(first.base() - last.base());
@@ -2110,7 +2122,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
-	void deque<T, Allocator, kDequeSubarraySize>::clear()
+	void deque<T, Allocator, kDequeSubarraySize>::clear() EA_NOEXCEPT
 	{
 		// Destroy all values and all subarrays they belong to, except for the first one, 
 		// as we need to reserve some space for a valid mItBegin/mItEnd.
@@ -2159,7 +2171,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
-	void deque<T, Allocator, kDequeSubarraySize>::swap(deque& x)
+	void deque<T, Allocator, kDequeSubarraySize>::swap(deque& x) EA_NOEXCEPT
 	{
 	#if defined(EASTL_DEQUE_LEGACY_SWAP_BEHAVIOUR_REQUIRES_COPY_CTOR) && EASTL_DEQUE_LEGACY_SWAP_BEHAVIOUR_REQUIRES_COPY_CTOR
 		if(mAllocator == x.mAllocator) // If allocators are equivalent...
@@ -2741,7 +2753,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
-	inline bool deque<T, Allocator, kDequeSubarraySize>::validate() const
+	inline bool deque<T, Allocator, kDequeSubarraySize>::validate() const EA_NOEXCEPT
 	{
 		// To do: More detailed validation.
 		// To do: Try to make the validation resistant to crashes if the data is invalid.
@@ -2752,7 +2764,7 @@ namespace eastl
 
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
-	inline int deque<T, Allocator, kDequeSubarraySize>::validate_iterator(const_iterator i) const
+	inline int deque<T, Allocator, kDequeSubarraySize>::validate_iterator(const_iterator i) const EA_NOEXCEPT
 	{
 		// To do: We don't currently track isf_current, will need to make it do so.
 		// To do: Fix the validation below, as it will not catch all invalid iterators.
@@ -2820,7 +2832,7 @@ namespace eastl
 #endif
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
-	inline void swap(deque<T, Allocator, kDequeSubarraySize>& a, deque<T, Allocator, kDequeSubarraySize>& b)
+	inline void swap(deque<T, Allocator, kDequeSubarraySize>& a, deque<T, Allocator, kDequeSubarraySize>& b) EA_NOEXCEPT
 	{
 		a.swap(b);
 	}

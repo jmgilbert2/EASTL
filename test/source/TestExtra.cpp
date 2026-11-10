@@ -266,6 +266,129 @@ template class eastl::queue<TestObject, list<TestObject> >;
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: queue, stack and priority_queue are at least as noexcept as MSVC STL's.
+// Like the standard library, their noexcept-ness follows the underlying container.
+namespace
+{
+	// An allocator whose construction cannot throw, so that the default constructor of the container can be noexcept.
+	class AdaptorNothrowAllocator
+	{
+	public:
+		explicit AdaptorNothrowAllocator(const char* = "AdaptorNothrowAllocator") noexcept {}
+		AdaptorNothrowAllocator(const AdaptorNothrowAllocator&) noexcept {}
+		AdaptorNothrowAllocator(const AdaptorNothrowAllocator&, const char*) noexcept {}
+		AdaptorNothrowAllocator& operator=(const AdaptorNothrowAllocator&) noexcept { return *this; }
+		void* allocate(size_t n, int = 0) { return ::operator new(n); }
+		void* allocate(size_t n, size_t, size_t, int = 0) { return ::operator new(n); }
+		void  deallocate(void* p, size_t) noexcept { ::operator delete(p); }
+		const char* get_name() const noexcept { return "AdaptorNothrowAllocator"; }
+		void        set_name(const char*) noexcept {}
+		bool operator==(const AdaptorNothrowAllocator&) const noexcept { return true; }
+		bool operator!=(const AdaptorNothrowAllocator&) const noexcept { return false; }
+	};
+
+	struct AdaptorNothrowLess
+	{
+		bool operator()(int a, int b) const noexcept { return a < b; }
+	};
+
+	struct AdaptorThrowingLess // Default construction, copying and moving may throw.
+	{
+		AdaptorThrowingLess() noexcept(false) {}
+		AdaptorThrowingLess(const AdaptorThrowingLess&) noexcept(false) {}
+		AdaptorThrowingLess(AdaptorThrowingLess&&) noexcept(false) {}
+		AdaptorThrowingLess& operator=(const AdaptorThrowingLess&) noexcept(false) { return *this; }
+		AdaptorThrowingLess& operator=(AdaptorThrowingLess&&) noexcept(false) { return *this; }
+		bool operator()(int a, int b) const noexcept(false) { return a < b; }
+	};
+
+	typedef eastl::vector<int, AdaptorNothrowAllocator>  AdaptorNothrowVector;
+	typedef eastl::deque<int>                            AdaptorDeque;
+	typedef eastl::list<int>                             AdaptorList;
+
+	template <typename Q>
+	struct QueueNoexceptChecks
+	{
+		static_assert(noexcept(eastl::declval<const Q&>().empty()), "queue::empty must be noexcept");
+		static_assert(noexcept(eastl::declval<const Q&>().size()), "queue::size must be noexcept");
+		static_assert(noexcept(eastl::declval<Q&>().front()), "queue::front must be noexcept");
+		static_assert(noexcept(eastl::declval<const Q&>().front()), "queue::front const must be noexcept");
+		static_assert(noexcept(eastl::declval<Q&>().back()), "queue::back must be noexcept");
+		static_assert(noexcept(eastl::declval<const Q&>().back()), "queue::back const must be noexcept");
+		static_assert(noexcept(eastl::declval<Q&>().pop()), "queue::pop must be noexcept");
+		static_assert(noexcept(eastl::declval<Q&>().get_container()), "queue::get_container must be noexcept");
+		static_assert(noexcept(eastl::declval<const Q&>().get_container()), "queue::get_container const must be noexcept");
+	};
+
+	template struct QueueNoexceptChecks<eastl::queue<int, AdaptorDeque> >;
+	template struct QueueNoexceptChecks<eastl::queue<int, AdaptorList> >;
+	static_assert(noexcept(eastl::declval<eastl::queue<int, AdaptorList>&>().swap(eastl::declval<eastl::queue<int, AdaptorList>&>())), "queue<list>::swap must be noexcept");
+	static_assert(noexcept(eastl::swap(eastl::declval<eastl::queue<int, AdaptorList>&>(), eastl::declval<eastl::queue<int, AdaptorList>&>())), "swap(queue<list>&, queue<list>&) must be noexcept");
+	static_assert(noexcept(eastl::declval<eastl::queue<int, AdaptorList>&>() = eastl::declval<eastl::queue<int, AdaptorList>&&>()), "queue<list>::operator=(queue&&) must be noexcept");
+
+	// The container operations are noexcept, so these follow the (nothrow) container.
+	static_assert(noexcept(eastl::declval<eastl::queue<int, AdaptorDeque>&>().swap(eastl::declval<eastl::queue<int, AdaptorDeque>&>())), "queue::swap must be noexcept when the container's swap is");
+	static_assert(noexcept(eastl::swap(eastl::declval<eastl::queue<int, AdaptorDeque>&>(), eastl::declval<eastl::queue<int, AdaptorDeque>&>())), "swap(queue&, queue&) must be noexcept when the container's swap is");
+	static_assert(noexcept(eastl::queue<int, AdaptorDeque>(eastl::declval<AdaptorDeque&&>())) == eastl::is_nothrow_move_constructible_v<AdaptorDeque>, "queue(container&&) is conditional on the container");
+
+	template <typename S>
+	struct StackNoexceptChecks
+	{
+		typedef typename S::container_type C;
+		typedef typename C::allocator_type A;
+
+		static_assert(noexcept(S()) == eastl::is_nothrow_default_constructible_v<C>, "stack() is conditional on the container");
+		static_assert(noexcept(S(eastl::declval<C&&>())) == eastl::is_nothrow_move_constructible_v<C>, "stack(container&&) is conditional on the container");
+		static_assert(noexcept(S(eastl::declval<const A&>())) == eastl::is_nothrow_constructible_v<C, const A&>, "stack(const Allocator&) is conditional on the container");
+		static_assert(noexcept(S(eastl::declval<S&&>(), eastl::declval<const A&>())) == eastl::is_nothrow_constructible_v<C, C, const A&>, "stack(stack&&, const Allocator&) is conditional on the container");
+		static_assert(noexcept(eastl::declval<const S&>().empty()), "stack::empty must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().size()), "stack::size must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().top()), "stack::top must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().top()), "stack::top const must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().pop()), "stack::pop must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().get_container()), "stack::get_container must be noexcept");
+		static_assert(noexcept(eastl::declval<const S&>().get_container()), "stack::get_container const must be noexcept");
+		static_assert(noexcept(eastl::declval<S&>().swap(eastl::declval<S&>())) == eastl::is_nothrow_swappable<C>::value, "stack::swap");
+		static_assert(noexcept(eastl::swap(eastl::declval<S&>(), eastl::declval<S&>())) == eastl::is_nothrow_swappable<C>::value, "swap(stack&, stack&)");
+	};
+
+	template struct StackNoexceptChecks<eastl::stack<int, AdaptorNothrowVector> >;
+	template struct StackNoexceptChecks<eastl::stack<int, AdaptorDeque> >;
+	static_assert(noexcept(eastl::stack<int, AdaptorNothrowVector>()), "stack() must be noexcept when the container's default constructor is");
+	static_assert(noexcept(eastl::stack<int, AdaptorNothrowVector>(eastl::declval<AdaptorNothrowVector&&>())), "stack(container&&) must be noexcept when the container's move constructor is");
+	static_assert(noexcept(eastl::stack<int, AdaptorNothrowVector>(eastl::declval<const AdaptorNothrowAllocator&>())), "stack(const Allocator&) must be noexcept when the container's allocator constructor is");
+	static_assert(noexcept(eastl::declval<eastl::stack<int, AdaptorNothrowVector>&>().swap(eastl::declval<eastl::stack<int, AdaptorNothrowVector>&>())), "stack::swap must be noexcept when the container's swap is");
+
+	template <typename P, bool kNothrowCompare>
+	struct PriorityQueueNoexceptChecks
+	{
+		typedef typename P::container_type C;
+		typedef typename C::allocator_type A;
+		typedef typename P::compare_type   Cmp;
+
+		static_assert(noexcept(P()) == (eastl::is_nothrow_default_constructible_v<C> && eastl::is_nothrow_default_constructible_v<Cmp>), "priority_queue()");
+		static_assert(noexcept(P(eastl::declval<const Cmp&>())) == (eastl::is_nothrow_default_constructible_v<C> && eastl::is_nothrow_copy_constructible_v<Cmp>), "priority_queue(const Compare&)");
+		static_assert(noexcept(P(eastl::declval<const A&>())) == (eastl::is_nothrow_constructible_v<C, const A&> && eastl::is_nothrow_default_constructible_v<Cmp>), "priority_queue(const Allocator&)");
+		static_assert(noexcept(P(eastl::declval<P&&>(), eastl::declval<const A&>())) == (eastl::is_nothrow_constructible_v<C, C, const A&> && eastl::is_nothrow_move_constructible_v<Cmp>), "priority_queue(priority_queue&&, const Allocator&)");
+		static_assert(noexcept(P()) == kNothrowCompare, "priority_queue() follows the comparator when the container's default constructor is noexcept");
+		static_assert(noexcept(eastl::declval<const P&>().empty()), "priority_queue::empty must be noexcept");
+		static_assert(noexcept(eastl::declval<const P&>().size()), "priority_queue::size must be noexcept");
+		static_assert(noexcept(eastl::declval<const P&>().top()), "priority_queue::top must be noexcept");
+		static_assert(noexcept(eastl::declval<P&>().get_container()), "priority_queue::get_container must be noexcept");
+		static_assert(noexcept(eastl::declval<const P&>().get_container()), "priority_queue::get_container const must be noexcept");
+		static_assert(noexcept(eastl::declval<P&>().swap(eastl::declval<P&>())) == (eastl::is_nothrow_swappable<C>::value && eastl::is_nothrow_swappable<Cmp>::value), "priority_queue::swap");
+		static_assert(noexcept(eastl::swap(eastl::declval<P&>(), eastl::declval<P&>())) == (eastl::is_nothrow_swappable<C>::value && eastl::is_nothrow_swappable<Cmp>::value), "swap(priority_queue&, priority_queue&)");
+	};
+
+	template struct PriorityQueueNoexceptChecks<eastl::priority_queue<int, AdaptorNothrowVector, AdaptorNothrowLess>, true>;
+	template struct PriorityQueueNoexceptChecks<eastl::priority_queue<int, AdaptorNothrowVector, AdaptorThrowingLess>, false>;
+	template struct PriorityQueueNoexceptChecks<eastl::priority_queue<int, AdaptorDeque, AdaptorNothrowLess>, false>; // deque() is not noexcept.
+	static_assert(noexcept(eastl::declval<eastl::priority_queue<int, AdaptorNothrowVector, AdaptorNothrowLess>&>().swap(eastl::declval<eastl::priority_queue<int, AdaptorNothrowVector, AdaptorNothrowLess>&>())), "priority_queue::swap must be noexcept when the container's and the comparator's swap are");
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
 // TestQueue
 //
 static int TestQueue()

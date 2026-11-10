@@ -188,10 +188,10 @@ namespace eastl
 
 		node_type* mpNode;
 
-		node_iterator_base(node_type* pNode)
+		node_iterator_base(node_type* pNode) EA_NOEXCEPT
 			: mpNode(pNode) { }
 
-		void increment()
+		void increment() EA_NOEXCEPT
 			{ mpNode = mpNode->mpNext; }
 	};
 
@@ -218,22 +218,22 @@ namespace eastl
 		typedef eastl::forward_iterator_tag                       iterator_category;
 
 	public:
-		explicit node_iterator(node_type* pNode = NULL)
+		explicit node_iterator(node_type* pNode = NULL) EA_NOEXCEPT
 			: base_type(pNode) { }
 
-		node_iterator(const node_iterator<Value, true, bCacheHashCode>& x)
+		node_iterator(const node_iterator<Value, true, bCacheHashCode>& x) EA_NOEXCEPT
 			: base_type(x.mpNode) { }
 
-		reference operator*() const
+		reference operator*() const EA_NOEXCEPT
 			{ return base_type::mpNode->mValue; }
 
-		pointer operator->() const
+		pointer operator->() const EA_NOEXCEPT
 			{ return &(base_type::mpNode->mValue); }
 
-		node_iterator& operator++()
+		node_iterator& operator++() EA_NOEXCEPT
 			{ base_type::increment(); return *this; }
 
-		node_iterator operator++(int)
+		node_iterator operator++(int) EA_NOEXCEPT
 			{ node_iterator temp(*this); base_type::increment(); return temp; }
 
 	}; // node_iterator
@@ -265,19 +265,19 @@ namespace eastl
 		friend struct hashtable_iterator;
 
 		template <typename V, bool b>
-		friend bool operator==(const hashtable_iterator_base<V, b>&, const hashtable_iterator_base<V, b>&);
+		friend bool operator==(const hashtable_iterator_base<V, b>&, const hashtable_iterator_base<V, b>&) EA_NOEXCEPT;
 
 		template <typename V, bool b>
-		friend bool operator!=(const hashtable_iterator_base<V, b>&, const hashtable_iterator_base<V, b>&);
+		friend bool operator!=(const hashtable_iterator_base<V, b>&, const hashtable_iterator_base<V, b>&) EA_NOEXCEPT;
 
 		node_type*  mpNode;      // Current node within current bucket.
 		node_type** mpBucket;    // Current bucket.
 
 	public:
-		hashtable_iterator_base(node_type* pNode, node_type** pBucket)
+		hashtable_iterator_base(node_type* pNode, node_type** pBucket) EA_NOEXCEPT
 			: mpNode(pNode), mpBucket(pBucket) { }
 
-		void increment_bucket()
+		void increment_bucket() EA_NOEXCEPT
 		{
 			++mpBucket;
 			while(*mpBucket == NULL) // We store an extra bucket with some non-NULL value at the end 
@@ -285,7 +285,7 @@ namespace eastl
 			mpNode = *mpBucket;      // array is quick and simple.
 		}
 
-		void increment()
+		void increment() EA_NOEXCEPT
 		{
 			mpNode = mpNode->mpNext;
 
@@ -323,14 +323,14 @@ namespace eastl
 		typedef eastl::forward_iterator_tag                       iterator_category;
 
 	public:
-		hashtable_iterator(node_type* pNode = NULL, node_type** pBucket = NULL)
+		hashtable_iterator(node_type* pNode = NULL, node_type** pBucket = NULL) EA_NOEXCEPT
 			: base_type(pNode, pBucket) { }
 
-		hashtable_iterator(node_type** pBucket)
+		hashtable_iterator(node_type** pBucket) EA_NOEXCEPT
 			: base_type(*pBucket, pBucket) { }
 
 		template <bool IsConst = bConst, typename enable_if<IsConst, int>::type = 0>
-		hashtable_iterator(const this_type_non_const& x)
+		hashtable_iterator(const this_type_non_const& x) EA_NOEXCEPT
 			: base_type(x.mpNode, x.mpBucket) { }
 
 		hashtable_iterator(const hashtable_iterator&) = default;
@@ -338,19 +338,19 @@ namespace eastl
 		hashtable_iterator& operator=(const hashtable_iterator&) = default;
 		hashtable_iterator& operator=(hashtable_iterator&&) = default;
 
-		reference operator*() const
+		reference operator*() const EA_NOEXCEPT
 			{ return base_type::mpNode->mValue; }
 
-		pointer operator->() const
+		pointer operator->() const EA_NOEXCEPT
 			{ return &(base_type::mpNode->mValue); }
 
-		hashtable_iterator& operator++()
+		hashtable_iterator& operator++() EA_NOEXCEPT
 			{ base_type::increment(); return *this; }
 
-		hashtable_iterator operator++(int)
+		hashtable_iterator operator++(int) EA_NOEXCEPT
 			{ hashtable_iterator temp(*this); base_type::increment(); return temp; }
 
-		const node_type* get_node() const
+		const node_type* get_node() const EA_NOEXCEPT
 			{ return base_type::mpNode; }
 
 	}; // hashtable_iterator
@@ -965,9 +965,9 @@ namespace eastl
 
 		this_type& operator=(const this_type& x);
 		this_type& operator=(std::initializer_list<value_type> ilist);
-		this_type& operator=(this_type&& x);
+		this_type& operator=(this_type&& x) EA_NOEXCEPT_IF((eastl::is_nothrow_move_assignable_v<H1> && eastl::is_nothrow_move_assignable_v<Equal>)); // EASTL behaves as if propagate_on_container_move_assignment were true (see swap).
 
-		void swap(this_type& x);
+		void swap(this_type& x) EA_NOEXCEPT_IF((eastl::is_nothrow_swappable_v<H1> && eastl::is_nothrow_swappable_v<Equal>)); // EASTL behaves as if propagate_on_container_swap were true: the allocator is swapped along with the storage.
 
 		iterator begin() EA_NOEXCEPT
 		{
@@ -1130,17 +1130,17 @@ namespace eastl
 		void       free_uninitialized_node(node_type* pNode);
 
 		template <typename Iter = iterator, typename eastl::enable_if<!eastl::is_same_v<Iter, const_iterator>, int>::type = 0>
-		iterator         erase(iterator position) { return erase(const_iterator(position)); }
-		iterator         erase(const_iterator position);
-		iterator         erase(const_iterator first, const_iterator last);
-		size_type        erase(const key_type& k) { return DoErase(k); }
+		iterator         erase(iterator position) EA_NOEXCEPT { return erase(const_iterator(position)); }
+		iterator         erase(const_iterator position) EA_NOEXCEPT;
+		iterator         erase(const_iterator first, const_iterator last) EA_NOEXCEPT;
+		size_type        erase(const key_type& k) EA_NOEXCEPT_IF((eastl::is_nothrow_invocable_v<const H1&, const Key&> && (bUniqueKeys || eastl::is_nothrow_invocable_v<const Equal&, const Key&, const Key&>))) { return DoErase(k); }
 		template<typename KX, typename EqX = Equal, typename H1X = H1, typename HX = H,
 			eastl::enable_if_t<!eastl::is_convertible_v<KX&&, iterator> && !eastl::is_convertible_v<KX&&, const_iterator>
 			&& internal::is_transparent_key_available_v<EqX, H1X, HX>, bool> = true>
-		size_type        erase(KX&& k) { return DoErase(eastl::forward<KX>(k)); }
+		size_type        erase(KX&& k) EA_NOEXCEPT_IF((eastl::is_nothrow_invocable_v<const H1&, const eastl::remove_reference_t<KX>&> && (bUniqueKeys || (eastl::is_nothrow_invocable_v<const Equal&, const Key&, const eastl::remove_reference_t<KX>&> && eastl::is_nothrow_invocable_v<const Equal&, const eastl::remove_reference_t<KX>&, const Key&>)))) { return DoErase(eastl::forward<KX>(k)); }
 
-		void clear();
-		void clear(bool clearBuckets);                  // If clearBuckets is true, we free the bucket memory and set the bucket count back to the newly constructed count.
+		void clear() EA_NOEXCEPT;
+		void clear(bool clearBuckets) EA_NOEXCEPT;                  // If clearBuckets is true, we free the bucket memory and set the bucket count back to the newly constructed count.
 		void reset_lose_memory() EA_NOEXCEPT;           // This is a unilateral reset to an initially empty state. No destructors are called, no deallocation occurs.
 		void rehash(size_type nBucketCount);
 		void reserve(size_type nElementCount);
@@ -1280,8 +1280,8 @@ namespace eastl
 			eastl::enable_if_t<internal::is_transparent_key_available_v<EqX, H1X, HX>, bool> = true>
 		eastl::pair<const_iterator, const_iterator> equal_range(const KX& k) const { return DoEqualRange(k); }
 
-		bool validate() const;
-		int  validate_iterator(const_iterator i) const;
+		bool validate() const EA_NOEXCEPT;
+		int  validate_iterator(const_iterator i) const EA_NOEXCEPT;
 
 	protected:
 		// We must remove one of the 'DoGetResultIterator' overloads from the overload-set (via SFINAE) because both can
@@ -1480,11 +1480,11 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template <typename Value, bool bCacheHashCode>
-	inline bool operator==(const node_iterator_base<Value, bCacheHashCode>& a, const node_iterator_base<Value, bCacheHashCode>& b)
+	inline bool operator==(const node_iterator_base<Value, bCacheHashCode>& a, const node_iterator_base<Value, bCacheHashCode>& b) EA_NOEXCEPT
 		{ return a.mpNode == b.mpNode; }
 
 	template <typename Value, bool bCacheHashCode>
-	inline bool operator!=(const node_iterator_base<Value, bCacheHashCode>& a, const node_iterator_base<Value, bCacheHashCode>& b)
+	inline bool operator!=(const node_iterator_base<Value, bCacheHashCode>& a, const node_iterator_base<Value, bCacheHashCode>& b) EA_NOEXCEPT
 		{ return a.mpNode != b.mpNode; }
 
 
@@ -1495,11 +1495,11 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template <typename Value, bool bCacheHashCode>
-	inline bool operator==(const hashtable_iterator_base<Value, bCacheHashCode>& a, const hashtable_iterator_base<Value, bCacheHashCode>& b)
+	inline bool operator==(const hashtable_iterator_base<Value, bCacheHashCode>& a, const hashtable_iterator_base<Value, bCacheHashCode>& b) EA_NOEXCEPT
 		{ return a.mpNode == b.mpNode; }
 
 	template <typename Value, bool bCacheHashCode>
-	inline bool operator!=(const hashtable_iterator_base<Value, bCacheHashCode>& a, const hashtable_iterator_base<Value, bCacheHashCode>& b)
+	inline bool operator!=(const hashtable_iterator_base<Value, bCacheHashCode>& a, const hashtable_iterator_base<Value, bCacheHashCode>& b) EA_NOEXCEPT
 		{ return a.mpNode != b.mpNode; }
 
 
@@ -1712,7 +1712,7 @@ namespace eastl
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
 	inline typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::this_type&
-	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::operator=(this_type&& x)
+	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::operator=(this_type&& x) EA_NOEXCEPT_IF((eastl::is_nothrow_move_assignable_v<H1> && eastl::is_nothrow_move_assignable_v<Eq>))
 	{
 		if(this != &x)
 		{
@@ -1870,7 +1870,7 @@ namespace eastl
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-	void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::swap(this_type& x)
+	void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::swap(this_type& x) EA_NOEXCEPT_IF((eastl::is_nothrow_swappable_v<H1> && eastl::is_nothrow_swappable_v<Eq>))
 	{
 		hash_code_base<K, V, EK, Eq, H1, H2, H, bC>::base_swap(x); // hash_code_base has multiple implementations, so we let them handle the swap.
 		eastl::swap(mRehashPolicy, x.mRehashPolicy);
@@ -2919,7 +2919,7 @@ namespace eastl
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
 	typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator
-	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::erase(const_iterator i)
+	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::erase(const_iterator i) EA_NOEXCEPT
 	{
 		iterator iNext(i.mpNode, i.mpBucket); // Convert from const_iterator to iterator while constructing.
 		++iNext;
@@ -2955,7 +2955,7 @@ namespace eastl
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
 	inline typename hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::iterator
-	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::erase(const_iterator first, const_iterator last)
+	hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::erase(const_iterator first, const_iterator last) EA_NOEXCEPT
 	{
 		while(first != last)
 			first = erase(first);
@@ -3009,7 +3009,7 @@ namespace eastl
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-	inline void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::clear()
+	inline void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::clear() EA_NOEXCEPT
 	{
 		DoFreeNodes(mpBucketArray, mnBucketCount);
 		mnElementCount = 0;
@@ -3019,7 +3019,7 @@ namespace eastl
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-	inline void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::clear(bool clearBuckets)
+	inline void hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::clear(bool clearBuckets) EA_NOEXCEPT
 	{
 		DoFreeNodes(mpBucketArray, mnBucketCount);
 		if(clearBuckets)
@@ -3120,7 +3120,7 @@ namespace eastl
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-	inline bool hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::validate() const
+	inline bool hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::validate() const EA_NOEXCEPT
 	{
 		// Verify our empty bucket array is unmodified.
 		if(gpEmptyBucketArray[0] != NULL)
@@ -3167,7 +3167,7 @@ namespace eastl
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-	int hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::validate_iterator(const_iterator i) const
+	int hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>::validate_iterator(const_iterator i) const EA_NOEXCEPT
 	{
 		// To do: Come up with a more efficient mechanism of doing this.
 
@@ -3193,8 +3193,8 @@ namespace eastl
 
 	template <typename K, typename V, typename A, typename EK, typename Eq,
 			  typename H1, typename H2, typename H, typename RP, bool bC, bool bM, bool bU>
-	inline void swap(const hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>& a, 
-					 const hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>& b)
+	inline void swap(hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>& a,
+					 hashtable<K, V, A, EK, Eq, H1, H2, H, RP, bC, bM, bU>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
 	{
 		a.swap(b);
 	}

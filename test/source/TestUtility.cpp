@@ -611,12 +611,12 @@ static int TestUtilitySwap()
 
 #if EASTL_TYPE_TRAIT_is_nothrow_swappable_CONFORMANCE
 	static_assert((eastl::is_nothrow_swappable<int>::value == true), "is_nothrow_swappable failure");  // There currently isn't any specialization for swap of scalar types that's nothrow.
-	static_assert((eastl::is_nothrow_swappable<eastl::vector<int> >::value == false), "is_nothrow_swappable failure");
+	static_assert((eastl::is_nothrow_swappable<eastl::vector<int> >::value == true), "is_nothrow_swappable failure");
 	static_assert((eastl::is_nothrow_swappable<ThrowSwappable>::value == false), "is_nothrow_swappable failure");
 	static_assert((eastl::is_nothrow_swappable<NoThrowSwappable>::value == true), "is_nothrow_swappable failure");
 	#if EASTL_VARIABLE_TEMPLATES_ENABLED
 		static_assert((eastl::is_nothrow_swappable_v<int> == true), "is_nothrow_swappable failure");  // There currently isn't any specialization for swap of scalar types that's nothrow.
-		static_assert((eastl::is_nothrow_swappable_v<eastl::vector<int>> == false), "is_nothrow_swappable failure");
+		static_assert((eastl::is_nothrow_swappable_v<eastl::vector<int>> == true), "is_nothrow_swappable failure");
 		static_assert((eastl::is_nothrow_swappable_v<ThrowSwappable> == false), "is_nothrow_swappable failure");
 		static_assert((eastl::is_nothrow_swappable_v<NoThrowSwappable> == true), "is_nothrow_swappable failure");
 	#endif

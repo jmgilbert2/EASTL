@@ -138,21 +138,21 @@ namespace eastl
 		// The (this_type&& x) ctor above has the side effect of forcing us to make operator= visible in this subclass.
 		this_type& operator=(const this_type& x) { return (this_type&)base_type::operator=(x); }
 		this_type& operator=(std::initializer_list<value_type> ilist) { return (this_type&)base_type::operator=(ilist); }
-		this_type& operator=(this_type&& x) { return (this_type&)base_type::operator=(eastl::move(x)); }
+		this_type& operator=(this_type&& x) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<Compare>) { return (this_type&)base_type::operator=(eastl::move(x)); }
 
 	public:
 		value_compare value_comp() const;
 
-		size_type erase(const Key& k) { return DoErase(k); }
+		size_type erase(const Key& k) EA_NOEXCEPT_IF((eastl::is_nothrow_invocable_v<const Compare&, const Key&, const Key&>)) { return DoErase(k); }
 		template<typename KX, typename Cmp = Compare,
 			eastl::enable_if_t<!eastl::is_convertible_v<KX&&, iterator> && !eastl::is_convertible_v<KX&&, const_iterator>
 			&& eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
-		size_type erase(KX&& k) { return DoErase(eastl::forward<KX>(k)); }
-		iterator  erase(const_iterator position);
-		iterator  erase(const_iterator first, const_iterator last);
+		size_type erase(KX&& k) EA_NOEXCEPT_IF((eastl::is_nothrow_invocable_v<const Compare&, const Key&, const eastl::remove_reference_t<KX>&> && eastl::is_nothrow_invocable_v<const Compare&, const eastl::remove_reference_t<KX>&, const Key&>)) { return DoErase(eastl::forward<KX>(k)); }
+		iterator  erase(const_iterator position) EA_NOEXCEPT;
+		iterator  erase(const_iterator first, const_iterator last) EA_NOEXCEPT;
 
-		reverse_iterator erase(const_reverse_iterator position);
-		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last);
+		reverse_iterator erase(const_reverse_iterator position) EA_NOEXCEPT;
+		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT;
 
 		// this function was incorrectly defined in the rbtree base type.
 		// this function implicitly converts to value_type, which it shouldn't. Additionally, it does not correctly support heterogeneous insertion (unconditionally creates a key_type).
@@ -283,21 +283,21 @@ namespace eastl
 		// The (this_type&& x) ctor above has the side effect of forcing us to make operator= visible in this subclass.
 		this_type& operator=(const this_type& x) { return (this_type&)base_type::operator=(x); }
 		this_type& operator=(std::initializer_list<value_type> ilist) { return (this_type&)base_type::operator=(ilist); }
-		this_type& operator=(this_type&& x) { return (this_type&)base_type::operator=(eastl::move(x)); }
+		this_type& operator=(this_type&& x) EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable_v<Compare>) { return (this_type&)base_type::operator=(eastl::move(x)); }
 
 	public:
 		value_compare value_comp() const;
 
-		size_type erase(const Key& k) { return DoErase(k); }
+		size_type erase(const Key& k) EA_NOEXCEPT_IF((eastl::is_nothrow_invocable_v<const Compare&, const Key&, const Key&>)) { return DoErase(k); }
 		template<typename KX, typename Cmp = Compare,
 			eastl::enable_if_t<!eastl::is_convertible_v<KX&&, iterator> && !eastl::is_convertible_v<KX&&, const_iterator>
 			&& eastl::detail::is_transparent_comparison_v<Cmp>, bool> = true>
-		size_type erase(KX&& k) { return DoErase(eastl::forward<KX>(k)); }
-		iterator  erase(const_iterator position);
-		iterator  erase(const_iterator first, const_iterator last);
+		size_type erase(KX&& k) EA_NOEXCEPT_IF((eastl::is_nothrow_invocable_v<const Compare&, const Key&, const eastl::remove_reference_t<KX>&> && eastl::is_nothrow_invocable_v<const Compare&, const eastl::remove_reference_t<KX>&, const Key&>)) { return DoErase(eastl::forward<KX>(k)); }
+		iterator  erase(const_iterator position) EA_NOEXCEPT;
+		iterator  erase(const_iterator first, const_iterator last) EA_NOEXCEPT;
 
-		reverse_iterator erase(const_reverse_iterator position);
-		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last);
+		reverse_iterator erase(const_reverse_iterator position) EA_NOEXCEPT;
+		reverse_iterator erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT;
 
 		// this function was incorrectly defined in the rbtree base type.
 		// this function implicitly converts to value_type, which it shouldn't.
@@ -444,7 +444,7 @@ namespace eastl
 
 	template <typename Key, typename Compare, typename Allocator>
 	inline typename set<Key, Compare, Allocator>::iterator
-	set<Key, Compare, Allocator>::erase(const_iterator position)
+	set<Key, Compare, Allocator>::erase(const_iterator position) EA_NOEXCEPT
 	{
 		// We need to provide this version because we override another version 
 		// and C++ hiding rules would make the base version of this hidden.
@@ -454,7 +454,7 @@ namespace eastl
 
 	template <typename Key, typename Compare, typename Allocator>
 	inline typename set<Key, Compare, Allocator>::iterator
-	set<Key, Compare, Allocator>::erase(const_iterator first, const_iterator last)
+	set<Key, Compare, Allocator>::erase(const_iterator first, const_iterator last) EA_NOEXCEPT
 	{
 		// We need to provide this version because we override another version 
 		// and C++ hiding rules would make the base version of this hidden.
@@ -473,7 +473,7 @@ namespace eastl
 
 	template <typename Key, typename Compare, typename Allocator>
 	inline typename set<Key, Compare, Allocator>::reverse_iterator
-	set<Key, Compare, Allocator>::erase(const_reverse_iterator position)
+	set<Key, Compare, Allocator>::erase(const_reverse_iterator position) EA_NOEXCEPT
 	{
 		return reverse_iterator(erase((++position).base()));
 	}
@@ -481,7 +481,7 @@ namespace eastl
 
 	template <typename Key, typename Compare, typename Allocator>
 	inline typename set<Key, Compare, Allocator>::reverse_iterator
-	set<Key, Compare, Allocator>::erase(const_reverse_iterator first, const_reverse_iterator last)
+	set<Key, Compare, Allocator>::erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT
 	{
 		// Version which erases in order from first to last.
 		// difference_type i(first.base() - last.base());
@@ -552,6 +552,12 @@ namespace eastl
 			}
 		}
 		return oldSize - c.size();
+	}
+
+	template <typename Key, typename Compare, typename Allocator>
+	inline void swap(set<Key, Compare, Allocator>& a, set<Key, Compare, Allocator>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
+	{
+		a.swap(b);
 	}
 
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
@@ -652,7 +658,7 @@ namespace eastl
 
 	template <typename Key, typename Compare, typename Allocator>
 	inline typename multiset<Key, Compare, Allocator>::iterator
-	multiset<Key, Compare, Allocator>::erase(const_iterator position)
+	multiset<Key, Compare, Allocator>::erase(const_iterator position) EA_NOEXCEPT
 	{
 		// We need to provide this version because we override another version 
 		// and C++ hiding rules would make the base version of this hidden.
@@ -662,7 +668,7 @@ namespace eastl
 
 	template <typename Key, typename Compare, typename Allocator>
 	inline typename multiset<Key, Compare, Allocator>::iterator
-	multiset<Key, Compare, Allocator>::erase(const_iterator first, const_iterator last)
+	multiset<Key, Compare, Allocator>::erase(const_iterator first, const_iterator last) EA_NOEXCEPT
 	{
 		// We need to provide this version because we override another version 
 		// and C++ hiding rules would make the base version of this hidden.
@@ -682,7 +688,7 @@ namespace eastl
 
 	template <typename Key, typename Compare, typename Allocator>
 	inline typename multiset<Key, Compare, Allocator>::reverse_iterator
-	multiset<Key, Compare, Allocator>::erase(const_reverse_iterator position)
+	multiset<Key, Compare, Allocator>::erase(const_reverse_iterator position) EA_NOEXCEPT
 	{
 		return reverse_iterator(erase((++position).base()));
 	}
@@ -690,7 +696,7 @@ namespace eastl
 
 	template <typename Key, typename Compare, typename Allocator>
 	inline typename multiset<Key, Compare, Allocator>::reverse_iterator
-	multiset<Key, Compare, Allocator>::erase(const_reverse_iterator first, const_reverse_iterator last)
+	multiset<Key, Compare, Allocator>::erase(const_reverse_iterator first, const_reverse_iterator last) EA_NOEXCEPT
 	{
 		// Version which erases in order from first to last.
 		// difference_type i(first.base() - last.base());
@@ -793,6 +799,12 @@ namespace eastl
 			}
 		}
 		return oldSize - c.size();
+	}
+
+	template <typename Key, typename Compare, typename Allocator>
+	inline void swap(multiset<Key, Compare, Allocator>& a, multiset<Key, Compare, Allocator>& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a.swap(b)))
+	{
+		a.swap(b);
 	}
 
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)

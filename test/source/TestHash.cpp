@@ -27,6 +27,111 @@ EA_RESTORE_ALL_VC_WARNINGS()
 
 using namespace eastl;
 
+
+///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: hash_map, hash_multimap, hash_set, hash_multiset (hashtable and its iterators)
+// are at least as noexcept as MSVC STL's unordered containers.
+// EASTL has no allocator_traits and behaves as if propagate_on_container_move_assignment
+// and propagate_on_container_swap were true, so only the hasher and the key equality matter for
+// move assignment and swap.
+namespace
+{
+	struct HashNothrow
+	{
+		size_t operator()(int x) const noexcept { return (size_t)x; }
+	};
+
+	struct HashThrowing // Copying, moving, swapping and hashing may throw.
+	{
+		HashThrowing() {}
+		HashThrowing(const HashThrowing&) noexcept(false) {}
+		HashThrowing(HashThrowing&&) noexcept(false) {}
+		HashThrowing& operator=(const HashThrowing&) noexcept(false) { return *this; }
+		HashThrowing& operator=(HashThrowing&&) noexcept(false) { return *this; }
+		size_t operator()(int x) const noexcept(false) { return (size_t)x; }
+	};
+
+	struct EqualNothrow
+	{
+		bool operator()(int a, int b) const noexcept { return a == b; }
+	};
+
+	struct EqualThrowing // Copying, moving, swapping and comparing may throw.
+	{
+		EqualThrowing() {}
+		EqualThrowing(const EqualThrowing&) noexcept(false) {}
+		EqualThrowing(EqualThrowing&&) noexcept(false) {}
+		EqualThrowing& operator=(const EqualThrowing&) noexcept(false) { return *this; }
+		EqualThrowing& operator=(EqualThrowing&&) noexcept(false) { return *this; }
+		bool operator()(int a, int b) const noexcept(false) { return a == b; }
+	};
+
+	// kNothrowMoveSwap: the hasher and the key equality are nothrow move assignable and nothrow swappable.
+	// kNothrowErase:    erase(const key_type&) is noexcept: the hasher cannot throw (and, for containers
+	//                   with equivalent keys, neither can the key equality).
+	template <typename C, bool kNothrowMoveSwap, bool kNothrowErase>
+	struct HashNoexceptChecks
+	{
+		typedef typename C::iterator               I;
+		typedef typename C::const_iterator         CI;
+		typedef typename C::local_iterator         LI;
+		typedef typename C::const_local_iterator   CLI;
+
+		// Conditional on the hasher and the key equality, as in the standard library.
+		static_assert(noexcept(eastl::declval<C&>() = eastl::declval<C&&>()) == kNothrowMoveSwap, "hash container::operator=(container&&)");
+		static_assert(noexcept(eastl::declval<C&>().swap(eastl::declval<C&>())) == kNothrowMoveSwap, "hash container::swap");
+		static_assert(noexcept(eastl::swap(eastl::declval<C&>(), eastl::declval<C&>())) == kNothrowMoveSwap, "swap(hash container&, hash container&)");
+		static_assert(noexcept(eastl::declval<C&>().erase(eastl::declval<const typename C::key_type&>())) == kNothrowErase, "hash container::erase(const key_type&)");
+
+		static_assert(noexcept(eastl::declval<C&>().clear()), "hash container::clear must be noexcept");
+		static_assert(noexcept(eastl::declval<C&>().clear(true)), "hash container::clear(bool) must be noexcept");
+		static_assert(noexcept(eastl::declval<C&>().erase(eastl::declval<I>())), "hash container::erase(iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<C&>().erase(eastl::declval<CI>())), "hash container::erase(const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<C&>().erase(eastl::declval<CI>(), eastl::declval<CI>())), "hash container::erase(const_iterator, const_iterator) must be noexcept");
+		static_assert(noexcept(eastl::declval<const C&>().validate()), "hash container::validate must be noexcept");
+		static_assert(noexcept(eastl::declval<const C&>().validate_iterator(eastl::declval<CI>())), "hash container::validate_iterator must be noexcept");
+
+		// hashtable_iterator
+		static_assert(noexcept(I()), "hashtable_iterator() must be noexcept");
+		static_assert(noexcept(CI()), "hashtable_iterator() must be noexcept");
+		static_assert(noexcept(CI(eastl::declval<const I&>())), "const_iterator(const iterator&) must be noexcept");
+		static_assert(noexcept(*eastl::declval<const I&>()), "hashtable_iterator::operator* must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>().operator->()), "hashtable_iterator::operator-> must be noexcept");
+		static_assert(noexcept(++eastl::declval<I&>()), "hashtable_iterator::operator++() must be noexcept");
+		static_assert(noexcept(eastl::declval<I&>()++), "hashtable_iterator::operator++(int) must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() == eastl::declval<const I&>()), "hashtable_iterator operator== must be noexcept");
+		static_assert(noexcept(eastl::declval<const I&>() != eastl::declval<const I&>()), "hashtable_iterator operator!= must be noexcept");
+		static_assert(noexcept(eastl::declval<const CI&>() == eastl::declval<const CI&>()), "const hashtable_iterator operator== must be noexcept");
+
+		// node_iterator (local iterators)
+		static_assert(noexcept(LI()), "node_iterator() must be noexcept");
+		static_assert(noexcept(CLI()), "node_iterator() must be noexcept");
+		static_assert(noexcept(*eastl::declval<const LI&>()), "node_iterator::operator* must be noexcept");
+		static_assert(noexcept(eastl::declval<const LI&>().operator->()), "node_iterator::operator-> must be noexcept");
+		static_assert(noexcept(++eastl::declval<LI&>()), "node_iterator::operator++() must be noexcept");
+		static_assert(noexcept(eastl::declval<LI&>()++), "node_iterator::operator++(int) must be noexcept");
+		static_assert(noexcept(eastl::declval<const LI&>() == eastl::declval<const LI&>()), "node_iterator operator== must be noexcept");
+		static_assert(noexcept(eastl::declval<const CLI&>() != eastl::declval<const CLI&>()), "node_iterator operator!= must be noexcept");
+	};
+
+	template struct HashNoexceptChecks<eastl::hash_map<int, int, HashNothrow, EqualNothrow>, true, true>;
+	template struct HashNoexceptChecks<eastl::hash_multimap<int, int, HashNothrow, EqualNothrow>, true, true>;
+	template struct HashNoexceptChecks<eastl::hash_set<int, HashNothrow, EqualNothrow>, true, true>;
+	template struct HashNoexceptChecks<eastl::hash_multiset<int, HashNothrow, EqualNothrow>, true, true>;
+
+	template struct HashNoexceptChecks<eastl::hash_map<int, int, HashThrowing, EqualNothrow>, false, false>;
+	template struct HashNoexceptChecks<eastl::hash_multimap<int, int, HashThrowing, EqualNothrow>, false, false>;
+	template struct HashNoexceptChecks<eastl::hash_set<int, HashThrowing, EqualNothrow>, false, false>;
+	template struct HashNoexceptChecks<eastl::hash_multiset<int, HashThrowing, EqualNothrow>, false, false>;
+
+	// With unique keys the standard library only requires the hasher to be nothrow for erase(const key_type&).
+	template struct HashNoexceptChecks<eastl::hash_map<int, int, HashNothrow, EqualThrowing>, false, true>;
+	template struct HashNoexceptChecks<eastl::hash_multimap<int, int, HashNothrow, EqualThrowing>, false, false>;
+	template struct HashNoexceptChecks<eastl::hash_set<int, HashNothrow, EqualThrowing>, false, true>;
+	template struct HashNoexceptChecks<eastl::hash_multiset<int, HashNothrow, EqualThrowing>, false, false>;
+}
+
+
 namespace eastl
 {
 	template <> 
@@ -222,6 +327,42 @@ int TestHash()
 	TestHashTable_MT();
 
 	int nErrorCount = 0;
+
+	{  // eastl::swap on hash_map, hash_multimap, hash_set, hash_multiset and the unordered_* aliases exchanges the contents.
+		eastl::hash_map<int, int> a, b;
+		a[1] = 10; a[2] = 20; b[3] = 30;
+		eastl::swap(a, b);
+		EATEST_VERIFY(a.size() == 1 && a.at(3) == 30);
+		EATEST_VERIFY(b.size() == 2 && b.at(1) == 10 && b.at(2) == 20);
+
+		eastl::hash_multimap<int, int> ma, mb;
+		ma.insert(eastl::make_pair(1, 10)); ma.insert(eastl::make_pair(1, 11)); mb.insert(eastl::make_pair(3, 30));
+		eastl::swap(ma, mb);
+		EATEST_VERIFY(ma.size() == 1 && ma.count(3) == 1);
+		EATEST_VERIFY(mb.size() == 2 && mb.count(1) == 2);
+
+		eastl::hash_set<int> sa, sb;
+		sa.insert(1); sa.insert(2); sb.insert(3);
+		eastl::swap(sa, sb);
+		EATEST_VERIFY(sa.size() == 1 && sa.count(3) == 1);
+		EATEST_VERIFY(sb.size() == 2 && sb.count(1) == 1 && sb.count(2) == 1);
+
+		eastl::hash_multiset<int> msa, msb;
+		msa.insert(1); msa.insert(1); msb.insert(3);
+		eastl::swap(msa, msb);
+		EATEST_VERIFY(msa.size() == 1 && msa.count(3) == 1);
+		EATEST_VERIFY(msb.size() == 2 && msb.count(1) == 2);
+
+		eastl::unordered_map<int, int> ua, ub;
+		ua[1] = 10; ub[2] = 20; ub[3] = 30;
+		eastl::swap(ua, ub);
+		EATEST_VERIFY(ua.size() == 2 && ub.size() == 1 && ub.at(1) == 10);
+
+		eastl::unordered_set<int> usa, usb;
+		usa.insert(1); usb.insert(2); usb.insert(3);
+		eastl::swap(usa, usb);
+		EATEST_VERIFY(usa.size() == 2 && usb.size() == 1 && usb.count(1) == 1);
+	}
 
 	{  // Test declarations
 		hash_set<int>           hashSet;
