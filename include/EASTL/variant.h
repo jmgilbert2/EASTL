@@ -132,7 +132,7 @@ namespace eastl
 	// 20.7.11, hash support
 	template <class T> struct hash;
 	template <> struct hash<monostate>
-		{ size_t operator()(monostate) const { return static_cast<size_t>(-0x42); } };
+		{ size_t operator()(monostate) const EA_NOEXCEPT { return static_cast<size_t>(-0x42); } };
 
 
 	///////////////////////////////////////////////////////////////////////////
@@ -688,10 +688,18 @@ namespace eastl
 	struct variant_hash : eastl::Internal::disabled_hash {};
 	EA_RESTORE_VC_WARNING()
 
+	// Whether hashing every alternative is noexcept (MSVC STL's _Is_nothrow_hashable).
+	template<class Variant>
+	struct variant_is_nothrow_hashable;
+
+	template<class... Types>
+	struct variant_is_nothrow_hashable<variant<Types...>>
+		: bool_constant<conjunction_v<is_nothrow_invocable<hash<remove_const_t<Types>>, const remove_const_t<Types>&>...>> {};
+
 	template<class Variant>
 	struct variant_hash<Variant, true>
 	{
-		size_t operator()(const Variant& obj) const
+		size_t operator()(const Variant& obj) const EA_NOEXCEPT_IF(variant_is_nothrow_hashable<Variant>::value)
 		{
 			if (obj.valueless_by_exception())
 				return 0;
@@ -973,7 +981,7 @@ namespace eastl
 			enable_if_t<(I < sizeof...(Types)), bool> = true,
 			enable_if_t<is_constructible_v<meta::get_type_at_t<I, Types...>, std::initializer_list<U>&, Args...>, bool> = true>
 			EA_CONSTEXPR explicit variant(in_place_index_t<I>, std::initializer_list<U> il, Args&&... args)
-				EA_NOEXCEPT(is_nothrow_constructible_v<meta::get_type_at_t<I, Types...>, std::initializer_list<U>&, Args...>)
+				EA_NOEXCEPT // Like MSVC STL, whose spec here is is_constructible_v (not is_nothrow_constructible_v): always true.
 			: base_type(in_place_index<I>, il, eastl::forward<Args>(args)...)
 		{
 		}

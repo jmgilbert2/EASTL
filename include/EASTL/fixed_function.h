@@ -66,7 +66,7 @@ namespace eastl
 		{
 		}
 
-		fixed_function(fixed_function&& other)
+		fixed_function(fixed_function&& other) EA_NOEXCEPT
 			: Base(eastl::move(other))
 		{
 		}
@@ -88,7 +88,7 @@ namespace eastl
 		}
 
 		template<int OTHER_SIZE_IN_BYTES>
-		fixed_function(fixed_function<OTHER_SIZE_IN_BYTES, R(Args...)>&& other)
+		fixed_function(fixed_function<OTHER_SIZE_IN_BYTES, R(Args...)>&& other) EA_NOEXCEPT
 		    : Base(static_cast<internal::function_detail<OTHER_SIZE_IN_BYTES, R(Args...)>&&>(other))
 		{
 			EASTL_INTERNAL_FIXED_FUNCTION_OTHER_SIZE_STATIC_ASSERT(OTHER_SIZE_IN_BYTES);
@@ -102,7 +102,7 @@ namespace eastl
 			return *this;
 		}
 
-		fixed_function& operator=(fixed_function&& other)
+		fixed_function& operator=(fixed_function&& other) EA_NOEXCEPT
 		{
 			Base::operator=(eastl::move(other));
 			return *this;
@@ -124,7 +124,7 @@ namespace eastl
 		}
 
 		template<int OTHER_SIZE_IN_BYTES>
-		fixed_function& operator=(fixed_function<OTHER_SIZE_IN_BYTES, R(Args...)>&& other)
+		fixed_function& operator=(fixed_function<OTHER_SIZE_IN_BYTES, R(Args...)>&& other) EA_NOEXCEPT
 		{
 			EASTL_INTERNAL_FIXED_FUNCTION_OTHER_SIZE_STATIC_ASSERT(OTHER_SIZE_IN_BYTES);
 
@@ -210,7 +210,7 @@ namespace eastl
 	}
 
 	template <int S, typename R, typename... Args>
-	void swap(fixed_function<S, R(Args...)>& lhs, fixed_function<S, R(Args...)>& rhs)
+	void swap(fixed_function<S, R(Args...)>& lhs, fixed_function<S, R(Args...)>& rhs) EA_NOEXCEPT
 	{
 		lhs.swap(rhs);
 	}

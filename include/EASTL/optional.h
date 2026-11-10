@@ -159,6 +159,7 @@ namespace eastl
 #else
 			optional_base(const optional_base& other)
 #endif
+				EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible_v<value_type>)
 			{
 				engaged = other.engaged;
 
@@ -170,10 +171,10 @@ namespace eastl
 
 #if EA_IS_ENABLED(EA_DEPRECATIONS_FOR_2025_APRIL)
 			void ConstructFrom(optional_base&& other)
-				EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<value_type>::value)
 #else
 			optional_base(optional_base&& other)
 #endif
+				EA_NOEXCEPT_IF(eastl::is_nothrow_move_constructible<value_type>::value)
 			{
 				engaged = other.engaged;
 
@@ -188,6 +189,7 @@ namespace eastl
 #else
 			optional_base& operator=(const optional_base& other)
 #endif
+				EA_NOEXCEPT_IF(eastl::is_nothrow_copy_assignable_v<value_type> && eastl::is_nothrow_copy_constructible_v<value_type>)
 			{
 				if (engaged && !other.engaged)
 				{
@@ -213,11 +215,11 @@ namespace eastl
 
 #if EA_IS_ENABLED(EA_DEPRECATIONS_FOR_2025_APRIL)
 			void AssignFrom(optional_base&& other)
-				EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable<value_type>::value&&
-					eastl::is_nothrow_move_constructible<value_type>::value)
 #else
 			optional_base& operator=(optional_base&& other)
 #endif
+				EA_NOEXCEPT_IF(eastl::is_nothrow_move_assignable<value_type>::value&&
+					eastl::is_nothrow_move_constructible<value_type>::value)
 			{
 				if (engaged && !other.engaged)
 				{
@@ -300,7 +302,7 @@ namespace eastl
 		inline EA_CONSTEXPR optional(nullopt_t) EA_NOEXCEPT {}
 
 #if !EA_IS_ENABLED(EA_DEPRECATIONS_FOR_2025_APRIL)
-		inline EA_CONSTEXPR optional(const value_type& value)
+		inline EA_CONSTEXPR optional(const value_type& value) EA_NOEXCEPT_IF(eastl::is_nothrow_copy_constructible_v<T>)
 		{
 			construct_value(value);
 			engaged = true;
@@ -321,7 +323,7 @@ namespace eastl
 		template<typename U,
 			eastl::enable_if_t<is_constructible_v<T, const U&> && (is_same_v<eastl::remove_cv_t<T>, bool> || !Internal::converts_from_any_cvref_v<T, optional<U>>) &&
 			!is_convertible_v<const U&, T>, bool> = true>
-		EA_CPP20_CONSTEXPR explicit optional(const optional<U>& other)
+		EA_CPP20_CONSTEXPR explicit optional(const optional<U>& other) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T, const U&>))
 		{
 			if (other)
 			{
@@ -334,7 +336,7 @@ namespace eastl
 		template<typename U,
 			eastl::enable_if_t<is_constructible_v<T, const U&> && (is_same_v<eastl::remove_cv_t<T>, bool> || !Internal::converts_from_any_cvref_v<T, optional<U>>) &&
 			is_convertible_v<const U&, T>, bool> = true>
-		EA_CPP20_CONSTEXPR optional(const optional<U>& other)
+		EA_CPP20_CONSTEXPR optional(const optional<U>& other) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T, const U&>))
 		{
 			if (other)
 			{
@@ -347,7 +349,7 @@ namespace eastl
 		template<typename U,
 			eastl::enable_if_t<is_constructible_v<T, U> && (is_same_v<eastl::remove_cv_t<T>, bool> || !Internal::converts_from_any_cvref_v<T, optional<U>>) &&
 			!is_convertible_v<U, T>, bool> = true>
-		EA_CPP20_CONSTEXPR explicit optional(optional<U>&& other)
+		EA_CPP20_CONSTEXPR explicit optional(optional<U>&& other) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T, U>))
 		{
 			if (other)
 			{
@@ -361,7 +363,7 @@ namespace eastl
 		template<typename U,
 			eastl::enable_if_t<is_constructible_v<T, U> && (is_same_v<eastl::remove_cv_t<T>, bool> || !Internal::converts_from_any_cvref_v<T, optional<U>>) &&
 			is_convertible_v<U, T>, bool> = true>
-		EA_CPP20_CONSTEXPR explicit optional(optional<U>&& other)
+		EA_CPP20_CONSTEXPR explicit optional(optional<U>&& other) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T, U>))
 		{
 			if (other)
 			{
@@ -377,7 +379,7 @@ namespace eastl
 #else
 		template <typename... Args>
 #endif
-		inline EA_CONSTEXPR explicit optional(in_place_t, Args&&... args)
+		inline EA_CONSTEXPR explicit optional(in_place_t, Args&&... args) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T, Args...>))
 		{
 #if EA_IS_ENABLED(EA_DEPRECATIONS_FOR_2025_APRIL)
 			construct_value(eastl::forward<Args>(args)...);
@@ -396,7 +398,7 @@ namespace eastl
 #else
 		template <typename U, typename... Args>
 #endif
-		inline EA_CONSTEXPR explicit optional(in_place_t, std::initializer_list<U> ilist, Args&&... args)
+		inline EA_CONSTEXPR explicit optional(in_place_t, std::initializer_list<U> ilist, Args&&... args) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T, std::initializer_list<U>&, Args...>))
 		{
 #if EA_IS_ENABLED(EA_DEPRECATIONS_FOR_2025_APRIL)
 			construct_value(ilist, eastl::forward<Args>(args)...);
@@ -417,7 +419,7 @@ namespace eastl
 			(!eastl::is_same_v<eastl::remove_cv_t<T>, bool> || !Internal::is_specialization_of_optional_v<eastl::remove_cvref_t<U>>) &&
 			!eastl::is_convertible_v<U&&, T>,
 			bool> = true>
-		inline explicit EA_CONSTEXPR optional(U&& value)
+		inline explicit EA_CONSTEXPR optional(U&& value) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T, U&&>))
 		{
 			construct_value(eastl::forward<U>(value));
 			engaged = true;
@@ -431,7 +433,7 @@ namespace eastl
 			(!eastl::is_same_v<eastl::remove_cv_t<T>, bool> || !Internal::is_specialization_of_optional_v<eastl::remove_cvref_t<U>>) &&
 			eastl::is_convertible_v<U&&, T>,
 			bool> = true>
-		inline EA_CONSTEXPR optional(U&& value)
+		inline EA_CONSTEXPR optional(U&& value) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T, U&&>))
 		{
 			construct_value(eastl::forward<U>(value));
 			engaged = true;
@@ -452,6 +454,7 @@ namespace eastl
 			eastl::enable_if_t<is_constructible_v<T, const U&> && is_assignable_v<T&, const U&> && !Internal::converts_from_any_cvref_v<T, optional<U>> &&
 			!is_assignable_v<T&, optional<U>&> && !is_assignable_v<T&, optional<U>&&> && !is_assignable_v<T&, const optional<U>&> && !is_assignable_v<T&, const optional<U>&&>, bool> = true>
 		EA_CPP20_CONSTEXPR optional& operator=(const optional<U>& other)
+			EA_NOEXCEPT_IF((eastl::is_nothrow_assignable_v<T&, const U&> && eastl::is_nothrow_constructible_v<T, const U&>))
 		{
 			if (engaged && other.engaged)
 			{
@@ -478,6 +481,7 @@ namespace eastl
 			eastl::enable_if_t<is_constructible_v<T, U> && is_assignable_v<T&, U> && !Internal::converts_from_any_cvref_v<T, optional<U>> &&
 			!is_assignable_v<T&, optional<U>&> && !is_assignable_v<T&, optional<U>&&> && !is_assignable_v<T&, const optional<U>&> && !is_assignable_v<T&, const optional<U>&&>, bool> = true>
 		EA_CPP20_CONSTEXPR optional& operator=(optional<U>&& other)
+			EA_NOEXCEPT_IF((eastl::is_nothrow_assignable_v<T&, U> && eastl::is_nothrow_constructible_v<T, U>))
 		{
 			if (engaged && other.engaged)
 			{
@@ -505,6 +509,7 @@ namespace eastl
 			eastl::is_constructible_v<T, U>&&
 			eastl::is_assignable_v<T&, U> && (!eastl::is_scalar_v<T> || !eastl::is_same_v<eastl::decay_t<U>, T>), bool> = true>
 		inline EA_CPP20_CONSTEXPR optional& operator=(U&& u)
+			EA_NOEXCEPT_IF((eastl::is_nothrow_assignable_v<T&, U> && eastl::is_nothrow_constructible_v<T, U>))
 		{
 			if (engaged)
 			{
@@ -755,7 +760,7 @@ namespace eastl
 		}
 
 		template <class... Args>
-		EA_CPP20_CONSTEXPR T& emplace(Args&&... args)
+		EA_CPP20_CONSTEXPR T& emplace(Args&&... args) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T, Args...>))
 		{
 			if (engaged)
 			{
@@ -769,6 +774,7 @@ namespace eastl
 
 		template <class U, class... Args>
 		EA_CPP20_CONSTEXPR T& emplace(std::initializer_list<U> ilist, Args&&... args)
+			EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T, std::initializer_list<U>&, Args...>))
 		{
 			if (engaged)
 			{
@@ -839,35 +845,42 @@ namespace eastl
 	//
 	template <class T>
 	inline EA_CONSTEXPR bool operator==(const optional<T>& lhs, const optional<T>& rhs)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(static_cast<bool>(*lhs == *rhs)))
 	{
 		return (bool(lhs) != bool(rhs)) ? false : (bool(lhs) == false) ? true : *lhs == *rhs;
 	}
 
 	template <class T>
 	inline EA_CONSTEXPR bool operator<(const optional<T>& lhs, const optional<T>& rhs)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(static_cast<bool>(*lhs < *rhs)))
 	{
 	    return (!bool(rhs)) ? false : (!bool(lhs)) ? true : *lhs < *rhs;
     }
 
     template <class T>
 	inline EA_CONSTEXPR bool operator!=(const optional<T>& lhs, const optional<T>& rhs)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(lhs == rhs))
 		{ return !(lhs == rhs); }
 
 	template <class T>
 	inline EA_CONSTEXPR bool operator<=(const optional<T>& lhs, const optional<T>& rhs)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(rhs < lhs))
 		{ return !(rhs < lhs); }
 
 	template <class T>
 	inline EA_CONSTEXPR bool operator>(const optional<T>& lhs, const optional<T>& rhs)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(rhs < lhs))
 		{ return rhs < lhs; }
 
 	template <class T>
 	inline EA_CONSTEXPR bool operator>=(const optional<T>& lhs, const optional<T>& rhs)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(lhs < rhs))
 		{ return !(lhs < rhs);	}
 
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
 	template <class T, class U=T> requires std::three_way_comparable_with<T, U>
 	inline EA_CONSTEXPR std::compare_three_way_result_t<T, U> operator<=>(const optional<T>& lhs, const optional<U>& rhs)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(*lhs <=> *rhs))
 		{
 		    if (lhs && rhs)
 		    {
@@ -938,50 +951,62 @@ namespace eastl
 	//
     template <class T>
     inline EA_CONSTEXPR bool operator==(const optional<T>& opt, const T& value)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(static_cast<bool>(*opt == value)))
 		{ return bool(opt) ? *opt == value : false; }
 
     template <class T>
     inline EA_CONSTEXPR bool operator==(const T& value, const optional<T>& opt)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(static_cast<bool>(value == *opt)))
 		{ return bool(opt) ? value == *opt : false; }
 
     template <class T>
     inline EA_CONSTEXPR bool operator!=(const optional<T>& opt, const T& value)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(static_cast<bool>(*opt == value)))
 		{ return bool(opt) ? !(*opt == value) : true; }
 
     template <class T>
     inline EA_CONSTEXPR bool operator!=(const T& value, const optional<T>& opt)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(static_cast<bool>(value == *opt)))
 		{ return bool(opt) ? !(value == *opt) : true; }
 
     template <class T>
     inline EA_CONSTEXPR bool operator<(const optional<T>& opt, const T& value)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(static_cast<bool>(*opt < value)))
 		{ return bool(opt) ? *opt < value  : true; }
 
     template <class T>
     inline EA_CONSTEXPR bool operator<(const T& value, const optional<T>& opt)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(static_cast<bool>(value < *opt)))
 		{ return bool(opt) ? value < *opt  : false;  }
 
     template <class T>
     inline EA_CONSTEXPR bool operator<=(const optional<T>& opt, const T& value)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(opt > value))
 		{ return !(opt > value); }
 
     template <class T>
     inline EA_CONSTEXPR bool operator<=(const T& value, const optional<T>& opt)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(value > opt))
 		{ return !(value > opt); }
 
     template <class T>
     inline EA_CONSTEXPR bool operator>(const optional<T>& opt, const T& value)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(static_cast<bool>(value < *opt)))
 		{ return bool(opt) ? value < *opt  : false; }
 
     template <class T>
     inline EA_CONSTEXPR bool operator>(const T& value, const optional<T>& opt)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(static_cast<bool>(*opt < value)))
 		{ return bool(opt) ? *opt < value  : true; }
 
     template <class T>
     inline EA_CONSTEXPR bool operator>=(const optional<T>& opt, const T& value)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(opt < value))
 		{ return !(opt < value); }
 
     template <class T>
     inline EA_CONSTEXPR bool operator>=(const T& value, const optional<T>& opt)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(value < opt))
 		{ return !(value < opt);  }
 
 #if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
@@ -996,6 +1021,7 @@ namespace eastl
     // for U = optional<X> considers this operator again, and the constraint depends on itself.
     template <class T, class U=T> requires (!requires(const U& u) { Internal::accepts_optional(u); }) && std::three_way_comparable_with<T, U>
     inline EA_CONSTEXPR std::compare_three_way_result_t<T, U> operator<=>(const optional<T>& opt, const U& value)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(*opt <=> value))
 		{ return (opt.has_value()) ? *opt <=> value : std::strong_ordering::less; }
 #endif
 
@@ -1032,6 +1058,7 @@ namespace eastl
 	///
 	template <class T>
 	inline EA_CONSTEXPR optional<decay_t<T>> make_optional(T&& value)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(optional<decay_t<T>>(eastl::forward<T>(value))))
 	{
 		return optional<decay_t<T>>(eastl::forward<T>(value));
 	}
@@ -1042,6 +1069,7 @@ namespace eastl
 	template <class T, class... Args>
 #endif
 	inline EA_CONSTEXPR optional<T> make_optional(Args&&... args)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(optional<T>(eastl::in_place, eastl::forward<Args>(args)...)))
 	{
 		return optional<T>(eastl::in_place, eastl::forward<Args>(args)...);
 	}
@@ -1052,6 +1080,7 @@ namespace eastl
 	template <class T, class U, class... Args>
 #endif
 	inline EA_CONSTEXPR optional<T> make_optional(std::initializer_list<U> il, Args&&... args)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::optional<T>(eastl::in_place, il, eastl::forward<Args>(args)...)))
 	{
 		return eastl::optional<T>(eastl::in_place, il, eastl::forward<Args>(args)...);
 	}

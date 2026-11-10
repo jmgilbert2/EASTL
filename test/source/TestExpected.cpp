@@ -16,6 +16,206 @@
 
 using namespace eastl;
 
+/////////////////////////////////////////////////////////////////////////////
+// Exception specifications: unexpected and expected follow the standard (the conditional ones as MSVC's STL strengthens them).
+//
+namespace NoexceptExpectedTest
+{
+	// Everything is noexcept when Nothrow and may throw otherwise. Only declared: used in unevaluated operands.
+	template <bool Nothrow>
+	struct Elem
+	{
+		Elem() EA_NOEXCEPT_IF(Nothrow);
+		Elem(const Elem&) EA_NOEXCEPT_IF(Nothrow);
+		Elem(Elem&&) EA_NOEXCEPT_IF(Nothrow);
+		Elem& operator=(const Elem&) EA_NOEXCEPT_IF(Nothrow);
+		Elem& operator=(Elem&&) EA_NOEXCEPT_IF(Nothrow);
+		explicit Elem(int) EA_NOEXCEPT_IF(Nothrow);
+		Elem(std::initializer_list<int>, int) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator==(const Elem&, const Elem&) EA_NOEXCEPT_IF(Nothrow);
+	};
+
+	// Copying may throw, moving doesn't (so expected<void, CopyThrows> can be assigned).
+	struct CopyThrows
+	{
+		CopyThrows(const CopyThrows&) EA_NOEXCEPT_IF(false);
+		CopyThrows(CopyThrows&&) EA_NOEXCEPT;
+		CopyThrows& operator=(const CopyThrows&) EA_NOEXCEPT_IF(false);
+		CopyThrows& operator=(CopyThrows&&) EA_NOEXCEPT;
+	};
+
+	struct Src {};
+
+	// Constructible and assignable from Src; copying and moving it never throws.
+	template <bool Nothrow>
+	struct Dst
+	{
+		Dst(const Dst&) EA_NOEXCEPT;
+		Dst(Dst&&) EA_NOEXCEPT;
+		Dst& operator=(const Dst&) EA_NOEXCEPT;
+		Dst& operator=(Dst&&) EA_NOEXCEPT;
+		Dst(const Src&) EA_NOEXCEPT_IF(Nothrow);
+		Dst(Src&&) EA_NOEXCEPT_IF(Nothrow);
+		Dst& operator=(const Src&) EA_NOEXCEPT_IF(Nothrow);
+		Dst& operator=(Src&&) EA_NOEXCEPT_IF(Nothrow);
+	};
+
+	#define EASTL_TEST_NOEXCEPT(...)     static_assert(noexcept(__VA_ARGS__),  #__VA_ARGS__ " is noexcept")
+	#define EASTL_TEST_NOT_NOEXCEPT(...) static_assert(!noexcept(__VA_ARGS__), #__VA_ARGS__ " may throw")
+
+	using eastl::declval;
+	using eastl::expected;
+	using eastl::unexpected;
+	using N  = Elem<true>;
+	using T  = Elem<false>;
+	using UN = unexpected<N>;
+	using UT = unexpected<T>;
+	using NN = expected<N, N>;
+	using TT = expected<T, T>;
+	using NT = expected<N, T>; // the value can't throw, the error can
+	using TN = expected<T, N>; // the error can't throw, the value can
+	using VN = expected<void, N>;
+	using VT = expected<void, T>;
+	using VC = expected<void, CopyThrows>; // the assignments need a nothrow move constructible error
+	using ID = std::initializer_list<int>;
+
+	// unexpected
+	EASTL_TEST_NOEXCEPT    (UN(declval<N>()));
+	EASTL_TEST_NOT_NOEXCEPT(UT(declval<T>()));
+	EASTL_TEST_NOEXCEPT    (UN(declval<const N&>()));
+	EASTL_TEST_NOT_NOEXCEPT(UT(declval<const T&>()));
+	EASTL_TEST_NOEXCEPT    (UN(eastl::in_place, 1));
+	EASTL_TEST_NOT_NOEXCEPT(UT(eastl::in_place, 1));
+	EASTL_TEST_NOEXCEPT    (UN(eastl::in_place, declval<ID>(), 1));
+	EASTL_TEST_NOT_NOEXCEPT(UT(eastl::in_place, declval<ID>(), 1));
+	EASTL_TEST_NOEXCEPT    (declval<const UN&>() == declval<const UN&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const UT&>() == declval<const UT&>());
+
+	// default, copy and move constructors, and the copy and move assignments
+	EASTL_TEST_NOEXCEPT    (NN());
+	EASTL_TEST_NOT_NOEXCEPT(TN());
+	EASTL_TEST_NOEXCEPT    (NN(declval<const NN&>()));
+	EASTL_TEST_NOT_NOEXCEPT(NT(declval<const NT&>()));
+	EASTL_TEST_NOT_NOEXCEPT(TN(declval<const TN&>()));
+	EASTL_TEST_NOT_NOEXCEPT(TT(declval<const TT&>()));
+	EASTL_TEST_NOEXCEPT    (NN(declval<NN>()));
+	EASTL_TEST_NOT_NOEXCEPT(NT(declval<NT>()));
+	EASTL_TEST_NOT_NOEXCEPT(TN(declval<TN>()));
+	EASTL_TEST_NOEXCEPT    (declval<NN&>() = declval<const NN&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<NT&>() = declval<const NT&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<TN&>() = declval<const TN&>());
+	EASTL_TEST_NOEXCEPT    (declval<NN&>() = declval<NN>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<NT&>() = declval<NT>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<TN&>() = declval<TN>());
+
+	// constructors from a value, an unexpected, and in_place or unexpect
+	EASTL_TEST_NOEXCEPT    (NN(declval<N>()));
+	EASTL_TEST_NOT_NOEXCEPT(TN(declval<T>()));
+	EASTL_TEST_NOEXCEPT    (NN(declval<const N&>()));
+	EASTL_TEST_NOT_NOEXCEPT(TN(declval<const T&>()));
+	EASTL_TEST_NOEXCEPT    (NN(declval<UN>()));
+	EASTL_TEST_NOT_NOEXCEPT(NT(declval<UT>()));
+	EASTL_TEST_NOEXCEPT    (NN(declval<const UN&>()));
+	EASTL_TEST_NOT_NOEXCEPT(NT(declval<const UT&>()));
+	EASTL_TEST_NOEXCEPT    (NN(eastl::in_place, 1));
+	EASTL_TEST_NOT_NOEXCEPT(TN(eastl::in_place, 1));
+	EASTL_TEST_NOEXCEPT    (NN(eastl::in_place, declval<ID>(), 1));
+	EASTL_TEST_NOT_NOEXCEPT(TN(eastl::in_place, declval<ID>(), 1));
+	EASTL_TEST_NOEXCEPT    (NN(eastl::unexpect, 1));
+	EASTL_TEST_NOT_NOEXCEPT(NT(eastl::unexpect, 1));
+	EASTL_TEST_NOEXCEPT    (NN(eastl::unexpect, declval<ID>(), 1));
+	EASTL_TEST_NOT_NOEXCEPT(NT(eastl::unexpect, declval<ID>(), 1));
+
+	// converting constructors
+	EASTL_TEST_NOEXCEPT    (expected<Dst<true>, Dst<true>>(declval<const expected<Src, Src>&>()));
+	EASTL_TEST_NOT_NOEXCEPT(expected<Dst<true>, Dst<false>>(declval<const expected<Src, Src>&>()));
+	EASTL_TEST_NOT_NOEXCEPT(expected<Dst<false>, Dst<true>>(declval<const expected<Src, Src>&>()));
+	EASTL_TEST_NOEXCEPT    (expected<Dst<true>, Dst<true>>(declval<expected<Src, Src>>()));
+	EASTL_TEST_NOT_NOEXCEPT(expected<Dst<true>, Dst<false>>(declval<expected<Src, Src>>()));
+	EASTL_TEST_NOT_NOEXCEPT(expected<Dst<false>, Dst<true>>(declval<expected<Src, Src>>()));
+	EASTL_TEST_NOEXCEPT    (expected<Dst<true>, Dst<true>>(declval<Src>()));
+	EASTL_TEST_NOT_NOEXCEPT(expected<Dst<false>, Dst<true>>(declval<Src>()));
+	EASTL_TEST_NOEXCEPT    (expected<Dst<true>, Dst<true>>(declval<unexpected<Src>>()));
+	EASTL_TEST_NOT_NOEXCEPT(expected<Dst<true>, Dst<false>>(declval<unexpected<Src>>()));
+
+	// assignment from a value and an unexpected
+	EASTL_TEST_NOEXCEPT    (declval<NN&>() = declval<N>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<TN&>() = declval<T>());
+	EASTL_TEST_NOEXCEPT    (declval<NN&>() = declval<const N&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<TN&>() = declval<const T&>());
+	EASTL_TEST_NOEXCEPT    (declval<NN&>() = declval<UN>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<NT&>() = declval<UT>());
+	EASTL_TEST_NOEXCEPT    (declval<NN&>() = declval<const UN&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<NT&>() = declval<const UT&>());
+	EASTL_TEST_NOEXCEPT    (declval<expected<Dst<true>, Dst<true>>&>() = declval<Src>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<expected<Dst<false>, Dst<true>>&>() = declval<Src>());
+	EASTL_TEST_NOEXCEPT    (declval<expected<Dst<true>, Dst<true>>&>() = declval<unexpected<Src>>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<expected<Dst<true>, Dst<false>>&>() = declval<unexpected<Src>>());
+
+	// error() is noexcept whatever the types
+	EASTL_TEST_NOEXCEPT(declval<TT&>().error());
+	EASTL_TEST_NOEXCEPT(declval<const TT&>().error());
+	EASTL_TEST_NOEXCEPT(declval<TT>().error());
+	EASTL_TEST_NOEXCEPT(declval<const TT>().error());
+
+	// value_or and error_or
+	EASTL_TEST_NOEXCEPT    (declval<const NN&>().value_or(declval<N>()));
+	EASTL_TEST_NOT_NOEXCEPT(declval<const TT&>().value_or(declval<T>()));
+	EASTL_TEST_NOEXCEPT    (declval<NN>().value_or(declval<N>()));
+	EASTL_TEST_NOT_NOEXCEPT(declval<TT>().value_or(declval<T>()));
+	EASTL_TEST_NOEXCEPT    (declval<const NN&>().error_or(declval<N>()));
+	EASTL_TEST_NOT_NOEXCEPT(declval<const TT&>().error_or(declval<T>()));
+	EASTL_TEST_NOEXCEPT    (declval<NN>().error_or(declval<N>()));
+	EASTL_TEST_NOT_NOEXCEPT(declval<TT>().error_or(declval<T>()));
+
+	// comparisons
+	EASTL_TEST_NOEXCEPT    (declval<const NN&>() == declval<const NN&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const NT&>() == declval<const NT&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const TN&>() == declval<const TN&>());
+	EASTL_TEST_NOEXCEPT    (declval<const NN&>() == declval<const N&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const TN&>() == declval<const T&>());
+	EASTL_TEST_NOEXCEPT    (declval<const NN&>() == declval<const UN&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const NT&>() == declval<const UT&>());
+
+	// expected<void, E>
+	EASTL_TEST_NOEXCEPT    (VN(declval<const VN&>()));
+	EASTL_TEST_NOT_NOEXCEPT(VT(declval<const VT&>()));
+	EASTL_TEST_NOEXCEPT    (VN(declval<VN>()));
+	EASTL_TEST_NOT_NOEXCEPT(VT(declval<VT>()));
+	EASTL_TEST_NOEXCEPT    (declval<VN&>() = declval<const VN&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<VC&>() = declval<const VC&>());
+	EASTL_TEST_NOEXCEPT    (declval<VN&>() = declval<VN>());
+	EASTL_TEST_NOEXCEPT    (declval<VC&>() = declval<VC>());
+	EASTL_TEST_NOEXCEPT    (expected<void, Dst<true>>(declval<const expected<void, Src>&>()));
+	EASTL_TEST_NOT_NOEXCEPT(expected<void, Dst<false>>(declval<const expected<void, Src>&>()));
+	EASTL_TEST_NOEXCEPT    (expected<void, Dst<true>>(declval<expected<void, Src>>()));
+	EASTL_TEST_NOT_NOEXCEPT(expected<void, Dst<false>>(declval<expected<void, Src>>()));
+	EASTL_TEST_NOEXCEPT    (VN(declval<UN>()));
+	EASTL_TEST_NOT_NOEXCEPT(VT(declval<UT>()));
+	EASTL_TEST_NOEXCEPT    (VN(declval<const UN&>()));
+	EASTL_TEST_NOT_NOEXCEPT(VT(declval<const UT&>()));
+	EASTL_TEST_NOEXCEPT    (VN(eastl::unexpect, 1));
+	EASTL_TEST_NOT_NOEXCEPT(VT(eastl::unexpect, 1));
+	EASTL_TEST_NOEXCEPT    (VN(eastl::unexpect, declval<ID>(), 1));
+	EASTL_TEST_NOT_NOEXCEPT(VT(eastl::unexpect, declval<ID>(), 1));
+	EASTL_TEST_NOEXCEPT    (declval<VN&>() = declval<UN>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<VT&>() = declval<UT>());
+	EASTL_TEST_NOEXCEPT    (declval<VN&>() = declval<const UN&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<VT&>() = declval<const UT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const VT&>().error());
+	EASTL_TEST_NOEXCEPT    (declval<const VN&>().error_or(declval<N>()));
+	EASTL_TEST_NOT_NOEXCEPT(declval<const VT&>().error_or(declval<T>()));
+	EASTL_TEST_NOEXCEPT    (declval<VN>().error_or(declval<N>()));
+	EASTL_TEST_NOT_NOEXCEPT(declval<VT>().error_or(declval<T>()));
+	EASTL_TEST_NOEXCEPT    (declval<const VN&>() == declval<const VN&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const VT&>() == declval<const VT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const VN&>() == declval<const UN&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const VT&>() == declval<const UT&>());
+
+	#undef EASTL_TEST_NOEXCEPT
+	#undef EASTL_TEST_NOT_NOEXCEPT
+}
+
 namespace
 {
 	enum class TestError

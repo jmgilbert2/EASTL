@@ -11,6 +11,156 @@
 #include <EASTL/unique_ptr.h>
 
 /////////////////////////////////////////////////////////////////////////////
+// Exception specifications: optional follows the standard (the conditional ones as MSVC's STL strengthens them).
+//
+namespace NoexceptOptionalTest
+{
+	// Everything is noexcept when Nothrow and may throw otherwise. Only declared: used in unevaluated operands.
+	template <bool Nothrow>
+	struct Elem
+	{
+		Elem() EA_NOEXCEPT_IF(Nothrow);
+		Elem(const Elem&) EA_NOEXCEPT_IF(Nothrow);
+		Elem(Elem&&) EA_NOEXCEPT_IF(Nothrow);
+		Elem& operator=(const Elem&) EA_NOEXCEPT_IF(Nothrow);
+		Elem& operator=(Elem&&) EA_NOEXCEPT_IF(Nothrow);
+		explicit Elem(int) EA_NOEXCEPT_IF(Nothrow);
+		Elem(std::initializer_list<int>, int) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator==(const Elem&, const Elem&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator<(const Elem&, const Elem&) EA_NOEXCEPT_IF(Nothrow);
+	#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+		friend std::strong_ordering operator<=>(const Elem&, const Elem&) EA_NOEXCEPT_IF(Nothrow);
+	#endif
+	};
+
+	struct Src {};
+
+	// Constructible and assignable from Src; copying and moving it never throws.
+	template <bool Nothrow>
+	struct Dst
+	{
+		Dst(const Dst&) EA_NOEXCEPT;
+		Dst(Dst&&) EA_NOEXCEPT;
+		Dst& operator=(const Dst&) EA_NOEXCEPT;
+		Dst& operator=(Dst&&) EA_NOEXCEPT;
+		Dst(const Src&) EA_NOEXCEPT_IF(Nothrow);
+		Dst(Src&&) EA_NOEXCEPT_IF(Nothrow);
+		Dst& operator=(const Src&) EA_NOEXCEPT_IF(Nothrow);
+		Dst& operator=(Src&&) EA_NOEXCEPT_IF(Nothrow);
+	};
+
+	#define EASTL_TEST_NOEXCEPT(...)     static_assert(noexcept(__VA_ARGS__),  #__VA_ARGS__ " is noexcept")
+	#define EASTL_TEST_NOT_NOEXCEPT(...) static_assert(!noexcept(__VA_ARGS__), #__VA_ARGS__ " may throw")
+
+	using eastl::declval;
+	using N  = Elem<true>;
+	using T  = Elem<false>;
+	using ON = eastl::optional<N>;
+	using OT = eastl::optional<T>;
+	using ID = std::initializer_list<int>;
+
+	// copy constructor and copy assignment
+	EASTL_TEST_NOEXCEPT    (ON(declval<const ON&>()));
+	EASTL_TEST_NOT_NOEXCEPT(OT(declval<const OT&>()));
+	EASTL_TEST_NOEXCEPT    (declval<ON&>() = declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<OT&>() = declval<const OT&>());
+
+	// constructors from a value
+	EASTL_TEST_NOEXCEPT    (ON(declval<N>()));
+	EASTL_TEST_NOT_NOEXCEPT(OT(declval<T>()));
+	EASTL_TEST_NOEXCEPT    (ON(declval<const N&>()));
+	EASTL_TEST_NOT_NOEXCEPT(OT(declval<const T&>()));
+	EASTL_TEST_NOEXCEPT    (ON(eastl::in_place, 1));
+	EASTL_TEST_NOT_NOEXCEPT(OT(eastl::in_place, 1));
+	EASTL_TEST_NOEXCEPT    (ON(eastl::in_place, declval<ID>(), 1));
+	EASTL_TEST_NOT_NOEXCEPT(OT(eastl::in_place, declval<ID>(), 1));
+
+	// converting constructors and assignments
+	EASTL_TEST_NOEXCEPT    (eastl::optional<Dst<true>>(declval<const eastl::optional<Src>&>()));
+	EASTL_TEST_NOT_NOEXCEPT(eastl::optional<Dst<false>>(declval<const eastl::optional<Src>&>()));
+	EASTL_TEST_NOEXCEPT    (eastl::optional<Dst<true>>(declval<eastl::optional<Src>>()));
+	EASTL_TEST_NOT_NOEXCEPT(eastl::optional<Dst<false>>(declval<eastl::optional<Src>>()));
+	EASTL_TEST_NOEXCEPT    (eastl::optional<Dst<true>>(declval<Src>()));
+	EASTL_TEST_NOT_NOEXCEPT(eastl::optional<Dst<false>>(declval<Src>()));
+	EASTL_TEST_NOEXCEPT    (declval<eastl::optional<Dst<true>>&>() = declval<const eastl::optional<Src>&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<eastl::optional<Dst<false>>&>() = declval<const eastl::optional<Src>&>());
+	EASTL_TEST_NOEXCEPT    (declval<eastl::optional<Dst<true>>&>() = declval<eastl::optional<Src>>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<eastl::optional<Dst<false>>&>() = declval<eastl::optional<Src>>());
+
+	// assignment from a value
+	EASTL_TEST_NOEXCEPT    (declval<ON&>() = declval<N>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<OT&>() = declval<T>());
+	EASTL_TEST_NOEXCEPT    (declval<ON&>() = declval<const N&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<OT&>() = declval<const T&>());
+	EASTL_TEST_NOEXCEPT    (declval<eastl::optional<Dst<true>>&>() = declval<Src>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<eastl::optional<Dst<false>>&>() = declval<Src>());
+
+	// emplace
+	EASTL_TEST_NOEXCEPT    (declval<ON&>().emplace(1));
+	EASTL_TEST_NOT_NOEXCEPT(declval<OT&>().emplace(1));
+	EASTL_TEST_NOEXCEPT    (declval<ON&>().emplace(declval<ID>(), 1));
+	EASTL_TEST_NOT_NOEXCEPT(declval<OT&>().emplace(declval<ID>(), 1));
+
+	// comparisons of two optionals
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() == declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() == declval<const OT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() != declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() != declval<const OT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() < declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() < declval<const OT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() <= declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() <= declval<const OT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() > declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() > declval<const OT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() >= declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() >= declval<const OT&>());
+
+	// comparisons of an optional with a value
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() == declval<const N&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() == declval<const T&>());
+	EASTL_TEST_NOEXCEPT    (declval<const N&>() == declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const T&>() == declval<const OT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() != declval<const N&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() != declval<const T&>());
+	EASTL_TEST_NOEXCEPT    (declval<const N&>() != declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const T&>() != declval<const OT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() < declval<const N&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() < declval<const T&>());
+	EASTL_TEST_NOEXCEPT    (declval<const N&>() < declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const T&>() < declval<const OT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() <= declval<const N&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() <= declval<const T&>());
+	EASTL_TEST_NOEXCEPT    (declval<const N&>() <= declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const T&>() <= declval<const OT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() > declval<const N&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() > declval<const T&>());
+	EASTL_TEST_NOEXCEPT    (declval<const N&>() > declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const T&>() > declval<const OT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() >= declval<const N&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() >= declval<const T&>());
+	EASTL_TEST_NOEXCEPT    (declval<const N&>() >= declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const T&>() >= declval<const OT&>());
+
+#if defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() <=> declval<const ON&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() <=> declval<const OT&>());
+	EASTL_TEST_NOEXCEPT    (declval<const ON&>() <=> declval<const N&>());
+	EASTL_TEST_NOT_NOEXCEPT(declval<const OT&>() <=> declval<const T&>());
+#endif
+
+	// make_optional
+	EASTL_TEST_NOEXCEPT    (eastl::make_optional(declval<N>()));
+	EASTL_TEST_NOT_NOEXCEPT(eastl::make_optional(declval<T>()));
+	EASTL_TEST_NOEXCEPT    (eastl::make_optional<N>(1));
+	EASTL_TEST_NOT_NOEXCEPT(eastl::make_optional<T>(1));
+	EASTL_TEST_NOEXCEPT    (eastl::make_optional<N>(declval<ID>(), 1));
+	EASTL_TEST_NOT_NOEXCEPT(eastl::make_optional<T>(declval<ID>(), 1));
+
+	#undef EASTL_TEST_NOEXCEPT
+	#undef EASTL_TEST_NOT_NOEXCEPT
+}
+
+/////////////////////////////////////////////////////////////////////////////
 struct IntStruct
 {
 	IntStruct(int in) : data(in) {}

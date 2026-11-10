@@ -34,6 +34,7 @@ namespace eastl
 
 	template<class T, class... Args>
 	EA_CPP14_CONSTEXPR T* construct_at(T* p, Args&&... args)
+		EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(::new (static_cast<void*>(p)) T(eastl::forward<Args>(args)...)))
 	{
 		return ::new (static_cast<void*>(p)) T(eastl::forward<Args>(args)...);
 	}

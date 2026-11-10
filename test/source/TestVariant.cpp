@@ -20,6 +20,48 @@ EA_DISABLE_VC_WARNING(4512 4626);
 #include "ConceptImpls.h"
 #include <EASTL/variant.h>
 
+///////////////////////////////////////////////////////////////////////////////
+// Exception specifications: hash<monostate> is noexcept, hash<variant> is noexcept if hashing every alternative is,
+// and the in_place_index constructor with an initializer_list is noexcept (like MSVC's STL, whose specification is
+// is_constructible_v and so always true).
+//
+namespace NoexceptVariantTest
+{
+	// A hash that is noexcept when Nothrow. Only declared: used in unevaluated operands.
+	template <bool Nothrow>
+	struct HashedElem {};
+
+	// The constructor with an initializer_list may throw when !Nothrow.
+	template <bool Nothrow>
+	struct ListElem
+	{
+		ListElem(std::initializer_list<int>, int) EA_NOEXCEPT_IF(Nothrow);
+	};
+}
+
+namespace eastl
+{
+	template <bool Nothrow>
+	struct hash<NoexceptVariantTest::HashedElem<Nothrow>>
+	{
+		size_t operator()(const NoexceptVariantTest::HashedElem<Nothrow>&) const EA_NOEXCEPT_IF(Nothrow);
+	};
+}
+
+namespace NoexceptVariantTest
+{
+	using eastl::declval;
+	typedef eastl::variant<HashedElem<true>>                   NothrowHashVariant;
+	typedef eastl::variant<HashedElem<true>, HashedElem<false>> ThrowingHashVariant;
+
+	static_assert(noexcept(eastl::hash<eastl::monostate>()(declval<eastl::monostate>())), "hash<monostate> is noexcept");
+	static_assert( noexcept(eastl::hash<NothrowHashVariant>()(declval<const NothrowHashVariant&>())), "hash<variant> is noexcept if hashing every alternative is");
+	static_assert(!noexcept(eastl::hash<ThrowingHashVariant>()(declval<const ThrowingHashVariant&>())), "hash<variant> may throw if hashing an alternative may");
+
+	static_assert(noexcept(eastl::variant<ListElem<true>>(eastl::in_place_index<0>, declval<std::initializer_list<int>>(), 1)), "variant(in_place_index<I>, initializer_list, args...) is noexcept");
+	static_assert(noexcept(eastl::variant<ListElem<false>>(eastl::in_place_index<0>, declval<std::initializer_list<int>>(), 1)), "variant(in_place_index<I>, initializer_list, args...) is noexcept like MSVC's STL, even when the alternative's constructor may throw");
+}
+
 
 #if EASTL_EXCEPTIONS_ENABLED
 

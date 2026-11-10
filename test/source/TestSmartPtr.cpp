@@ -39,6 +39,54 @@ EA_RESTORE_ALL_VC_WARNINGS()
 EA_DISABLE_VC_WARNING(4702 4800)  // 4702: unreachable code
 								  // 4800: forcing value to bool 'true' or 'false'
 
+/////////////////////////////////////////////////////////////////////////////
+// Exception specifications: unique_ptr, weak_ptr and enable_shared_from_this follow the standard.
+//
+namespace NoexceptSmartPtrTest
+{
+	// A pointer type whose operator* is noexcept when Nothrow. Only declared: used in unevaluated operands.
+	template <bool Nothrow>
+	struct FancyPtr
+	{
+		FancyPtr() EA_NOEXCEPT;
+		FancyPtr(std::nullptr_t) EA_NOEXCEPT;
+		int& operator*() const EA_NOEXCEPT_IF(Nothrow);
+		int* operator->() const EA_NOEXCEPT;
+		explicit operator bool() const EA_NOEXCEPT;
+		friend bool operator==(const FancyPtr&, const FancyPtr&) EA_NOEXCEPT;
+		friend bool operator!=(const FancyPtr&, const FancyPtr&) EA_NOEXCEPT;
+		friend bool operator==(const FancyPtr&, std::nullptr_t) EA_NOEXCEPT;
+		friend bool operator!=(const FancyPtr&, std::nullptr_t) EA_NOEXCEPT;
+	};
+
+	template <bool Nothrow>
+	struct FancyDeleter
+	{
+		typedef FancyPtr<Nothrow> pointer;
+		void operator()(pointer) const EA_NOEXCEPT;
+	};
+
+	struct Shareable : public eastl::enable_shared_from_this<Shareable> {};
+
+	using eastl::declval;
+
+	// unique_ptr::operator* is noexcept if dereferencing the pointer is, operator[] always is
+	static_assert( noexcept(*declval<const eastl::unique_ptr<int>&>()), "unique_ptr<int>::operator* is noexcept");
+	static_assert( noexcept(*declval<const eastl::unique_ptr<int, FancyDeleter<true>>&>()), "unique_ptr::operator* is noexcept if the pointer's operator* is");
+	static_assert(!noexcept(*declval<const eastl::unique_ptr<int, FancyDeleter<false>>&>()), "unique_ptr::operator* may throw if the pointer's operator* may");
+	static_assert( noexcept(declval<const eastl::unique_ptr<int[]>&>()[0]), "unique_ptr<int[]>::operator[] is noexcept");
+
+	// weak_ptr::reset, weak_ptr::swap and swap(weak_ptr&, weak_ptr&)
+	static_assert(noexcept(declval<eastl::weak_ptr<int>&>().reset()), "weak_ptr::reset is noexcept");
+	static_assert(noexcept(declval<eastl::weak_ptr<int>&>().swap(declval<eastl::weak_ptr<int>&>())), "weak_ptr::swap is noexcept");
+	static_assert(noexcept(eastl::swap(declval<eastl::weak_ptr<int>&>(), declval<eastl::weak_ptr<int>&>())), "swap(weak_ptr&, weak_ptr&) is noexcept");
+
+	// enable_shared_from_this::weak_from_this
+	static_assert(noexcept(declval<Shareable&>().weak_from_this()), "enable_shared_from_this::weak_from_this is noexcept");
+	static_assert(noexcept(declval<const Shareable&>().weak_from_this()), "enable_shared_from_this::weak_from_this const is noexcept");
+}
+
+
 
 
 namespace SmartPtrTest

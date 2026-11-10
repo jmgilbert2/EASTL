@@ -51,18 +51,18 @@ namespace eastl
 	class EASTL_API allocator
 	{
 	public:
-		EASTL_ALLOCATOR_EXPLICIT allocator(const char* pName = EASTL_NAME_VAL(EASTL_ALLOCATOR_DEFAULT_NAME));
-		allocator(const allocator& x);
-		allocator(const allocator& x, const char* pName);
+		EASTL_ALLOCATOR_EXPLICIT allocator(const char* pName = EASTL_NAME_VAL(EASTL_ALLOCATOR_DEFAULT_NAME)) EA_NOEXCEPT;
+		allocator(const allocator& x) EA_NOEXCEPT;
+		allocator(const allocator& x, const char* pName) EA_NOEXCEPT;
 
-		allocator& operator=(const allocator& x);
+		allocator& operator=(const allocator& x) EA_NOEXCEPT;
 
 		void* allocate(size_t n, int flags = 0);
 		void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0);
-		void  deallocate(void* p, size_t n);
+		void  deallocate(void* p, size_t n) EA_NOEXCEPT;
 
-		const char* get_name() const;
-		void        set_name(const char* pName);
+		const char* get_name() const EA_NOEXCEPT;
+		void        set_name(const char* pName) EA_NOEXCEPT;
 
 	protected:
 		#if EASTL_NAME_ENABLED
@@ -70,9 +70,9 @@ namespace eastl
 		#endif
 	};
 
-	bool operator==(const allocator& a, const allocator& b);
+	bool operator==(const allocator& a, const allocator& b) EA_NOEXCEPT;
 #if !defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
-	bool operator!=(const allocator& a, const allocator& b);
+	bool operator!=(const allocator& a, const allocator& b) EA_NOEXCEPT;
 #endif
 
 
@@ -83,23 +83,23 @@ namespace eastl
 	class EASTL_API dummy_allocator
 	{
 	public:
-		EASTL_ALLOCATOR_EXPLICIT dummy_allocator(const char* = NULL) { }
-		dummy_allocator(const dummy_allocator&) { }
-		dummy_allocator(const dummy_allocator&, const char*) { }
+		EASTL_ALLOCATOR_EXPLICIT dummy_allocator(const char* = NULL) EA_NOEXCEPT { }
+		dummy_allocator(const dummy_allocator&) EA_NOEXCEPT { }
+		dummy_allocator(const dummy_allocator&, const char*) EA_NOEXCEPT { }
 
-		dummy_allocator& operator=(const dummy_allocator&) { return *this; }
+		dummy_allocator& operator=(const dummy_allocator&) EA_NOEXCEPT { return *this; }
 
 		void* allocate(size_t, int = 0)                 { return NULL; }
 		void* allocate(size_t, size_t, size_t, int = 0) { return NULL; }
-		void  deallocate(void*, size_t)                 { }
+		void  deallocate(void*, size_t) EA_NOEXCEPT     { }
 
-		const char* get_name() const      { return ""; }
-		void        set_name(const char*) { }
+		const char* get_name() const EA_NOEXCEPT      { return ""; }
+		void        set_name(const char*) EA_NOEXCEPT { }
 	};
 
-	inline bool operator==(const dummy_allocator&, const dummy_allocator&) { return true;  }
+	inline bool operator==(const dummy_allocator&, const dummy_allocator&) EA_NOEXCEPT { return true;  }
 #if !defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
-	inline bool operator!=(const dummy_allocator&, const dummy_allocator&) { return false; }
+	inline bool operator!=(const dummy_allocator&, const dummy_allocator&) EA_NOEXCEPT { return false; }
 #endif
 
 
@@ -176,7 +176,7 @@ namespace eastl
 
 	namespace eastl
 	{
-		inline allocator::allocator(const char* EASTL_NAME(pName))
+		inline allocator::allocator(const char* EASTL_NAME(pName)) EA_NOEXCEPT
 		{
 			#if EASTL_NAME_ENABLED
 				mpName = pName ? pName : EASTL_ALLOCATOR_DEFAULT_NAME;
@@ -184,7 +184,7 @@ namespace eastl
 		}
 
 
-		inline allocator::allocator(const allocator& EASTL_NAME(alloc))
+		inline allocator::allocator(const allocator& EASTL_NAME(alloc)) EA_NOEXCEPT
 		{
 			#if EASTL_NAME_ENABLED
 				mpName = alloc.mpName;
@@ -192,7 +192,7 @@ namespace eastl
 		}
 
 
-		inline allocator::allocator(const allocator&, const char* EASTL_NAME(pName))
+		inline allocator::allocator(const allocator&, const char* EASTL_NAME(pName)) EA_NOEXCEPT
 		{
 			#if EASTL_NAME_ENABLED
 				mpName = pName ? pName : EASTL_ALLOCATOR_DEFAULT_NAME;
@@ -200,7 +200,7 @@ namespace eastl
 		}
 
 
-		inline allocator& allocator::operator=(const allocator& EASTL_NAME(alloc))
+		inline allocator& allocator::operator=(const allocator& EASTL_NAME(alloc)) EA_NOEXCEPT
 		{
 			#if EASTL_NAME_ENABLED
 				mpName = alloc.mpName;
@@ -209,7 +209,7 @@ namespace eastl
 		}
 
 
-		inline const char* allocator::get_name() const
+		inline const char* allocator::get_name() const EA_NOEXCEPT
 		{
 			#if EASTL_NAME_ENABLED
 				return mpName;
@@ -219,7 +219,7 @@ namespace eastl
 		}
 
 
-		inline void allocator::set_name(const char* EASTL_NAME(pName))
+		inline void allocator::set_name(const char* EASTL_NAME(pName)) EA_NOEXCEPT
 		{
 			#if EASTL_NAME_ENABLED
 				mpName = pName;
@@ -280,7 +280,7 @@ namespace eastl
 		}
 
 
-		inline void allocator::deallocate(void* p, size_t)
+		inline void allocator::deallocate(void* p, size_t) EA_NOEXCEPT
 		{
 			#if EASTL_DLL
 				if (p != nullptr)
@@ -294,13 +294,13 @@ namespace eastl
 		}
 
 
-		inline bool operator==(const allocator&, const allocator&)
+		inline bool operator==(const allocator&, const allocator&) EA_NOEXCEPT
 		{
 			return true; // All allocators are considered equal, as they merely use global new/delete.
 		}
 
 #if !defined(EA_COMPILER_HAS_THREE_WAY_COMPARISON)
-		inline bool operator!=(const allocator&, const allocator&)
+		inline bool operator!=(const allocator&, const allocator&) EA_NOEXCEPT
 		{
 			return false; // All allocators are considered equal, as they merely use global new/delete.
 		}

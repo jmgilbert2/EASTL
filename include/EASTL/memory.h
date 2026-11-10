@@ -922,7 +922,7 @@ namespace eastl
 	/// is a no-op.
 	///
 	template <typename T>
-	inline void destruct(T* p)
+	inline void destruct(T* p) EA_NOEXCEPT
 	{
 		// https://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k(C4100)&rd=true
 		// "C4100 can also be issued when code calls a destructor on a otherwise unreferenced parameter
@@ -979,7 +979,7 @@ namespace eastl
 	/// http://en.cppreference.com/w/cpp/memory/destroy_at
 	///
 	template <typename T>
-	inline void destroy_at(T* p)
+	inline void destroy_at(T* p) EA_NOEXCEPT
 	{
 		EA_UNUSED(p);
 		p->~T();
@@ -1032,7 +1032,7 @@ namespace eastl
 	///     void*  p2 = eastl::align(32, 78, p, space); p = (char*)p + 78; space -= 78;
 	///     void*  p3 = eastl::align(64,  9, p, space); p = (char*)p +  9; space -=  9;
 
-	inline void* align(size_t alignment, size_t size, void*& ptr, size_t& space)
+	inline void* align(size_t alignment, size_t size, void*& ptr, size_t& space) EA_NOEXCEPT
 	{
 		if(space >= size)
 		{
@@ -1067,7 +1067,7 @@ namespace eastl
 	///     void*  p3 = eastl::align_advance(64,  9, p, space, &p, &space);
 	///     void*  p4 = eastl::align_advance(16, 33, p, space);
 
-	inline void* align_advance(size_t alignment, size_t size, void* ptr, size_t space, void** ptrAdvanced = NULL, size_t* spaceReduced = NULL)
+	inline void* align_advance(size_t alignment, size_t size, void* ptr, size_t space, void** ptrAdvanced = NULL, size_t* spaceReduced = NULL) EA_NOEXCEPT
 	{
 		if(space >= size)
 		{

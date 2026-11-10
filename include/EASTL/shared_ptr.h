@@ -1541,7 +1541,7 @@ namespace eastl
 			return (!mpRefCount || (mpRefCount->use_count() == 0));
 		}
 
-		void reset()
+		void reset() EA_NOEXCEPT
 		{
 			if(mpRefCount)
 				mpRefCount->weak_release();
@@ -1550,7 +1550,7 @@ namespace eastl
 			mpRefCount = nullptr;
 		}
 
-		void swap(this_type& weakPtr)
+		void swap(this_type& weakPtr) EA_NOEXCEPT
 		{
 			T* const pValue = weakPtr.mpValue;
 			weakPtr.mpValue = mpValue;
@@ -1653,7 +1653,7 @@ namespace eastl
 
 
 	template <typename T>
-	void swap(weak_ptr<T>& weakPtr1, weak_ptr<T>& weakPtr2)
+	void swap(weak_ptr<T>& weakPtr1, weak_ptr<T>& weakPtr2) EA_NOEXCEPT
 	{
 		weakPtr1.swap(weakPtr2);
 	}

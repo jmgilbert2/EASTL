@@ -461,7 +461,7 @@ namespace eastl
 				}
 			}
 
-			function_detail(function_detail&& other)
+			function_detail(function_detail&& other) EA_NOEXCEPT
 			{
 				if (this != &other)
 				{
@@ -470,7 +470,7 @@ namespace eastl
 			}
 
 			template<int OTHER_SIZE_IN_BYTES>
-			function_detail(function_detail <OTHER_SIZE_IN_BYTES, R(Args...)> && other)
+			function_detail(function_detail <OTHER_SIZE_IN_BYTES, R(Args...)> && other) EA_NOEXCEPT
 			{
 				static_assert(OTHER_SIZE_IN_BYTES < SIZE_IN_BYTES, "Other sized function_detail must be smaller");
 				Move(eastl::move(other));
@@ -505,7 +505,7 @@ namespace eastl
 				return *this;
 			}
 
-			function_detail& operator=(function_detail&& other)
+			function_detail& operator=(function_detail&& other) EA_NOEXCEPT
 			{
 				if(this != &other)
 				{
@@ -527,7 +527,7 @@ namespace eastl
 			}
 
 			template <int OTHER_SIZE_IN_BYTES>
-			function_detail& operator=(function_detail<OTHER_SIZE_IN_BYTES, R(Args...)>&& other)
+			function_detail& operator=(function_detail<OTHER_SIZE_IN_BYTES, R(Args...)>&& other) EA_NOEXCEPT
 			{
 				static_assert(OTHER_SIZE_IN_BYTES < SIZE_IN_BYTES, "Other sized function_detail must be smaller");
 				Destroy();
@@ -679,7 +679,7 @@ namespace eastl
 				mInvokeFuncPtr = other.mInvokeFuncPtr;
 			}
 
-			void Move(function_detail&& other)
+			void Move(function_detail&& other) EA_NOEXCEPT
 			{
 				if (other.HaveManager())
 				{
@@ -694,7 +694,7 @@ namespace eastl
 			}
 
 			template <int OTHER_SIZE_IN_BYTES>
-			void Move(function_detail<OTHER_SIZE_IN_BYTES, R(Args...)>&& other)
+			void Move(function_detail<OTHER_SIZE_IN_BYTES, R(Args...)>&& other) EA_NOEXCEPT
 			{
 				static_assert(OTHER_SIZE_IN_BYTES < SIZE_IN_BYTES, "Other sized function_detail must be smaller");
 
