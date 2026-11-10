@@ -207,11 +207,54 @@ namespace
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+// slist(slist&&, const allocator_type&) constructs with the given allocator. With equal allocators it takes x's
+// nodes; with unequal allocators it moves x's elements one by one into nodes from the given allocator and
+// leaves x empty and valid.
+namespace
+{
+	int TestSListAllocatorExtendedMoveConstructor()
+	{
+		int nErrorCount = 0;
+
+		{   // Unequal allocators: the elements are moved (not copied) into nodes allocated by the given allocator.
+			UnequalAllocatorSList x({ 1, 2, 3 }, InstanceAllocator(1));
+			SListCopyCounted::sCopies = 0;
+
+			UnequalAllocatorSList y(eastl::move(x), InstanceAllocator(2));
+			EATEST_VERIFY(SListHolds(y, { 1, 2, 3 }));
+			EATEST_VERIFY(y.get_allocator().mInstanceId == 2);
+			EATEST_VERIFY(x.empty() && x.validate() && y.validate());
+			EATEST_VERIFY(x.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(SListCopyCounted::sCopies == 0);
+		}
+
+		{   // Equal allocators: x's nodes are taken, no element is moved or copied.
+			UnequalAllocatorSList x({ 1, 2, 3 }, InstanceAllocator(1));
+			const SListCopyCounted* const p = &x.front();
+			SListCopyCounted::sCopies = 0;
+
+			UnequalAllocatorSList y(eastl::move(x), InstanceAllocator(1));
+			EATEST_VERIFY(SListHolds(y, { 1, 2, 3 }));
+			EATEST_VERIFY(&y.front() == p);
+			EATEST_VERIFY(y.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(x.empty() && x.validate() && y.validate());
+			EATEST_VERIFY(SListCopyCounted::sCopies == 0);
+		}
+
+		EATEST_VERIFY_MSG(InstanceAllocator::reset_all(), "slist nodes should be deallocated by the allocator that allocated them.");
+
+		return nErrorCount;
+	}
+}
+
+
 int TestSList()
 {
 	int nErrorCount = 0;
 
 	nErrorCount += TestSListUnequalAllocators();
+	nErrorCount += TestSListAllocatorExtendedMoveConstructor();
 
 	// slist();
 	{

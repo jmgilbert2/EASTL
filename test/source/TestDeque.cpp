@@ -676,9 +676,79 @@ int TestDequeEmptyInsert()
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+// deque(deque&&, const allocator_type&) constructs with the given allocator. With equal allocators it takes x's
+// storage; with unequal allocators it moves x's elements one by one into storage from the given allocator and
+// leaves x empty and valid.
+// deque::operator=(deque&&) is allocation free: it clears and then swaps (and so propagates the allocator).
+namespace
+{
+	struct DequeMoveCounted
+	{
+		DequeMoveCounted(int i = 0) : mI(i) {}
+		DequeMoveCounted(const DequeMoveCounted& x) : mI(x.mI) { ++sCopies; }
+		DequeMoveCounted(DequeMoveCounted&& x) noexcept : mI(x.mI) {}
+		DequeMoveCounted& operator=(const DequeMoveCounted& x) { mI = x.mI; ++sCopies; return *this; }
+		DequeMoveCounted& operator=(DequeMoveCounted&& x) noexcept { mI = x.mI; return *this; }
+
+		int        mI;
+		static int sCopies;
+	};
+	int DequeMoveCounted::sCopies = 0;
+
+	int TestDequeAllocatorExtendedMoveConstructor()
+	{
+		int nErrorCount = 0;
+		typedef eastl::deque<DequeMoveCounted, InstanceAllocator> D;
+
+		{   // Unequal allocators: the elements are moved (not copied) into storage allocated by the given allocator.
+			D x({ 1, 2, 3 }, InstanceAllocator(1));
+			DequeMoveCounted::sCopies = 0;
+
+			D y(eastl::move(x), InstanceAllocator(2));
+			EATEST_VERIFY(y.size() == 3 && y[0].mI == 1 && y[1].mI == 2 && y[2].mI == 3);
+			EATEST_VERIFY(y.get_allocator().mInstanceId == 2);
+			EATEST_VERIFY(x.empty() && x.validate() && y.validate());
+			EATEST_VERIFY(x.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(DequeMoveCounted::sCopies == 0);
+		}
+
+		{   // Equal allocators: x's storage is taken, no element is moved or copied.
+			D x({ 1, 2, 3 }, InstanceAllocator(1));
+			const DequeMoveCounted* const p = &x.front();
+			DequeMoveCounted::sCopies = 0;
+
+			D y(eastl::move(x), InstanceAllocator(1));
+			EATEST_VERIFY(y.size() == 3 && y[0].mI == 1 && y[2].mI == 3);
+			EATEST_VERIFY(&y.front() == p);
+			EATEST_VERIFY(y.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(x.empty() && x.validate() && y.validate());
+			EATEST_VERIFY(DequeMoveCounted::sCopies == 0);
+		}
+
+		{   // Move assignment with unequal allocators: nothing is copied and the allocator is propagated.
+			D a({ 1, 2, 3 }, InstanceAllocator(1));
+			D b({ 4, 5 }, InstanceAllocator(2));
+			DequeMoveCounted::sCopies = 0;
+
+			a = eastl::move(b);
+			EATEST_VERIFY(a.size() == 2 && a[0].mI == 4 && a[1].mI == 5);
+			EATEST_VERIFY(a.get_allocator().mInstanceId == 2);
+			EATEST_VERIFY(a.validate() && b.validate() && b.empty());
+			EATEST_VERIFY(DequeMoveCounted::sCopies == 0);
+		}
+
+		EATEST_VERIFY_MSG(InstanceAllocator::reset_all(), "deque storage should be deallocated by the allocator that allocated it.");
+
+		return nErrorCount;
+	}
+}
+
+
 int TestDeque()
 {
 	int nErrorCount = 0;
+	nErrorCount += TestDequeAllocatorExtendedMoveConstructor();
 	nErrorCount += TestDequeEmptyInsert();
 
 	{   // Test construction

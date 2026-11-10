@@ -752,10 +752,18 @@ namespace eastl
 		: base_type(allocator)
 	{
 		if(internalAllocator() == x.internalAllocator()) // If we can borrow from x...
-			DoSwap(x);
-		else // else copy x's elements and leave x empty.
 		{
-			DoInsertAfter(&internalNode(), const_iterator(x.internalNode().mpNext), const_iterator(NULL), false_type());
+			// Take x's nodes and keep the given allocator.
+			eastl::swap(internalNode().mpNext, x.internalNode().mpNext);
+			#if EASTL_SLIST_SIZE_CACHE
+				eastl::swap(mSize, x.mSize);
+			#endif
+		}
+		else // else move x's elements one by one into nodes from the given allocator and leave x empty.
+		{
+			iterator itLast(before_begin());
+			for(iterator it(x.begin()), itEnd(x.end()); it != itEnd; ++it)
+				itLast = insert_after(itLast, eastl::move(*it));
 			x.clear();
 		}
 	}

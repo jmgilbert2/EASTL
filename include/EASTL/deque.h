@@ -1274,7 +1274,20 @@ namespace eastl
 	inline deque<T, Allocator, kDequeSubarraySize>::deque(this_type&& x, const allocator_type& allocator)
 	  : base_type((size_type)0, allocator)
 	{
-		swap(x); // member swap handles the case that x has a different allocator than our allocator by doing a copy.
+		if(mAllocator == x.mAllocator) // If we can borrow from x...
+		{
+			// Take x's storage and keep the given allocator.
+			eastl::swap(mpPtrArray,     x.mpPtrArray);
+			eastl::swap(mnPtrArraySize, x.mnPtrArraySize);
+			eastl::swap(mItBegin,       x.mItBegin);
+			eastl::swap(mItEnd,         x.mItEnd);
+		}
+		else // else move x's elements one by one into subarrays from the given allocator and leave x empty.
+		{
+			for(iterator it(x.begin()), itEnd(x.end()); it != itEnd; ++it)
+				push_back(eastl::move(*it));
+			x.clear();
+		}
 	}
 
 
@@ -1345,9 +1358,8 @@ namespace eastl
 	{
 		if(this != &x)
 		{
-			this_type temp(mAllocator);
-			swap(temp);
-			swap(x);         // member swap handles the case that x has a different allocator than our allocator by doing a copy.
+			clear();         // clear doesn't free the one subarray that an empty deque keeps, so nothing is allocated here.
+			swap(x);         // member swap exchanges the allocators along with the storage.
 		}
 		return *this; 
 	}

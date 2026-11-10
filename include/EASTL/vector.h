@@ -244,7 +244,7 @@ namespace eastl
 		vector(const this_type& x);
 		vector(const this_type& x, const allocator_type& allocator);
 		vector(this_type&& x) EA_NOEXCEPT;
-		vector(this_type&& x, const allocator_type& allocator) EA_NOEXCEPT;
+		vector(this_type&& x, const allocator_type& allocator);
 		vector(std::initializer_list<value_type> ilist, const allocator_type& allocator = EASTL_VECTOR_DEFAULT_ALLOCATOR);
 
 		// note: this has pre-C++11 semantics:
@@ -609,15 +609,23 @@ namespace eastl
 
 
 	template <typename T, typename Allocator>
-	inline vector<T, Allocator>::vector(this_type&& x, const allocator_type& allocator) EA_NOEXCEPT
+	inline vector<T, Allocator>::vector(this_type&& x, const allocator_type& allocator)
 		: base_type(allocator)
 	{
 		if (internalAllocator() == x.internalAllocator()) // If allocators are equivalent...
-			DoSwap(x);
-		else 
 		{
-			this_type temp(eastl::move(*this)); // move construct so we don't require the use of copy-ctors that prevent the use of move-only types.
-			temp.swap(x);
+			// Take x's storage and keep the given allocator.
+			eastl::swap(mpBegin, x.mpBegin);
+			eastl::swap(mpEnd, x.mpEnd);
+			eastl::swap(internalCapacityPtr(), x.internalCapacityPtr());
+		}
+		else // else move x's elements one by one into storage from the given allocator and leave x empty.
+		{
+			const size_type n = x.size();
+			mpBegin = DoAllocate(n);
+			internalCapacityPtr() = mpBegin + n;
+			mpEnd = eastl::uninitialized_move(x.mpBegin, x.mpEnd, mpBegin);
+			x.clear();
 		}
 	}
 

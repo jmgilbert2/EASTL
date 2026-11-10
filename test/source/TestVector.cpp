@@ -82,7 +82,6 @@ namespace
 		static_assert(noexcept(eastl::declval<V&>() = eastl::declval<V&&>()), "vector::operator=(vector&&) must be noexcept");
 		static_assert(noexcept(eastl::declval<V&>().swap(eastl::declval<V&>())), "vector::swap must be noexcept");
 		static_assert(noexcept(eastl::swap(eastl::declval<V&>(), eastl::declval<V&>())), "swap(vector&, vector&) must be noexcept");
-		static_assert(noexcept(V(eastl::declval<V&&>(), eastl::declval<const A&>())), "vector(vector&&, const allocator_type&) must be noexcept");
 
 		static_assert(noexcept(eastl::declval<V&>()[0]), "vector::operator[] must be noexcept");
 		static_assert(noexcept(eastl::declval<const V&>()[0]), "vector::operator[] const must be noexcept");
@@ -216,9 +215,73 @@ struct TestMoveAssignToSelf
 #endif
 
 
+///////////////////////////////////////////////////////////////////////////////
+// vector(vector&&, const allocator_type&) constructs with the given allocator. With equal allocators it takes x's
+// storage; with unequal allocators it moves x's elements one by one into storage from the given allocator and
+// leaves x empty and valid.
+namespace
+{
+	struct VectorMoveCounted
+	{
+		VectorMoveCounted(int i = 0) : mI(i) {}
+		VectorMoveCounted(const VectorMoveCounted& x) : mI(x.mI) { ++sCopies; }
+		VectorMoveCounted(VectorMoveCounted&& x) noexcept : mI(x.mI) {}
+		VectorMoveCounted& operator=(const VectorMoveCounted& x) { mI = x.mI; ++sCopies; return *this; }
+		VectorMoveCounted& operator=(VectorMoveCounted&& x) noexcept { mI = x.mI; return *this; }
+
+		int        mI;
+		static int sCopies;
+	};
+	int VectorMoveCounted::sCopies = 0;
+
+	int TestVectorAllocatorExtendedMoveConstructor()
+	{
+		int nErrorCount = 0;
+		typedef eastl::vector<VectorMoveCounted, InstanceAllocator> V;
+
+		{   // Unequal allocators: the elements are moved (not copied) into storage allocated by the given allocator.
+			V x({ 1, 2, 3 }, InstanceAllocator(1));
+			VectorMoveCounted::sCopies = 0;
+
+			V y(eastl::move(x), InstanceAllocator(2));
+			EATEST_VERIFY(y.size() == 3 && y[0].mI == 1 && y[1].mI == 2 && y[2].mI == 3);
+			EATEST_VERIFY(y.get_allocator().mInstanceId == 2);
+			EATEST_VERIFY(x.empty() && x.validate() && y.validate());
+			EATEST_VERIFY(x.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(VectorMoveCounted::sCopies == 0);
+		}
+
+		{   // Equal allocators: x's storage is taken, no element is moved or copied.
+			V x({ 1, 2, 3 }, InstanceAllocator(1));
+			const VectorMoveCounted* const p = x.data();
+			VectorMoveCounted::sCopies = 0;
+
+			V y(eastl::move(x), InstanceAllocator(1));
+			EATEST_VERIFY(y.size() == 3 && y[0].mI == 1 && y[2].mI == 3);
+			EATEST_VERIFY(y.data() == p);
+			EATEST_VERIFY(y.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(x.empty() && x.validate() && y.validate());
+			EATEST_VERIFY(VectorMoveCounted::sCopies == 0);
+		}
+
+		{   // Unequal allocators, empty x.
+			V x(InstanceAllocator(1));
+			V y(eastl::move(x), InstanceAllocator(2));
+			EATEST_VERIFY(y.empty() && y.get_allocator().mInstanceId == 2 && y.validate());
+		}
+
+		EATEST_VERIFY_MSG(InstanceAllocator::reset_all(), "vector storage should be deallocated by the allocator that allocated it.");
+
+		return nErrorCount;
+	}
+}
+
+
 int TestVector()
 {
 	int nErrorCount = 0;
+
+	nErrorCount += TestVectorAllocatorExtendedMoveConstructor();
 	eastl_size_t i;
 
 	TestObject::Reset();

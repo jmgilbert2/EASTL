@@ -197,11 +197,60 @@ namespace
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+// basic_string(basic_string&&, const allocator_type&) constructs with the given allocator. With equal allocators
+// it takes x's buffer; with unequal allocators it moves x's characters into a buffer from the given allocator
+// and leaves x empty and valid. Both the heap and the SSO (small string) cases are tested.
+namespace
+{
+	int TestStringAllocatorExtendedMoveConstructorCase(const char* pX, bool bHeap)
+	{
+		int nErrorCount = 0;
+
+		{   // Unequal allocators.
+			UnequalAllocatorString x(pX, InstanceAllocator(1));
+
+			UnequalAllocatorString y(eastl::move(x), InstanceAllocator(2));
+			EATEST_VERIFY(y == pX);
+			EATEST_VERIFY(y.get_allocator().mInstanceId == 2);
+			EATEST_VERIFY(x.empty() && x.validate() && y.validate());
+			EATEST_VERIFY(x.get_allocator().mInstanceId == 1);
+		}
+
+		{   // Equal allocators.
+			UnequalAllocatorString x(pX, InstanceAllocator(1));
+			const char* const p = x.data();
+
+			UnequalAllocatorString y(eastl::move(x), InstanceAllocator(1));
+			EATEST_VERIFY(y == pX);
+			EATEST_VERIFY(!bHeap || y.data() == p); // A heap buffer is taken, not copied.
+			EATEST_VERIFY(y.get_allocator().mInstanceId == 1);
+			EATEST_VERIFY(x.empty() && x.validate() && y.validate());
+		}
+
+		EATEST_VERIFY_MSG(InstanceAllocator::reset_all(), "string heap blocks should be deallocated by the allocator that allocated them.");
+
+		return nErrorCount;
+	}
+
+	int TestStringAllocatorExtendedMoveConstructor()
+	{
+		int nErrorCount = 0;
+
+		nErrorCount += TestStringAllocatorExtendedMoveConstructorCase("abc", false);
+		nErrorCount += TestStringAllocatorExtendedMoveConstructorCase("0123456789012345678901234567890123456789012345678901234567890123456789", true); // Longer than any small string buffer.
+
+		return nErrorCount;
+	}
+}
+
+
 int TestString()
 {
 	int nErrorCount = 0;
 
 	nErrorCount += TestStringUnequalAllocators();
+	nErrorCount += TestStringAllocatorExtendedMoveConstructor();
 
 	nErrorCount += TestBasicString<eastl::basic_string<char, StompDetectAllocator>>();
 	nErrorCount += TestBasicString<eastl::string>();

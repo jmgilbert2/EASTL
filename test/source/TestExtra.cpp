@@ -357,7 +357,6 @@ namespace
 	static_assert(noexcept(eastl::stack<int, AdaptorNothrowVector>()), "stack() must be noexcept when the container's default constructor is");
 	static_assert(noexcept(eastl::stack<int, AdaptorNothrowVector>(eastl::declval<AdaptorNothrowVector&&>())), "stack(container&&) must be noexcept when the container's move constructor is");
 	static_assert(noexcept(eastl::stack<int, AdaptorNothrowVector>(eastl::declval<const AdaptorNothrowAllocator&>())), "stack(const Allocator&) must be noexcept when the container's allocator constructor is");
-	static_assert(noexcept(eastl::stack<int, AdaptorNothrowVector>(eastl::declval<eastl::stack<int, AdaptorNothrowVector>&&>(), eastl::declval<const AdaptorNothrowAllocator&>())), "stack(stack&&, const Allocator&) must be noexcept when the container's is");
 	static_assert(noexcept(eastl::declval<eastl::stack<int, AdaptorNothrowVector>&>().swap(eastl::declval<eastl::stack<int, AdaptorNothrowVector>&>())), "stack::swap must be noexcept when the container's swap is");
 
 	template <typename P, bool kNothrowCompare>

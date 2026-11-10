@@ -981,7 +981,7 @@ namespace eastl
 		else if(x.internalLayout().BeginPtr())
 		{
 			RangeInitialize(x.internalLayout().BeginPtr(), x.internalLayout().EndPtr());
-			// Let x destruct its own items.
+			x.clear(); // The characters were moved, leave x empty.
 		}
 	}
 
