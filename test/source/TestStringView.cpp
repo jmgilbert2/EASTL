@@ -8,6 +8,51 @@
 #include <EASTL/string.h>
 #include <EASTL/string_view.h>
 #include <EASTL/vector.h>
+#include <EASTL/array.h>
+
+// The exception specifications of basic_string_view follow the standard (MSVC's STL strengthens the overloads that take
+// a C string, operator[], front, back, remove_prefix and remove_suffix).
+namespace NoexceptStringViewTest
+{
+	#define EASTL_TEST_NOEXCEPT_STRING_VIEW(C) \
+		static_assert(noexcept(eastl::basic_string_view<C>()), "basic_string_view<" #C ">() is noexcept"); \
+		static_assert(noexcept(eastl::basic_string_view<C>(static_cast<const C*>(nullptr))), "basic_string_view<" #C ">(const C*) is noexcept"); \
+		static_assert(noexcept(eastl::basic_string_view<C>(static_cast<const C*>(nullptr), 1)), "basic_string_view<" #C ">(const C*, size_type) is noexcept"); \
+		static_assert(noexcept(eastl::basic_string_view<C>(static_cast<const C*>(nullptr), static_cast<const C*>(nullptr))), "basic_string_view<" #C ">(It, End) is noexcept"); \
+		static_assert(noexcept(eastl::basic_string_view<C>(eastl::declval<eastl::array<C, 3>&>())), "basic_string_view<" #C ">(range) is noexcept when data and size are"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().data()), "basic_string_view<" #C ">::data is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().front()), "basic_string_view<" #C ">::front is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().back()), "basic_string_view<" #C ">::back is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>()[0]), "basic_string_view<" #C ">::operator[] is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::basic_string_view<C>&>().remove_prefix(1)), "basic_string_view<" #C ">::remove_prefix is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::basic_string_view<C>&>().remove_suffix(1)), "basic_string_view<" #C ">::remove_suffix is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::basic_string_view<C>&>().swap(eastl::declval<eastl::basic_string_view<C>&>())), "basic_string_view<" #C ">::swap is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().compare(static_cast<const C*>(nullptr))), "basic_string_view<" #C ">::compare(const C*) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().find(static_cast<const C*>(nullptr), 0, 1)), "basic_string_view<" #C ">::find(const C*, pos, count) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().find(static_cast<const C*>(nullptr), 0)), "basic_string_view<" #C ">::find(const C*, pos) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().rfind(static_cast<const C*>(nullptr), 0, 1)), "basic_string_view<" #C ">::rfind(const C*, pos, count) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().rfind(static_cast<const C*>(nullptr), 0)), "basic_string_view<" #C ">::rfind(const C*, pos) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().find_first_of(static_cast<const C*>(nullptr), 0, 1)), "basic_string_view<" #C ">::find_first_of(const C*, pos, count) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().find_first_of(static_cast<const C*>(nullptr), 0)), "basic_string_view<" #C ">::find_first_of(const C*, pos) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().find_last_of(static_cast<const C*>(nullptr), 0, 1)), "basic_string_view<" #C ">::find_last_of(const C*, pos, count) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().find_last_of(static_cast<const C*>(nullptr), 0)), "basic_string_view<" #C ">::find_last_of(const C*, pos) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().find_first_not_of(static_cast<const C*>(nullptr), 0, 1)), "basic_string_view<" #C ">::find_first_not_of(const C*, pos, count) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().find_first_not_of(static_cast<const C*>(nullptr), 0)), "basic_string_view<" #C ">::find_first_not_of(const C*, pos) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().find_last_not_of(static_cast<const C*>(nullptr), 0, 1)), "basic_string_view<" #C ">::find_last_not_of(const C*, pos, count) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().find_last_not_of(static_cast<const C*>(nullptr), 0)), "basic_string_view<" #C ">::find_last_not_of(const C*, pos) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().starts_with(static_cast<const C*>(nullptr))), "basic_string_view<" #C ">::starts_with(const C*) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>().ends_with(static_cast<const C*>(nullptr))), "basic_string_view<" #C ">::ends_with(const C*) is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::basic_string_view<C>&>() == static_cast<const C*>(nullptr)), "basic_string_view<" #C "> == const C* is noexcept"); \
+		static_assert(noexcept(eastl::hash<eastl::basic_string_view<C> >()(eastl::declval<const eastl::basic_string_view<C>&>())), "hash<basic_string_view<" #C ">>::operator() is noexcept");
+	EASTL_TEST_NOEXCEPT_STRING_VIEW(char)
+	EASTL_TEST_NOEXCEPT_STRING_VIEW(wchar_t)
+	EASTL_TEST_NOEXCEPT_STRING_VIEW(char16_t)
+	EASTL_TEST_NOEXCEPT_STRING_VIEW(char32_t)
+	#if EA_CHAR8_UNIQUE
+		EASTL_TEST_NOEXCEPT_STRING_VIEW(char8_t)
+	#endif
+	#undef EASTL_TEST_NOEXCEPT_STRING_VIEW
+}
 
 // Verify char8_t support is present if the test build requested it.
 #if defined(EASTL_EXPECT_CHAR8T_SUPPORT) && !EA_CHAR8_UNIQUE

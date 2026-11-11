@@ -105,7 +105,7 @@ namespace eastl
 		}
 
 		// Returns the high half of the 128-bit product a * b and stores its low half in low.
-		inline uint64_t urng_mul128(uint64_t a, uint64_t b, uint64_t& low)
+		inline uint64_t urng_mul128(uint64_t a, uint64_t b, uint64_t& low) EA_NOEXCEPT
 		{
 		#if EASTL_GCC_STYLE_INT128_SUPPORTED
 			const __uint128_t product = (__uint128_t)a * b;
@@ -238,23 +238,23 @@ namespace eastl
 		// the range returned by operator(). It may mean something else for other distribution types.
 		struct param_type
 		{
-			explicit param_type(IntType a = 0, IntType b = eastl::numeric_limits<IntType>::max());
+			explicit param_type(IntType a = 0, IntType b = eastl::numeric_limits<IntType>::max()) EA_NOEXCEPT;
 
-			result_type a() const;
-			result_type b() const;
+			result_type a() const EA_NOEXCEPT;
+			result_type b() const EA_NOEXCEPT;
 
-			bool operator==(const param_type& x) const { return (x.mA == mA) && (x.mB == mB); }
-			bool operator!=(const param_type& x) const { return (x.mA != mA) || (x.mB != mB); }
+			bool operator==(const param_type& x) const EA_NOEXCEPT { return (x.mA == mA) && (x.mB == mB); }
+			bool operator!=(const param_type& x) const EA_NOEXCEPT { return (x.mA != mA) || (x.mB != mB); }
 
 		protected:
 			IntType mA;
 			IntType mB;
 		};
 
-		uniform_int_distribution(IntType a = 0, IntType b = eastl::numeric_limits<IntType>::max());
-		uniform_int_distribution(const param_type& params);
+		uniform_int_distribution(IntType a = 0, IntType b = eastl::numeric_limits<IntType>::max()) EA_NOEXCEPT;
+		uniform_int_distribution(const param_type& params) EA_NOEXCEPT;
 
-		void reset();
+		void reset() EA_NOEXCEPT;
 
 		template<class Generator>
 		result_type operator()(Generator& g);
@@ -262,14 +262,14 @@ namespace eastl
 		template<class Generator>
 		result_type operator()(Generator& g, const param_type& params);
 
-		result_type a() const;
-		result_type b() const;
+		result_type a() const EA_NOEXCEPT;
+		result_type b() const EA_NOEXCEPT;
 
-		param_type param() const;
-		void param(const param_type& params);
+		param_type param() const EA_NOEXCEPT;
+		void param(const param_type& params) EA_NOEXCEPT;
 
-		result_type min() const;
-		result_type max() const;
+		result_type min() const EA_NOEXCEPT;
+		result_type max() const EA_NOEXCEPT;
 
 		protected:
 			param_type mParam;
@@ -282,7 +282,7 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 
 	template<class IntType>
-	inline uniform_int_distribution<IntType>::param_type::param_type(IntType aValue, IntType bValue)
+	inline uniform_int_distribution<IntType>::param_type::param_type(IntType aValue, IntType bValue) EA_NOEXCEPT
 	  : mA(aValue), mB(bValue)
 	{
 		EASTL_ASSERT(aValue <= bValue);
@@ -290,14 +290,14 @@ namespace eastl
 
 	template<class IntType>
 	inline typename uniform_int_distribution<IntType>::result_type 
-	uniform_int_distribution<IntType>::param_type::a() const
+	uniform_int_distribution<IntType>::param_type::a() const EA_NOEXCEPT
 	{
 		return mA;
 	}
 
 	template<class IntType>
 	inline typename uniform_int_distribution<IntType>::result_type 
-	uniform_int_distribution<IntType>::param_type::b() const
+	uniform_int_distribution<IntType>::param_type::b() const EA_NOEXCEPT
 	{
 		return mB;
 	}
@@ -305,21 +305,21 @@ namespace eastl
 
 
 	template<class IntType>
-	inline uniform_int_distribution<IntType>::uniform_int_distribution(IntType aValue, IntType bValue) 
+	inline uniform_int_distribution<IntType>::uniform_int_distribution(IntType aValue, IntType bValue) EA_NOEXCEPT 
 	  : mParam(aValue, bValue)
 	{
 		// Nothing more to do.
 	}
 
 	template<class IntType>
-	inline uniform_int_distribution<IntType>::uniform_int_distribution(const param_type& params) 
+	inline uniform_int_distribution<IntType>::uniform_int_distribution(const param_type& params) EA_NOEXCEPT 
 	  : mParam(params)
 	{
 		// Nothing more to do.
 	}
 
 	template<class IntType>
-	void uniform_int_distribution<IntType>::reset()
+	void uniform_int_distribution<IntType>::reset() EA_NOEXCEPT
 	{
 		// Nothing to do.
 	}
@@ -352,14 +352,14 @@ namespace eastl
 
 	template<class IntType>
 	inline typename uniform_int_distribution<IntType>::result_type
-	uniform_int_distribution<IntType>::a() const
+	uniform_int_distribution<IntType>::a() const EA_NOEXCEPT
 	{
 		return mParam.a();
 	}
 
 	template<class IntType>
 	inline typename uniform_int_distribution<IntType>::result_type
-	uniform_int_distribution<IntType>::b() const
+	uniform_int_distribution<IntType>::b() const EA_NOEXCEPT
 	{
 		return mParam.b();
 	}
@@ -367,28 +367,28 @@ namespace eastl
 
 	template<class IntType>
 	inline typename uniform_int_distribution<IntType>::param_type
-	uniform_int_distribution<IntType>::param() const
+	uniform_int_distribution<IntType>::param() const EA_NOEXCEPT
 	{
 		return mParam;
 	}
 
 	template<class IntType>
 	inline void
-	uniform_int_distribution<IntType>::param(const param_type& params)
+	uniform_int_distribution<IntType>::param(const param_type& params) EA_NOEXCEPT
 	{
 		mParam = params;
 	}
 
 	template<class IntType>
 	inline typename uniform_int_distribution<IntType>::result_type
-	uniform_int_distribution<IntType>::min() const
+	uniform_int_distribution<IntType>::min() const EA_NOEXCEPT
 	{
 		return mParam.a();
 	}
 
 	template<class IntType>
 	inline typename uniform_int_distribution<IntType>::result_type
-	uniform_int_distribution<IntType>::max() const
+	uniform_int_distribution<IntType>::max() const EA_NOEXCEPT
 	{
 		return mParam.b();
 	}
@@ -397,14 +397,14 @@ namespace eastl
 
 	template<class ResultType>
 	inline bool operator==(const uniform_int_distribution<ResultType>& lhs,
-						   const uniform_int_distribution<ResultType>& rhs)
+						   const uniform_int_distribution<ResultType>& rhs) EA_NOEXCEPT
 	{
 		return (lhs.param() == rhs.param());
 	}
 
 	template<class ResultType>
 	inline bool operator!=(const uniform_int_distribution<ResultType>& lhs,
-						   const uniform_int_distribution<ResultType>& rhs)
+						   const uniform_int_distribution<ResultType>& rhs) EA_NOEXCEPT
 	{
 		return (lhs.param() != rhs.param());
 	}

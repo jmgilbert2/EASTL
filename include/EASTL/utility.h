@@ -238,7 +238,7 @@ namespace eastl
 	/// http://en.cppreference.com/w/cpp/utility/exchange
 	///
 	template <typename T, typename U = T>
-	inline T exchange(T& obj, U&& new_value)
+	inline T exchange(T& obj, U&& new_value) EA_NOEXCEPT_IF((eastl::is_nothrow_move_constructible_v<T> && eastl::is_nothrow_assignable_v<T&, U>))
 	{
 		T old_value = eastl::move(obj);
 		obj = eastl::forward<U>(new_value);
@@ -450,7 +450,7 @@ namespace eastl
 		          eastl::enable_if_t<eastl::is_default_constructible_v<TT1> && eastl::is_default_constructible_v<TT2> &&
 		                             (Internal::is_implicitly_default_constructible<TT1>::value &&
 		                              Internal::is_implicitly_default_constructible<TT2>::value), int> = 0>
-		EA_CONSTEXPR pair()
+		EA_CONSTEXPR pair() EA_NOEXCEPT_IF((eastl::is_nothrow_default_constructible_v<TT1> && eastl::is_nothrow_default_constructible_v<TT2>))
 		    : first(), second()
 		{
 		}
@@ -460,7 +460,7 @@ namespace eastl
 		          eastl::enable_if_t<eastl::is_default_constructible_v<TT1> && eastl::is_default_constructible_v<TT2> &&
 		                             !(Internal::is_implicitly_default_constructible<TT1>::value &&
 		                               Internal::is_implicitly_default_constructible<TT2>::value), int> = 0>
-		explicit EA_CONSTEXPR pair()
+		explicit EA_CONSTEXPR pair() EA_NOEXCEPT_IF((eastl::is_nothrow_default_constructible_v<TT1> && eastl::is_nothrow_default_constructible_v<TT2>))
 		    : first(), second()
 		{
 		}
@@ -473,7 +473,7 @@ namespace eastl
 		          eastl::enable_if_t<!Internal::is_pair<eastl::remove_cvref_t<U>>::value &&
 		                             eastl::is_constructible_v<T1, U> && eastl::is_default_constructible_v<TT2> &&
 		                             !Internal::reference_constructs_from_temporary_v<T1, U&&>, int> = 0>
-		EA_CPP14_CONSTEXPR pair(U&& x)
+		EA_CPP14_CONSTEXPR pair(U&& x) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T1, U> && eastl::is_nothrow_default_constructible_v<TT2>))
 		    : first(eastl::forward<U>(x)), second()
 		{
 		}
@@ -487,7 +487,7 @@ namespace eastl
 		          typename TT2 = T2,
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_default_constructible_v<TT2> &&
 		                             !Internal::reference_constructs_from_temporary_v<T1, U&&>, int> = 0>
-		EA_CPP14_CONSTEXPR pair(pair_first_construct_t, U&& x)
+		EA_CPP14_CONSTEXPR pair(pair_first_construct_t, U&& x) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T1, U> && eastl::is_nothrow_default_constructible_v<TT2>))
 		    : first(eastl::forward<U>(x)), second()
 		{
 		}
@@ -498,7 +498,7 @@ namespace eastl
 		          typename TT2 = T2,
 		          eastl::enable_if_t<eastl::is_copy_constructible_v<TT1> && eastl::is_copy_constructible_v<TT2> &&
 		                             (eastl::is_convertible_v<const TT1&, TT1> && eastl::is_convertible_v<const TT2&, TT2>), int> = 0>
-		EA_CPP14_CONSTEXPR pair(const T1& x, const T2& y)
+		EA_CPP14_CONSTEXPR pair(const T1& x, const T2& y) EA_NOEXCEPT_IF((eastl::is_nothrow_copy_constructible_v<TT1> && eastl::is_nothrow_copy_constructible_v<TT2>))
 		    : first(x), second(y)
 		{
 		}
@@ -507,7 +507,7 @@ namespace eastl
 		          typename TT2 = T2,
 		          eastl::enable_if_t<eastl::is_copy_constructible_v<TT1> && eastl::is_copy_constructible_v<TT2> &&
 		                             !(eastl::is_convertible_v<const TT1&, TT1> && eastl::is_convertible_v<const TT2&, TT2>), int> = 0>
-		explicit EA_CPP14_CONSTEXPR pair(const T1& x, const T2& y)
+		explicit EA_CPP14_CONSTEXPR pair(const T1& x, const T2& y) EA_NOEXCEPT_IF((eastl::is_nothrow_copy_constructible_v<TT1> && eastl::is_nothrow_copy_constructible_v<TT2>))
 		    : first(x), second(y)
 		{
 		}
@@ -521,7 +521,7 @@ namespace eastl
 		// The defaulted copy assignment is deleted when T1 or T2 is a reference, but std::pair assigns through the
 		// reference. Being more constrained, this one is then used instead, and the defaulted one stays trivial for
 		// other types (P0848). C++17 can't do this without making every pair's copy assignment non-trivial.
-		EA_CPP14_CONSTEXPR pair& operator=(const pair& p)
+		EA_CPP14_CONSTEXPR pair& operator=(const pair& p) EA_NOEXCEPT_IF((eastl::is_nothrow_copy_assignable_v<T1> && eastl::is_nothrow_copy_assignable_v<T2>))
 			requires (eastl::is_reference_v<T1> || eastl::is_reference_v<T2>) &&
 			         eastl::is_copy_assignable_v<T1> && eastl::is_copy_assignable_v<T2>
 		{
@@ -539,7 +539,7 @@ namespace eastl
 		                             !Internal::reference_constructs_from_temporary_v<T1, const U&> &&
 		                             !Internal::reference_constructs_from_temporary_v<T2, const V&> &&
 		                             (eastl::is_convertible_v<const U&, T1> && eastl::is_convertible_v<const V&, T2>), int> = 0>
-		EA_CPP14_CONSTEXPR pair(const pair<U, V>& p)
+		EA_CPP14_CONSTEXPR pair(const pair<U, V>& p) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T1, const U&> && eastl::is_nothrow_constructible_v<T2, const V&>))
 		    : first(p.first), second(p.second)
 		{
 		}
@@ -550,7 +550,7 @@ namespace eastl
 		                             !Internal::reference_constructs_from_temporary_v<T1, const U&> &&
 		                             !Internal::reference_constructs_from_temporary_v<T2, const V&> &&
 		                             !(eastl::is_convertible_v<const U&, T1> && eastl::is_convertible_v<const V&, T2>), int> = 0>
-		explicit EA_CPP14_CONSTEXPR pair(const pair<U, V>& p)
+		explicit EA_CPP14_CONSTEXPR pair(const pair<U, V>& p) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T1, const U&> && eastl::is_nothrow_constructible_v<T2, const V&>))
 		    : first(p.first), second(p.second)
 		{
 		}
@@ -561,7 +561,7 @@ namespace eastl
 		                             !Internal::reference_constructs_from_temporary_v<T1, U&&> &&
 		                             !Internal::reference_constructs_from_temporary_v<T2, V&&> &&
 		                             (eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
-		EA_CPP14_CONSTEXPR pair(U&& u, V&& v)
+		EA_CPP14_CONSTEXPR pair(U&& u, V&& v) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T1, U> && eastl::is_nothrow_constructible_v<T2, V>))
 		    : first(eastl::forward<U>(u)), second(eastl::forward<V>(v))
 		{
 		}
@@ -572,7 +572,7 @@ namespace eastl
 		                             !Internal::reference_constructs_from_temporary_v<T1, U&&> &&
 		                             !Internal::reference_constructs_from_temporary_v<T2, V&&> &&
 		                             !(eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
-		explicit EA_CPP14_CONSTEXPR pair(U&& u, V&& v)
+		explicit EA_CPP14_CONSTEXPR pair(U&& u, V&& v) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T1, U> && eastl::is_nothrow_constructible_v<T2, V>))
 		    : first(eastl::forward<U>(u)), second(eastl::forward<V>(v))
 		{
 		}
@@ -590,7 +590,7 @@ namespace eastl
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_copy_constructible_v<T2> &&
 		                             !Internal::reference_constructs_from_temporary_v<T1, U&&> &&
 		                             (eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<const T2&, T2>), int> = 0>
-		EA_CPP14_CONSTEXPR pair(U&& x, const T2& y)
+		EA_CPP14_CONSTEXPR pair(U&& x, const T2& y) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T1, U> && eastl::is_nothrow_copy_constructible_v<T2>))
 			: first(eastl::forward<U>(x)), second(y)
 		{
 		}
@@ -599,7 +599,7 @@ namespace eastl
 		          eastl::enable_if_t<eastl::is_constructible_v<T1, U> && eastl::is_copy_constructible_v<T2> &&
 		                             !Internal::reference_constructs_from_temporary_v<T1, U&&> &&
 		                             !(eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<const T2&, T2>), int> = 0>
-		explicit EA_CPP14_CONSTEXPR pair(U&& x, const T2& y)
+		explicit EA_CPP14_CONSTEXPR pair(U&& x, const T2& y) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T1, U> && eastl::is_nothrow_copy_constructible_v<T2>))
 			: first(eastl::forward<U>(x)), second(y)
 		{
 		}
@@ -608,7 +608,7 @@ namespace eastl
 		          eastl::enable_if_t<eastl::is_copy_constructible_v<T1> && eastl::is_constructible_v<T2, V> &&
 		                             !Internal::reference_constructs_from_temporary_v<T2, V&&> &&
 		                             (eastl::is_convertible_v<const T1&, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
-		EA_CPP14_CONSTEXPR pair(const T1& x, V&& y)
+		EA_CPP14_CONSTEXPR pair(const T1& x, V&& y) EA_NOEXCEPT_IF((eastl::is_nothrow_copy_constructible_v<T1> && eastl::is_nothrow_constructible_v<T2, V>))
 			: first(x), second(eastl::forward<V>(y))
 		{
 		}
@@ -617,7 +617,7 @@ namespace eastl
 		          eastl::enable_if_t<eastl::is_copy_constructible_v<T1> && eastl::is_constructible_v<T2, V> &&
 		                             !Internal::reference_constructs_from_temporary_v<T2, V&&> &&
 		                             !(eastl::is_convertible_v<const T1&, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
-		explicit EA_CPP14_CONSTEXPR pair(const T1& x, V&& y)
+		explicit EA_CPP14_CONSTEXPR pair(const T1& x, V&& y) EA_NOEXCEPT_IF((eastl::is_nothrow_copy_constructible_v<T1> && eastl::is_nothrow_constructible_v<T2, V>))
 			: first(x), second(eastl::forward<V>(y))
 		{
 		}
@@ -628,7 +628,7 @@ namespace eastl
 		                             !Internal::reference_constructs_from_temporary_v<T1, U&&> &&
 		                             !Internal::reference_constructs_from_temporary_v<T2, V&&> &&
 		                             (eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
-		EA_CPP14_CONSTEXPR pair(pair<U, V>&& p)
+		EA_CPP14_CONSTEXPR pair(pair<U, V>&& p) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T1, U> && eastl::is_nothrow_constructible_v<T2, V>))
 		    : first(eastl::forward<U>(p.first)), second(eastl::forward<V>(p.second))
 		{
 		}
@@ -639,7 +639,7 @@ namespace eastl
 		                             !Internal::reference_constructs_from_temporary_v<T1, U&&> &&
 		                             !Internal::reference_constructs_from_temporary_v<T2, V&&> &&
 		                             !(eastl::is_convertible_v<U, T1> && eastl::is_convertible_v<V, T2>), int> = 0>
-		explicit EA_CPP14_CONSTEXPR pair(pair<U, V>&& p)
+		explicit EA_CPP14_CONSTEXPR pair(pair<U, V>&& p) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<T1, U> && eastl::is_nothrow_constructible_v<T2, V>))
 		    : first(eastl::forward<U>(p.first)), second(eastl::forward<V>(p.second))
 		{
 		}
@@ -676,7 +676,7 @@ namespace eastl
 		template <typename U,
 		          typename V,
 		          typename = eastl::enable_if_t<eastl::is_assignable_v<T1&, const U&> && eastl::is_assignable_v<T2&, const V&>>>
-		pair& operator=(const pair<U, V>& p)
+		pair& operator=(const pair<U, V>& p) EA_NOEXCEPT_IF((eastl::is_nothrow_assignable_v<T1&, const U&> && eastl::is_nothrow_assignable_v<T2&, const V&>))
 		{
 			first = p.first;
 			second = p.second;
@@ -686,7 +686,7 @@ namespace eastl
 		template <typename U,
 		          typename V,
 		          typename = eastl::enable_if_t<eastl::is_assignable_v<T1&, U> && eastl::is_assignable_v<T2&, V>>>
-		pair& operator=(pair<U, V>&& p)
+		pair& operator=(pair<U, V>&& p) EA_NOEXCEPT_IF((eastl::is_nothrow_assignable_v<T1&, U> && eastl::is_nothrow_assignable_v<T2&, V>))
 		{
 			first = eastl::forward<U>(p.first);
 			second = eastl::forward<V>(p.second);
@@ -730,7 +730,7 @@ namespace eastl
 	{
 		typedef T result_type;
 
-		const T& operator()(const T& x) const
+		const T& operator()(const T& x) const EA_NOEXCEPT
 			{ return x; }
 	};
 
@@ -747,7 +747,7 @@ namespace eastl
 		typedef Pair argument_type;
 		typedef typename Pair::first_type result_type;
 
-		const result_type& operator()(const Pair& x) const
+		const result_type& operator()(const Pair& x) const EA_NOEXCEPT
 			{ return x.first; }
 	};
 
@@ -762,7 +762,7 @@ namespace eastl
 		typedef Pair argument_type;
 		typedef typename Pair::second_type result_type;
 
-		const result_type& operator()(const Pair& x) const
+		const result_type& operator()(const Pair& x) const EA_NOEXCEPT
 			{ return x.second; }
 	};
 
@@ -849,7 +849,8 @@ namespace eastl
 	template <typename T1, typename T2>
 	EA_CPP14_CONSTEXPR inline pair<typename eastl::remove_reference_wrapper<typename eastl::decay<T1>::type>::type, 
 								   typename eastl::remove_reference_wrapper<typename eastl::decay<T2>::type>::type>
-	make_pair(T1&& a, T2&& b)
+	make_pair(T1&& a, T2&& b) EA_NOEXCEPT_IF((eastl::is_nothrow_constructible_v<typename eastl::remove_reference_wrapper<typename eastl::decay<T1>::type>::type, T1> &&
+	                                          eastl::is_nothrow_constructible_v<typename eastl::remove_reference_wrapper<typename eastl::decay<T2>::type>::type, T2>))
 	{
 		typedef typename eastl::remove_reference_wrapper<typename eastl::decay<T1>::type>::type T1Type;
 		typedef typename eastl::remove_reference_wrapper<typename eastl::decay<T2>::type>::type T2Type;
@@ -942,25 +943,25 @@ namespace eastl
 			struct GetPair<0>
 			{
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR T1& get(pair<T1, T2>& p)
+				static EA_CONSTEXPR T1& get(pair<T1, T2>& p) EA_NOEXCEPT
 				{
 					return p.first;
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR const T1& get(const pair<T1, T2>& p)
+				static EA_CONSTEXPR const T1& get(const pair<T1, T2>& p) EA_NOEXCEPT
 				{
 					return p.first;
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR T1&& get(pair<T1, T2>&& p)
+				static EA_CONSTEXPR T1&& get(pair<T1, T2>&& p) EA_NOEXCEPT
 				{
 					return eastl::forward<T1>(p.first);
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR const T1&& get(const pair<T1, T2>&& p)
+				static EA_CONSTEXPR const T1&& get(const pair<T1, T2>&& p) EA_NOEXCEPT
 				{
 					return eastl::forward<const T1>(p.first);
 				}
@@ -970,25 +971,25 @@ namespace eastl
 			struct GetPair<1>
 			{
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR T2& get(pair<T1, T2>& p)
+				static EA_CONSTEXPR T2& get(pair<T1, T2>& p) EA_NOEXCEPT
 				{
 					return p.second;
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR const T2& get(const pair<T1, T2>& p)
+				static EA_CONSTEXPR const T2& get(const pair<T1, T2>& p) EA_NOEXCEPT
 				{
 					return p.second;
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR T2&& get(pair<T1, T2>&& p)
+				static EA_CONSTEXPR T2&& get(pair<T1, T2>&& p) EA_NOEXCEPT
 				{
 					return eastl::forward<T2>(p.second);
 				}
 
 				template <typename T1, typename T2>
-				static EA_CONSTEXPR const T2&& get(const pair<T1, T2>&& p)
+				static EA_CONSTEXPR const T2&& get(const pair<T1, T2>&& p) EA_NOEXCEPT
 				{
 					return eastl::forward<const T2>(p.second);
 				}
@@ -996,25 +997,25 @@ namespace eastl
 		} // namespace internal
 
 		template <size_t I, typename T1, typename T2>
-		EA_CPP14_CONSTEXPR tuple_element_t<I, pair<T1, T2>>& get(pair<T1, T2>& p)
+		EA_CPP14_CONSTEXPR tuple_element_t<I, pair<T1, T2>>& get(pair<T1, T2>& p) EA_NOEXCEPT
 		{
 			return internal::GetPair<I>::get(p);
 		}
 
 		template <size_t I, typename T1, typename T2>
-		EA_CPP14_CONSTEXPR const tuple_element_t<I, pair<T1, T2>>& get(const pair<T1, T2>& p)
+		EA_CPP14_CONSTEXPR const tuple_element_t<I, pair<T1, T2>>& get(const pair<T1, T2>& p) EA_NOEXCEPT
 		{
 			return internal::GetPair<I>::get(p);
 		}
 
 		template <size_t I, typename T1, typename T2>
-		EA_CPP14_CONSTEXPR tuple_element_t<I, pair<T1, T2>>&& get(pair<T1, T2>&& p)
+		EA_CPP14_CONSTEXPR tuple_element_t<I, pair<T1, T2>>&& get(pair<T1, T2>&& p) EA_NOEXCEPT
 		{
 			return internal::GetPair<I>::get(eastl::move(p));
 		}
 
 		template <size_t I, typename T1, typename T2>
-		EA_CPP14_CONSTEXPR const tuple_element_t<I, pair<T1, T2>>&& get(const pair<T1, T2>&& p)
+		EA_CPP14_CONSTEXPR const tuple_element_t<I, pair<T1, T2>>&& get(const pair<T1, T2>&& p) EA_NOEXCEPT
 		{
 			return internal::GetPair<I>::get(eastl::move(p));
 		}

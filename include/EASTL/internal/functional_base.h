@@ -210,7 +210,7 @@ namespace eastl
 	template <typename T = void>
 	struct less
 	{
-		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const
+		EA_CPP14_CONSTEXPR bool operator()(const T& a, const T& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a < b))
 			{ return a < b; }
 	};
 
@@ -220,7 +220,7 @@ namespace eastl
 	{
 		typedef int is_transparent;
 		template<typename A, typename B>
-		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const
+		EA_CPP14_CONSTEXPR auto operator()(A&& a, B&& b) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::forward<A>(a) < eastl::forward<B>(b)))
 			-> decltype(eastl::forward<A>(a) < eastl::forward<B>(b))
 			{ return eastl::forward<A>(a) < eastl::forward<B>(b); }
 	};
@@ -243,7 +243,7 @@ namespace eastl
 		T& get() const EA_NOEXCEPT;
 
 		template <typename... ArgTypes>
-		typename eastl::invoke_result<T&, ArgTypes...>::type operator() (ArgTypes&&...) const;
+		typename eastl::invoke_result<T&, ArgTypes...>::type operator() (ArgTypes&&...) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::invoke(eastl::declval<T&>(), eastl::declval<ArgTypes>()...)));
 
 	private:
 		T* val;
@@ -280,7 +280,7 @@ namespace eastl
 
 	template <typename T>
 	template <typename... ArgTypes>
-	typename eastl::invoke_result<T&, ArgTypes...>::type reference_wrapper<T>::operator() (ArgTypes&&... args) const
+	typename eastl::invoke_result<T&, ArgTypes...>::type reference_wrapper<T>::operator() (ArgTypes&&... args) const EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::invoke(eastl::declval<T&>(), eastl::declval<ArgTypes>()...)))
 	{
 		return eastl::invoke(*val, eastl::forward<ArgTypes>(args)...);
 	}

@@ -448,21 +448,21 @@ namespace eastl
 		///
 		template <typename T>
 		inline EA_CONSTEXPR typename eastl::enable_if<eastl::is_scalar<T>::value, T>::type
-		min(T a, T b)
+		min(T a, T b) EA_NOEXCEPT
 		{
 			return b < a ? b : a;
 		}
 
 		template <typename T>
 		inline EA_CONSTEXPR typename eastl::enable_if<!eastl::is_scalar<T>::value, const T&>::type
-		min(const T& a, const T& b)
+		min(const T& a, const T& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(b < a))
 		{
 			return b < a ? b : a;
 		}
 
-		inline EA_CONSTEXPR float       min(float  a, float   b)           { return b < a ? b : a; }
-		inline EA_CONSTEXPR double      min(double a, double  b)           { return b < a ? b : a; }
-		inline EA_CONSTEXPR long double min(long double a, long double  b) { return b < a ? b : a; }
+		inline EA_CONSTEXPR float       min(float  a, float   b) EA_NOEXCEPT           { return b < a ? b : a; }
+		inline EA_CONSTEXPR double      min(double a, double  b) EA_NOEXCEPT           { return b < a ? b : a; }
+		inline EA_CONSTEXPR long double min(long double a, long double  b) EA_NOEXCEPT { return b < a ? b : a; }
 
 	#endif // EASTL_MINMAX_ENABLED
 
@@ -476,21 +476,21 @@ namespace eastl
 	///
 	template <typename T>
 	inline EA_CONSTEXPR typename eastl::enable_if<eastl::is_scalar<T>::value, T>::type
-	min_alt(T a, T b)
+	min_alt(T a, T b) EA_NOEXCEPT
 	{
 		return b < a ? b : a;
 	}
 
 	template <typename T>
 	inline typename eastl::enable_if<!eastl::is_scalar<T>::value, const T&>::type
-	min_alt(const T& a, const T& b)
+	min_alt(const T& a, const T& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(b < a))
 	{
 		return b < a ? b : a;
 	}
 
-	inline EA_CONSTEXPR float       min_alt(float  a, float   b)           { return b < a ? b : a; }
-	inline EA_CONSTEXPR double      min_alt(double a, double  b)           { return b < a ? b : a; }
-	inline EA_CONSTEXPR long double min_alt(long double a, long double  b) { return b < a ? b : a; }
+	inline EA_CONSTEXPR float       min_alt(float  a, float   b) EA_NOEXCEPT           { return b < a ? b : a; }
+	inline EA_CONSTEXPR double      min_alt(double a, double  b) EA_NOEXCEPT           { return b < a ? b : a; }
+	inline EA_CONSTEXPR long double min_alt(long double a, long double  b) EA_NOEXCEPT { return b < a ? b : a; }
 
 
 	#if EASTL_MINMAX_ENABLED
@@ -521,7 +521,7 @@ namespace eastl
 		///
 		template <typename T, typename Compare>
 		inline const T&
-		min(const T& a, const T& b, Compare compare)
+		min(const T& a, const T& b, Compare compare) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(compare(b, a)))
 		{
 			return compare(b, a) ? b : a;
 		}
@@ -538,7 +538,7 @@ namespace eastl
 	///
 	template <typename T, typename Compare>
 	inline const T&
-	min_alt(const T& a, const T& b, Compare compare)
+	min_alt(const T& a, const T& b, Compare compare) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(compare(b, a)))
 	{
 		return compare(b, a) ? b : a;
 	}
@@ -562,21 +562,21 @@ namespace eastl
 		///
 		template <typename T>
 		inline EA_CONSTEXPR typename eastl::enable_if<eastl::is_scalar<T>::value, T>::type
-		max(T a, T b)
+		max(T a, T b) EA_NOEXCEPT
 		{
 			return a < b ? b : a;
 		}
 
 		template <typename T>
 		inline EA_CONSTEXPR typename eastl::enable_if<!eastl::is_scalar<T>::value, const T&>::type
-		max(const T& a, const T& b)
+		max(const T& a, const T& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a < b))
 		{
 			return a < b ? b : a;
 		}
 
-		inline EA_CONSTEXPR float       max(float       a, float       b) { return a < b ? b : a; }
-		inline EA_CONSTEXPR double      max(double      a, double      b) { return a < b ? b : a; }
-		inline EA_CONSTEXPR long double max(long double a, long double b) { return a < b ? b : a; }
+		inline EA_CONSTEXPR float       max(float       a, float       b) EA_NOEXCEPT { return a < b ? b : a; }
+		inline EA_CONSTEXPR double      max(double      a, double      b) EA_NOEXCEPT { return a < b ? b : a; }
+		inline EA_CONSTEXPR long double max(long double a, long double b) EA_NOEXCEPT { return a < b ? b : a; }
 
 	#endif // EASTL_MINMAX_ENABLED
 
@@ -588,21 +588,21 @@ namespace eastl
 	///
 	template <typename T>
 	inline EA_CONSTEXPR typename eastl::enable_if<eastl::is_scalar<T>::value, T>::type
-	max_alt(T a, T b)
+	max_alt(T a, T b) EA_NOEXCEPT
 	{
 		return a < b ? b : a;
 	}
 
 	template <typename T>
 	inline EA_CONSTEXPR typename eastl::enable_if<!eastl::is_scalar<T>::value, const T&>::type
-	max_alt(const T& a, const T& b)
+	max_alt(const T& a, const T& b) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(a < b))
 	{
 		return a < b ? b : a;
 	}
 
-	inline EA_CONSTEXPR float       max_alt(float       a, float       b) { return a < b ? b : a; }
-	inline EA_CONSTEXPR double      max_alt(double      a, double      b) { return a < b ? b : a; }
-	inline EA_CONSTEXPR long double max_alt(long double a, long double b) { return a < b ? b : a; }
+	inline EA_CONSTEXPR float       max_alt(float       a, float       b) EA_NOEXCEPT { return a < b ? b : a; }
+	inline EA_CONSTEXPR double      max_alt(double      a, double      b) EA_NOEXCEPT { return a < b ? b : a; }
+	inline EA_CONSTEXPR long double max_alt(long double a, long double b) EA_NOEXCEPT { return a < b ? b : a; }
 
 
 	#if EASTL_MINMAX_ENABLED
@@ -616,7 +616,7 @@ namespace eastl
 		///
 		template <typename T, typename Compare>
 		inline const T&
-		max(const T& a, const T& b, Compare compare)
+		max(const T& a, const T& b, Compare compare) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(compare(a, b)))
 		{
 			return compare(a, b) ? b : a;
 		}
@@ -630,7 +630,7 @@ namespace eastl
 	///
 	template <typename T, typename Compare>
 	inline const T&
-	max_alt(const T& a, const T& b, Compare compare)
+	max_alt(const T& a, const T& b, Compare compare) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(compare(a, b)))
 	{
 		return compare(a, b) ? b : a;
 	}
@@ -2014,7 +2014,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for const char*.
-	lexicographical_compare(const char* first1, const char* last1, const char* first2, const char* last2)
+	lexicographical_compare(const char* first1, const char* last1, const char* first2, const char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);
@@ -2025,7 +2025,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for char*.
-	lexicographical_compare(char* first1, char* last1, char* first2, char* last2)
+	lexicographical_compare(char* first1, char* last1, char* first2, char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);
@@ -2036,7 +2036,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for const unsigned char*.
-	lexicographical_compare(const unsigned char* first1, const unsigned char* last1, const unsigned char* first2, const unsigned char* last2)
+	lexicographical_compare(const unsigned char* first1, const unsigned char* last1, const unsigned char* first2, const unsigned char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);
@@ -2047,7 +2047,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for unsigned char*.
-	lexicographical_compare(unsigned char* first1, unsigned char* last1, unsigned char* first2, unsigned char* last2)
+	lexicographical_compare(unsigned char* first1, unsigned char* last1, unsigned char* first2, unsigned char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);
@@ -2058,7 +2058,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for const signed char*.
-	lexicographical_compare(const signed char* first1, const signed char* last1, const signed char* first2, const signed char* last2)
+	lexicographical_compare(const signed char* first1, const signed char* last1, const signed char* first2, const signed char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);
@@ -2069,7 +2069,7 @@ namespace eastl
 	}
 
 	inline bool     // Specialization for signed char*.
-	lexicographical_compare(signed char* first1, signed char* last1, signed char* first2, signed char* last2)
+	lexicographical_compare(signed char* first1, signed char* last1, signed char* first2, signed char* last2) EA_NOEXCEPT
 	{
 		const ptrdiff_t n1(last1 - first1), n2(last2 - first2);
 		const size_t n = (size_t)eastl::min_alt(n1, n2);

@@ -57,9 +57,9 @@ namespace eastl
 		// 21.4.2.1, construction and assignment
 		EA_CONSTEXPR basic_string_view() EA_NOEXCEPT : mpBegin(nullptr), mnCount(0) {}
 		EA_CONSTEXPR basic_string_view(const basic_string_view& other) EA_NOEXCEPT = default;
-		EA_CONSTEXPR basic_string_view(const T* s, size_type count) : mpBegin(s), mnCount(count) {}
+		EA_CONSTEXPR basic_string_view(const T* s, size_type count) EA_NOEXCEPT : mpBegin(s), mnCount(count) {}
 		// Unlike std, a null pointer gives an empty view instead of reading through it.
-		EA_CONSTEXPR basic_string_view(const T* s) : mpBegin(s), mnCount(s != nullptr ? CharStrlen(s) : 0) {}
+		EA_CONSTEXPR basic_string_view(const T* s) EA_NOEXCEPT : mpBegin(s), mnCount(s != nullptr ? CharStrlen(s) : 0) {}
 		basic_string_view(std::nullptr_t) = delete; // Like std (C++23).
 
 		// From a contiguous iterator and its end, as in C++20, for pointers to T (the iterators of EASTL's
@@ -67,7 +67,7 @@ namespace eastl
 		template <typename It, typename End,
 		          typename = enable_if_t<is_pointer<It>::value && is_same<remove_cv_t<remove_pointer_t<It>>, T>::value &&
 		                                 !is_convertible<End, size_type>::value && is_convertible<decltype(eastl::declval<End>() - eastl::declval<It>()), difference_type>::value>>
-		EA_CONSTEXPR basic_string_view(It first, End last) : mpBegin(first), mnCount(static_cast<size_type>(last - first)) {}
+		EA_CONSTEXPR basic_string_view(It first, End last) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(last - first)) : mpBegin(first), mnCount(static_cast<size_type>(last - first)) {}
 
 	private:
 		template <typename R>
@@ -92,7 +92,7 @@ namespace eastl
 		// From a contiguous range of T, explicitly, as in C++23: not for a basic_string_view, a type that converts to
 		// const T*, or one with its own conversion to basic_string_view (such as basic_string).
 		template <typename R, typename = enable_if_t<is_view_range<R>::value>>
-		EA_CONSTEXPR explicit basic_string_view(R&& r) : mpBegin(eastl::data(r)), mnCount(static_cast<size_type>(eastl::size(r))) {}
+		EA_CONSTEXPR explicit basic_string_view(R&& r) EA_NOEXCEPT_IF(EA_NOEXCEPT_EXPR(eastl::data(r)) && EA_NOEXCEPT_EXPR(eastl::size(r))) : mpBegin(eastl::data(r)), mnCount(static_cast<size_type>(eastl::size(r))) {}
 
 		basic_string_view& operator=(const basic_string_view& view) = default;
 
@@ -108,18 +108,18 @@ namespace eastl
 
 
 		// 21.4.2.4, element access
-		EA_CONSTEXPR const_pointer data() const { return mpBegin; }
-		EA_CONSTEXPR const_reference front() const
+		EA_CONSTEXPR const_pointer data() const EA_NOEXCEPT { return mpBegin; }
+		EA_CONSTEXPR const_reference front() const EA_NOEXCEPT
 		{
 			return [&] { EASTL_ASSERT_MSG(!empty(), "behavior is undefined if string_view is empty"); }(), mpBegin[0];
 		}
 
-		EA_CONSTEXPR const_reference back() const
+		EA_CONSTEXPR const_reference back() const EA_NOEXCEPT
 		{
 			return [&] { EASTL_ASSERT_MSG(!empty(), "behavior is undefined if string_view is empty"); }(), mpBegin[mnCount - 1];
 		}
 
-		EA_CONSTEXPR const_reference operator[](size_type pos) const
+		EA_CONSTEXPR const_reference operator[](size_type pos) const EA_NOEXCEPT
 		{
 			// As per the standard spec: No bounds checking is performed: the behavior is undefined if pos >= size().
 			return mpBegin[pos];
@@ -150,20 +150,20 @@ namespace eastl
 
 
 		// 21.4.2.5, modifiers
-		EA_CPP14_CONSTEXPR void swap(basic_string_view& v)
+		EA_CPP14_CONSTEXPR void swap(basic_string_view& v) EA_NOEXCEPT
 		{
 			eastl::swap(mpBegin, v.mpBegin);
 			eastl::swap(mnCount, v.mnCount);
 		}
 
-		EA_CPP14_CONSTEXPR void remove_prefix(size_type n)
+		EA_CPP14_CONSTEXPR void remove_prefix(size_type n) EA_NOEXCEPT
 		{
 			EASTL_ASSERT_MSG(n <= mnCount, "behavior is undefined if moving past the end of the string");
 			mpBegin += n;
 			mnCount -= n;
 		}
 
-		EA_CPP14_CONSTEXPR void remove_suffix(size_type n)
+		EA_CPP14_CONSTEXPR void remove_suffix(size_type n) EA_NOEXCEPT
 		{
 			EASTL_ASSERT_MSG(n <= mnCount, "behavior is undefined if moving past the beginning of the string");
 			mnCount -= n;
@@ -201,7 +201,7 @@ namespace eastl
 			return this_type(mpBegin + pos, count);
 		}
 
-		static EA_CPP14_CONSTEXPR int compare(const T* pBegin1, const T* pEnd1, const T* pBegin2, const T* pEnd2)
+		static EA_CPP14_CONSTEXPR int compare(const T* pBegin1, const T* pEnd1, const T* pBegin2, const T* pEnd2) EA_NOEXCEPT
 		{
 			const ptrdiff_t n1   = pEnd1 - pBegin1;
 			const ptrdiff_t n2   = pEnd2 - pBegin2;
@@ -230,7 +230,7 @@ namespace eastl
 			return substr(pos1, count1).compare(sw.substr(pos2, count2));
 		}
 
-		EA_CONSTEXPR int compare(const T* s) const { return compare(basic_string_view(s)); }
+		EA_CONSTEXPR int compare(const T* s) const EA_NOEXCEPT { return compare(basic_string_view(s)); }
 
 		EA_CONSTEXPR int compare(size_type pos1, size_type count1, const T* s) const
 		{
@@ -260,12 +260,12 @@ namespace eastl
 			return find(basic_string_view(&c, 1), pos);
 		}
 
-		EA_CONSTEXPR size_type find(const T* s, size_type pos, size_type count) const
+		EA_CONSTEXPR size_type find(const T* s, size_type pos, size_type count) const EA_NOEXCEPT
 		{
 			return find(basic_string_view(s, count), pos);
 		}
 
-		EA_CONSTEXPR size_type find(const T* s, size_type pos = 0) const { return find(basic_string_view(s), pos); }
+		EA_CONSTEXPR size_type find(const T* s, size_type pos = 0) const EA_NOEXCEPT { return find(basic_string_view(s), pos); }
 
 		EA_CONSTEXPR size_type rfind(basic_string_view sw, size_type pos = npos) const EA_NOEXCEPT
 		{
@@ -285,7 +285,7 @@ namespace eastl
 			return npos;
 		}
 
-		EA_CPP14_CONSTEXPR size_type rfind(const T* s, size_type pos, size_type n) const
+		EA_CPP14_CONSTEXPR size_type rfind(const T* s, size_type pos, size_type n) const EA_NOEXCEPT
 		{
 			// Disabled because it's not clear what values are valid for position.
 			// It is documented that npos is a valid value, though. We return npos and
@@ -316,7 +316,7 @@ namespace eastl
 			return npos;
 		}
 
-		EA_CONSTEXPR size_type rfind(const T* s, size_type pos = npos) const
+		EA_CONSTEXPR size_type rfind(const T* s, size_type pos = npos) const EA_NOEXCEPT
 		{
 			return rfind(s, pos, (size_type)CharStrlen(s));
 		}
@@ -328,7 +328,7 @@ namespace eastl
 
 		EA_CONSTEXPR size_type find_first_of(T c, size_type pos = 0) const EA_NOEXCEPT { return find(c, pos); }
 
-		EA_CPP14_CONSTEXPR size_type find_first_of(const T* s, size_type pos, size_type n) const
+		EA_CPP14_CONSTEXPR size_type find_first_of(const T* s, size_type pos, size_type n) const EA_NOEXCEPT
 		{
 			// If position is >= size, we return npos.
 			if (EASTL_LIKELY((pos < mnCount)))
@@ -343,7 +343,7 @@ namespace eastl
 			return npos;
 		}
 
-		EA_CONSTEXPR size_type find_first_of(const T* s, size_type pos = 0) const
+		EA_CONSTEXPR size_type find_first_of(const T* s, size_type pos = 0) const EA_NOEXCEPT
 		{
 			return find_first_of(s, pos, (size_type)CharStrlen(s));
 		}
@@ -355,7 +355,7 @@ namespace eastl
 
 		EA_CONSTEXPR size_type find_last_of(T c, size_type pos = npos) const EA_NOEXCEPT { return rfind(c, pos); }
 
-		EA_CPP14_CONSTEXPR size_type find_last_of(const T* s, size_type pos, size_type n) const
+		EA_CPP14_CONSTEXPR size_type find_last_of(const T* s, size_type pos, size_type n) const EA_NOEXCEPT
 		{
 			// If n is zero or position is >= size, we return npos.
 			if (EASTL_LIKELY(mnCount))
@@ -369,7 +369,7 @@ namespace eastl
 			return npos;
 		}
 
-		EA_CONSTEXPR size_type find_last_of(const T* s, size_type pos = npos) const
+		EA_CONSTEXPR size_type find_last_of(const T* s, size_type pos = npos) const EA_NOEXCEPT
 		{
 			return find_last_of(s, pos, (size_type)CharStrlen(s));
 		}
@@ -393,7 +393,7 @@ namespace eastl
 			return npos;
 		}
 
-		EA_CPP14_CONSTEXPR size_type find_first_not_of(const T* s, size_type pos, size_type n) const
+		EA_CPP14_CONSTEXPR size_type find_first_not_of(const T* s, size_type pos, size_type n) const EA_NOEXCEPT
 		{
 			if (EASTL_LIKELY(pos <= mnCount))
 			{
@@ -406,7 +406,7 @@ namespace eastl
 			return npos;
 		}
 
-		EA_CONSTEXPR size_type find_first_not_of(const T* s, size_type pos = 0) const
+		EA_CONSTEXPR size_type find_first_not_of(const T* s, size_type pos = 0) const EA_NOEXCEPT
 		{
 			return find_first_not_of(s, pos, (size_type)CharStrlen(s));
 		}
@@ -430,7 +430,7 @@ namespace eastl
 			return npos;
 		}
 
-		EA_CPP14_CONSTEXPR size_type find_last_not_of(const T* s, size_type pos, size_type n) const
+		EA_CPP14_CONSTEXPR size_type find_last_not_of(const T* s, size_type pos, size_type n) const EA_NOEXCEPT
 		{
 			if (EASTL_LIKELY(mnCount))
 			{
@@ -443,7 +443,7 @@ namespace eastl
 			return npos;
 		}
 
-		EA_CONSTEXPR size_type find_last_not_of(const T* s, size_type pos = npos) const
+		EA_CONSTEXPR size_type find_last_not_of(const T* s, size_type pos = npos) const EA_NOEXCEPT
 		{
 			return find_last_not_of(s, pos, (size_type)CharStrlen(s));
 		}
@@ -459,7 +459,7 @@ namespace eastl
 			return starts_with(basic_string_view(&x, 1));
 		}
 
-		EA_CONSTEXPR bool starts_with(const T* s) const
+		EA_CONSTEXPR bool starts_with(const T* s) const EA_NOEXCEPT
 		{
 			return starts_with(basic_string_view(s));
 		}
@@ -475,7 +475,7 @@ namespace eastl
 			return ends_with(basic_string_view(&x, 1));
 		}
 
-		EA_CONSTEXPR bool ends_with(const T* s) const
+		EA_CONSTEXPR bool ends_with(const T* s) const EA_NOEXCEPT
 		{
 			return ends_with(basic_string_view(s));
 		}
@@ -637,7 +637,7 @@ namespace eastl
 
 	template<> struct hash<string_view>
 	{
-		size_t operator()(const string_view& x) const
+		size_t operator()(const string_view& x) const EA_NOEXCEPT
 		{
 			string_view::const_iterator p = x.cbegin();
 			string_view::const_iterator end = x.cend();
@@ -651,7 +651,7 @@ namespace eastl
 	#if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
 		template<> struct hash<u8string_view>
 		{
-			size_t operator()(const u8string_view& x) const
+			size_t operator()(const u8string_view& x) const EA_NOEXCEPT
 			{
 				u8string_view::const_iterator p = x.cbegin();
 				u8string_view::const_iterator end = x.cend();
@@ -665,7 +665,7 @@ namespace eastl
 
 	template<> struct hash<u16string_view>
 	{
-		size_t operator()(const u16string_view& x) const
+		size_t operator()(const u16string_view& x) const EA_NOEXCEPT
 		{
 			u16string_view::const_iterator p = x.cbegin();
 			u16string_view::const_iterator end = x.cend();
@@ -678,7 +678,7 @@ namespace eastl
 
 	template<> struct hash<u32string_view>
 	{
-		size_t operator()(const u32string_view& x) const
+		size_t operator()(const u32string_view& x) const EA_NOEXCEPT
 		{
 			u32string_view::const_iterator p = x.cbegin();
 			u32string_view::const_iterator end = x.cend();
@@ -692,7 +692,7 @@ namespace eastl
 	#if defined(EA_WCHAR_UNIQUE) && EA_WCHAR_UNIQUE
 		template<> struct hash<wstring_view>
 		{
-			size_t operator()(const wstring_view& x) const
+			size_t operator()(const wstring_view& x) const EA_NOEXCEPT
 			{
 				wstring_view::const_iterator p = x.cbegin();
 				wstring_view::const_iterator end = x.cend();

@@ -7,6 +7,40 @@
 #include <EASTL/array.h>
 #include <EABase/eabase.h>
 
+// The exception specifications of array's element access, swap and validation follow the standard (MSVC's STL strengthens
+// operator[], front and back).
+namespace NoexceptArrayTest
+{
+	struct Nothrow { Nothrow() EA_NOEXCEPT; Nothrow(const Nothrow&) EA_NOEXCEPT; Nothrow& operator=(const Nothrow&) EA_NOEXCEPT; };
+	struct Throwing { Throwing(); Throwing(const Throwing&); Throwing& operator=(const Throwing&); };
+	void swap(Throwing&, Throwing&); // may throw
+
+	#define EASTL_TEST_NOEXCEPT_ARRAY(T, N) \
+		static_assert(noexcept(eastl::declval<eastl::array<T, N>&>()[0]), "array<" #T ", " #N ">::operator[] is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::array<T, N>&>()[0]), "array<" #T ", " #N ">::operator[] const is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::array<T, N>&>().front()), "array<" #T ", " #N ">::front is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::array<T, N>&>().front()), "array<" #T ", " #N ">::front const is noexcept"); \
+		static_assert(noexcept(eastl::declval<eastl::array<T, N>&>().back()), "array<" #T ", " #N ">::back is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::array<T, N>&>().back()), "array<" #T ", " #N ">::back const is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::array<T, N>&>().validate()), "array<" #T ", " #N ">::validate is noexcept"); \
+		static_assert(noexcept(eastl::declval<const eastl::array<T, N>&>().validate_iterator(nullptr)), "array<" #T ", " #N ">::validate_iterator is noexcept");
+	EASTL_TEST_NOEXCEPT_ARRAY(int, 5)
+	EASTL_TEST_NOEXCEPT_ARRAY(Throwing, 5)
+	EASTL_TEST_NOEXCEPT_ARRAY(int, 0)
+	EASTL_TEST_NOEXCEPT_ARRAY(Throwing, 0)
+	#undef EASTL_TEST_NOEXCEPT_ARRAY
+
+	// The free swap is as noexcept as array::swap.
+	static_assert(noexcept(eastl::swap(eastl::declval<eastl::array<Nothrow, 3>&>(), eastl::declval<eastl::array<Nothrow, 3>&>())), "swap(array<Nothrow, 3>&, array<Nothrow, 3>&) is noexcept");
+	static_assert(noexcept(eastl::swap(eastl::declval<eastl::array<int, 3>&>(), eastl::declval<eastl::array<int, 3>&>())), "swap(array<int, 3>&, array<int, 3>&) is noexcept");
+	static_assert(!noexcept(eastl::swap(eastl::declval<eastl::array<Throwing, 3>&>(), eastl::declval<eastl::array<Throwing, 3>&>())), "swap(array<Throwing, 3>&, array<Throwing, 3>&) may throw");
+	static_assert(noexcept(eastl::swap(eastl::declval<eastl::array<Throwing, 0>&>(), eastl::declval<eastl::array<Throwing, 0>&>())), "swap of empty arrays is noexcept");
+
+	// Filling an empty array does nothing, whatever the element type is.
+	static_assert(noexcept(eastl::declval<eastl::array<Throwing, 0>&>().fill(eastl::declval<const Throwing&>())), "array<T, 0>::fill is noexcept");
+	static_assert(!noexcept(eastl::declval<eastl::array<Throwing, 3>&>().fill(eastl::declval<const Throwing&>())), "array<T, N>::fill may throw");
+}
+
 
 
 using namespace eastl;

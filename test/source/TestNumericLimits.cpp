@@ -162,6 +162,53 @@ int TestNumericLimits()
 	EATEST_VERIFY(!eastl::numeric_limits<double>::is_modulo);
 	EATEST_VERIFY(!eastl::numeric_limits<long double>::is_modulo);
 
+	// Every numeric_limits member function is noexcept, as in the standard.
+	#define EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(T) \
+		static_assert(noexcept(eastl::numeric_limits<T>::min()),           "numeric_limits<" #T ">::min is noexcept"); \
+		static_assert(noexcept(eastl::numeric_limits<T>::max()),           "numeric_limits<" #T ">::max is noexcept"); \
+		static_assert(noexcept(eastl::numeric_limits<T>::lowest()),        "numeric_limits<" #T ">::lowest is noexcept"); \
+		static_assert(noexcept(eastl::numeric_limits<T>::epsilon()),       "numeric_limits<" #T ">::epsilon is noexcept"); \
+		static_assert(noexcept(eastl::numeric_limits<T>::round_error()),   "numeric_limits<" #T ">::round_error is noexcept"); \
+		static_assert(noexcept(eastl::numeric_limits<T>::infinity()),      "numeric_limits<" #T ">::infinity is noexcept"); \
+		static_assert(noexcept(eastl::numeric_limits<T>::quiet_NaN()),     "numeric_limits<" #T ">::quiet_NaN is noexcept"); \
+		static_assert(noexcept(eastl::numeric_limits<T>::signaling_NaN()), "numeric_limits<" #T ">::signaling_NaN is noexcept"); \
+		static_assert(noexcept(eastl::numeric_limits<T>::denorm_min()),    "numeric_limits<" #T ">::denorm_min is noexcept");
+
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(bool)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(char)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(unsigned char)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(signed char)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(wchar_t)
+	#if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(char8_t)
+	#endif
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(char16_t)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(char32_t)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(unsigned short)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(signed short)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(unsigned int)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(signed int)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(unsigned long)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(signed long)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(unsigned long long)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(signed long long)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(float)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(double)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(long double)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(const int)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(volatile double)
+	EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(const volatile float)
+	#if (EA_COMPILER_INTMAX_SIZE >= 16) && (defined(EA_COMPILER_GNUC) || defined(EA_COMPILER_CLANG)) // If __int128_t/__uint128_t is supported...
+		EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(__uint128_t)
+		EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT(__int128_t)
+	#endif
+	#undef EASTL_TEST_NUMERIC_LIMITS_NOEXCEPT
+
+	// eastl::isnan (numeric.h) is noexcept as in the standard.
+	static_assert(noexcept(eastl::isnan(1.0f)), "isnan(float) is noexcept");
+	static_assert(noexcept(eastl::isnan(1.0)), "isnan(double) is noexcept");
+	static_assert(noexcept(eastl::isnan(1.0L)), "isnan(long double) is noexcept");
+
 	return nErrorCount;
 }
 

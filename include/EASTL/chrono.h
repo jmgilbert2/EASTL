@@ -76,9 +76,9 @@ namespace chrono
 	struct duration_values
 	{
 	public:
-		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep zero() { return Rep(0); }
-		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep max()  { return eastl::numeric_limits<Rep>::max(); }
-		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep min()  { return eastl::numeric_limits<Rep>::lowest(); }
+		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep zero() EA_NOEXCEPT { return Rep(0); }
+		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep max()  EA_NOEXCEPT { return eastl::numeric_limits<Rep>::max(); }
+		EASTL_FORCE_INLINE static EA_CONSTEXPR Rep min()  EA_NOEXCEPT { return eastl::numeric_limits<Rep>::lowest(); }
 	};
 
 
@@ -189,7 +189,7 @@ namespace chrono
 	///////////////////////////////////////////////////////////////////////////////
 	template <typename ToDuration, typename Rep, typename Period>
 	inline typename eastl::enable_if<Internal::IsDuration<ToDuration>::value, ToDuration>::type 
-	duration_cast(const duration<Rep, Period>& d)
+	duration_cast(const duration<Rep, Period>& d) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep>::value && eastl::is_arithmetic<typename ToDuration::rep>::value))
 	{
 		typedef typename duration<Rep, Period>::this_type FromDuration;
 		return Internal::DurationCastImpl<FromDuration, ToDuration>::DoCast(d);
@@ -234,6 +234,7 @@ namespace chrono
 		    typename eastl::enable_if<eastl::is_convertible<Rep2, Rep>::value &&
 		                              (treat_as_floating_point<Rep>::value ||
 		                               !treat_as_floating_point<Rep2>::value)>::type** = 0)
+		    EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep>::value && eastl::is_arithmetic<Rep2>::value))
 		    : mRep(static_cast<Rep>(rep2)) {}
 
 
@@ -243,39 +244,40 @@ namespace chrono
 		                                                    (eastl::ratio_divide<Period2, Period>::type::den == 1 &&
 		                                                     !treat_as_floating_point<Rep2>::value),
 		                                                void>::type** = 0)
+		    EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep>::value && eastl::is_arithmetic<Rep2>::value))
 		    : mRep(duration_cast<duration>(d2).count()) {}
 
 		///////////////////////////////////////////////////////////////////////////////
 		// returns the count of ticks 
 		///////////////////////////////////////////////////////////////////////////////
-		EA_CONSTEXPR Rep count() const { return mRep; }
+		EA_CONSTEXPR Rep count() const EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value) { return mRep; }
 
 		///////////////////////////////////////////////////////////////////////////////
 		// static accessors of special duration values 
 		///////////////////////////////////////////////////////////////////////////////
-		EA_CONSTEXPR inline static duration zero() { return duration(duration_values<Rep>::zero()); }
-		EA_CONSTEXPR inline static duration min()  { return duration(duration_values<Rep>::min()); }
-		EA_CONSTEXPR inline static duration max()  { return duration(duration_values<Rep>::max()); }
+		EA_CONSTEXPR inline static duration zero() EA_NOEXCEPT { return duration(duration_values<Rep>::zero()); }
+		EA_CONSTEXPR inline static duration min()  EA_NOEXCEPT { return duration(duration_values<Rep>::min()); }
+		EA_CONSTEXPR inline static duration max()  EA_NOEXCEPT { return duration(duration_values<Rep>::max()); }
 
 		///////////////////////////////////////////////////////////////////////////////
 		// const arithmetic operations
 		///////////////////////////////////////////////////////////////////////////////
-		EA_CONSTEXPR inline duration operator+() const { return *this; }
-		EA_CONSTEXPR inline duration operator-() const { return duration(0-mRep); }
+		EA_CONSTEXPR inline duration operator+() const EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value) { return *this; }
+		EA_CONSTEXPR inline duration operator-() const EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value) { return duration(0-mRep); }
 
 		///////////////////////////////////////////////////////////////////////////////
 		// arithmetic operations
 		///////////////////////////////////////////////////////////////////////////////
-		inline duration operator++(int)                  { return duration(mRep++); }
-		inline duration operator--(int)                  { return duration(mRep--); }
-		inline duration& operator++()                    { ++mRep; return *this; }
-		inline duration& operator--()                    { --mRep; return *this; }
-		inline duration& operator+=(const duration& d)   { mRep += d.count(); return *this; }
-		inline duration& operator-=(const duration& d)   { mRep -= d.count(); return *this; }
-		inline duration& operator*=(const Rep& rhs)      { mRep *= rhs; return *this; }
-		inline duration& operator/=(const Rep& rhs)      { mRep /= rhs; return *this; }
-		inline duration& operator%=(const Rep& rhs)      { mRep %= rhs; return *this; }
-		inline duration& operator%=(const duration& d)   { mRep %= d.count(); return *this; }
+		inline duration operator++(int) EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value)                  { return duration(mRep++); }
+		inline duration operator--(int) EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value)                  { return duration(mRep--); }
+		inline duration& operator++() EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value)                    { ++mRep; return *this; }
+		inline duration& operator--() EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value)                    { --mRep; return *this; }
+		inline duration& operator+=(const duration& d) EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value)   { mRep += d.count(); return *this; }
+		inline duration& operator-=(const duration& d) EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value)   { mRep -= d.count(); return *this; }
+		inline duration& operator*=(const Rep& rhs) EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value)      { mRep *= rhs; return *this; }
+		inline duration& operator/=(const Rep& rhs) EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value)      { mRep /= rhs; return *this; }
+		inline duration& operator%=(const Rep& rhs) EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value)      { mRep %= rhs; return *this; }
+		inline duration& operator%=(const duration& d) EA_NOEXCEPT_IF(eastl::is_arithmetic<Rep>::value)   { mRep %= d.count(); return *this; }
 	};
 
 
@@ -284,7 +286,7 @@ namespace chrono
 	///////////////////////////////////////////////////////////////////////////////
 	template <typename Rep1, typename Period1, typename Rep2, typename Period2>
 	typename eastl::common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type EASTL_FORCE_INLINE
-	operator+(const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs)
+	operator+(const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef typename eastl::common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type common_duration_t;
 		return common_duration_t(common_duration_t(lhs).count() + common_duration_t(rhs).count());
@@ -292,7 +294,7 @@ namespace chrono
 
 	template <typename Rep1, typename Period1, typename Rep2, typename Period2>
 	typename eastl::common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type EASTL_FORCE_INLINE
-	operator-(const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs)
+	operator-(const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef typename eastl::common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type common_duration_t;
 		return common_duration_t(common_duration_t(lhs).count() - common_duration_t(rhs).count());
@@ -300,7 +302,7 @@ namespace chrono
 
 	template <typename Rep1, typename Period1, typename Rep2>
 	duration<typename eastl::common_type<Rep1, Rep2>::type, Period1> EASTL_FORCE_INLINE
-	operator*(const duration<Rep1, Period1>& lhs, const Rep2& rhs)
+	operator*(const duration<Rep1, Period1>& lhs, const Rep2& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef duration<typename eastl::common_type<Rep1, Rep2>::type, Period1> common_duration_t;
 		return common_duration_t(common_duration_t(lhs).count() * rhs);
@@ -308,7 +310,7 @@ namespace chrono
 
 	template <typename Rep1, typename Rep2, typename Period2>
 	duration<typename eastl::common_type<Rep1, Rep2>::type, Period2> EASTL_FORCE_INLINE
-	operator*(const Rep1& lhs, const duration<Rep2, Period2>& rhs)
+	operator*(const Rep1& lhs, const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef duration<typename eastl::common_type<Rep1, Rep2>::type, Period2> common_duration_t;
 		return common_duration_t(lhs * common_duration_t(rhs).count());
@@ -321,7 +323,7 @@ namespace chrono
 			typename eastl::enable_if<!Internal::IsDuration<Rep2>::value, Rep2>::type
 		>::type,
 		Period1> EASTL_FORCE_INLINE
-	operator/(const duration<Rep1, Period1>& lhs, const Rep2& rhs)
+	operator/(const duration<Rep1, Period1>& lhs, const Rep2& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef duration<typename eastl::common_type<Rep1, Rep2>::type, Period1> common_duration_t;
 		return common_duration_t(common_duration_t(lhs).count() / rhs);
@@ -329,7 +331,7 @@ namespace chrono
 
 	template <typename Rep1, typename Period1, typename Rep2, typename Period2>
 	typename eastl::common_type<Rep1, Rep2>::type EASTL_FORCE_INLINE
-	operator/(const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs)
+	operator/(const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef typename eastl::common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type common_duration_t;
 		return common_duration_t(lhs).count() / common_duration_t(rhs).count();
@@ -342,7 +344,7 @@ namespace chrono
 			typename eastl::enable_if<!Internal::IsDuration<Rep2>::value, Rep2>::type
 		>::type,
 		Period1> EASTL_FORCE_INLINE
-	operator%(const duration<Rep1, Period1>& lhs, const Rep2& rhs)
+	operator%(const duration<Rep1, Period1>& lhs, const Rep2& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef duration<typename eastl::common_type<Rep1, Rep2>::type, Period1> common_duration_t;
 		return common_duration_t(common_duration_t(lhs).count() % rhs);
@@ -350,7 +352,7 @@ namespace chrono
 
 	template <typename Rep1, typename Period1, typename Rep2, typename Period2>
 	typename eastl::common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type EASTL_FORCE_INLINE
-	operator%(const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs)
+	operator%(const duration<Rep1, Period1>& lhs, const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef typename eastl::common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type common_duration_t;
 		return common_duration_t(common_duration_t(lhs).count() % common_duration_t(rhs).count());
@@ -362,7 +364,7 @@ namespace chrono
 	///////////////////////////////////////////////////////////////////////////////
 	template <typename Rep1, typename Period1, typename Rep2, typename Period2>
 	EASTL_FORCE_INLINE bool operator==(const duration<Rep1, Period1>& lhs,
-	                                                const duration<Rep2, Period2>& rhs)
+	                                                const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef typename eastl::common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type common_duration_t;
 		return common_duration_t(lhs).count() == common_duration_t(rhs).count();
@@ -370,7 +372,7 @@ namespace chrono
 
 	template <typename Rep1, typename Period1, typename Rep2, typename Period2>
 	EASTL_FORCE_INLINE bool operator<(const duration<Rep1, Period1>& lhs,
-	                                               const duration<Rep2, Period2>& rhs)
+	                                               const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef typename eastl::common_type<duration<Rep1, Period1>, duration<Rep2, Period2>>::type common_duration_t;
 		return common_duration_t(lhs).count() < common_duration_t(rhs).count();
@@ -378,28 +380,28 @@ namespace chrono
 
 	template <typename Rep1, typename Period1, typename Rep2, typename Period2>
 	EASTL_FORCE_INLINE bool operator!=(const duration<Rep1, Period1>& lhs,
-	                                                const duration<Rep2, Period2>& rhs)
+	                                                const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		return !(lhs == rhs);
 	}
 
 	template <typename Rep1, typename Period1, typename Rep2, typename Period2>
 	EASTL_FORCE_INLINE bool operator<=(const duration<Rep1, Period1>& lhs,
-	                                                const duration<Rep2, Period2>& rhs)
+	                                                const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		return !(rhs < lhs);
 	}
 
 	template <typename Rep1, typename Period1, typename Rep2, typename Period2>
 	EASTL_FORCE_INLINE bool operator>(const duration<Rep1, Period1>& lhs,
-	                                               const duration<Rep2, Period2>& rhs)
+	                                               const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		return rhs < lhs;
 	}
 
 	template <typename Rep1, typename Period1, typename Rep2, typename Period2>
 	EASTL_FORCE_INLINE bool operator>=(const duration<Rep1, Period1>& lhs,
-	                                                const duration<Rep2, Period2>& rhs)
+	                                                const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		return !(lhs < rhs);
 	}
@@ -430,22 +432,23 @@ namespace chrono
 		typedef typename Duration::rep rep;
 		typedef typename Duration::period period;
 
-		inline EA_CONSTEXPR time_point() : mDuration(Duration::zero()) {}
-		EA_CONSTEXPR explicit time_point(const Duration& other) : mDuration(other) {}
+		inline EA_CONSTEXPR time_point() EA_NOEXCEPT_IF(eastl::is_nothrow_default_constructible<Duration>::value) : mDuration(Duration::zero()) {}
+		EA_CONSTEXPR explicit time_point(const Duration& other) EA_NOEXCEPT_IF(eastl::is_arithmetic<rep>::value) : mDuration(other) {}
 
 		template <typename Duration2>
 		inline EA_CONSTEXPR time_point(
 		    const time_point<Clock, Duration2>& t,
 		    typename eastl::enable_if<eastl::is_convertible<Duration2, Duration>::value>::type** = 0)
+		    EA_NOEXCEPT_IF((eastl::is_arithmetic<rep>::value && eastl::is_arithmetic<typename Duration2::rep>::value))
 		    : mDuration(t.time_since_epoch()) {}
 
-		EA_CONSTEXPR Duration time_since_epoch() const { return mDuration; }
+		EA_CONSTEXPR Duration time_since_epoch() const EA_NOEXCEPT_IF(eastl::is_arithmetic<rep>::value) { return mDuration; }
 
-		time_point& operator+=(const Duration& d) { mDuration += d; return *this; } 
-		time_point& operator-=(const Duration& d) { mDuration -= d; return *this; }
+		time_point& operator+=(const Duration& d) EA_NOEXCEPT_IF(eastl::is_arithmetic<rep>::value) { mDuration += d; return *this; } 
+		time_point& operator-=(const Duration& d) EA_NOEXCEPT_IF(eastl::is_arithmetic<rep>::value) { mDuration -= d; return *this; }
 
-		static EA_CONSTEXPR time_point min() { return time_point(Duration::min()); }
-		static EA_CONSTEXPR time_point max() { return time_point(Duration::max()); }
+		static EA_CONSTEXPR time_point min() EA_NOEXCEPT { return time_point(Duration::min()); }
+		static EA_CONSTEXPR time_point max() EA_NOEXCEPT { return time_point(Duration::max()); }
 	};
 
 
@@ -454,7 +457,7 @@ namespace chrono
 	///////////////////////////////////////////////////////////////////////////////
 	template <class Clock, class Duration1, class Rep2, class Period2>
 	inline EA_CONSTEXPR time_point<Clock, typename eastl::common_type<Duration1, duration<Rep2, Period2>>::type>
-	operator+(const time_point<Clock, Duration1>& lhs, const duration<Rep2, Period2>& rhs)
+	operator+(const time_point<Clock, Duration1>& lhs, const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<typename Duration1::rep>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef time_point<Clock, typename eastl::common_type<Duration1, duration<Rep2, Period2>>::type> common_timepoint_t;
 		return common_timepoint_t(lhs.time_since_epoch() + rhs);
@@ -462,7 +465,7 @@ namespace chrono
 
 	template <class Rep1, class Period1, class Clock, class Duration2>
 	inline EA_CONSTEXPR time_point<Clock, typename eastl::common_type<Duration2, duration<Rep1, Period1>>::type>
-	operator+(const duration<Rep1, Period1>& lhs, const time_point<Clock, Duration2>& rhs)
+	operator+(const duration<Rep1, Period1>& lhs, const time_point<Clock, Duration2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<Rep1>::value && eastl::is_arithmetic<typename Duration2::rep>::value))
 	{
 		typedef time_point<Clock, typename eastl::common_type<Duration2, duration<Rep1, Period1>>::type> common_timepoint_t;
 		return common_timepoint_t(lhs + rhs.time_since_epoch());
@@ -470,7 +473,7 @@ namespace chrono
 
 	template <class Clock, class Duration1, class Rep2, class Period2>
 	inline EA_CONSTEXPR time_point<Clock, typename eastl::common_type<Duration1, duration<Rep2, Period2>>::type>
-	operator-(const time_point<Clock, Duration1>& lhs, const duration<Rep2, Period2>& rhs)
+	operator-(const time_point<Clock, Duration1>& lhs, const duration<Rep2, Period2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<typename Duration1::rep>::value && eastl::is_arithmetic<Rep2>::value))
 	{
 		typedef time_point<Clock, typename eastl::common_type<Duration1, duration<Rep2, Period2>>::type> common_timepoint_t;
 		return common_timepoint_t(lhs.time_since_epoch() - rhs);
@@ -479,47 +482,47 @@ namespace chrono
 	template <class Clock, class Duration1, class Duration2>
 	inline EA_CONSTEXPR typename eastl::common_type<Duration1, Duration2>::type operator-(
 	    const time_point<Clock, Duration1>& lhs,
-	    const time_point<Clock, Duration2>& rhs)
+	    const time_point<Clock, Duration2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<typename Duration1::rep>::value && eastl::is_arithmetic<typename Duration2::rep>::value))
 	{
 		return lhs.time_since_epoch() - rhs.time_since_epoch();
 	}
 
 	template <class Clock, class Duration1, class Duration2>
 	inline EA_CONSTEXPR bool operator==(const time_point<Clock, Duration1>& lhs,
-	                                    const time_point<Clock, Duration2>& rhs)
+	                                    const time_point<Clock, Duration2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<typename Duration1::rep>::value && eastl::is_arithmetic<typename Duration2::rep>::value))
 	{
 		return lhs.time_since_epoch() == rhs.time_since_epoch();
 	}
 
 	template <class Clock, class Duration1, class Duration2>
 	inline EA_CONSTEXPR bool operator!=(const time_point<Clock, Duration1>& lhs,
-	                                    const time_point<Clock, Duration2>& rhs)
+	                                    const time_point<Clock, Duration2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<typename Duration1::rep>::value && eastl::is_arithmetic<typename Duration2::rep>::value))
 	{
 		return !(lhs == rhs);
 	}
 
 	template <class Clock, class Duration1, class Duration2>
-	inline EA_CONSTEXPR bool operator<(const time_point<Clock, Duration1>& lhs, const time_point<Clock, Duration2>& rhs)
+	inline EA_CONSTEXPR bool operator<(const time_point<Clock, Duration1>& lhs, const time_point<Clock, Duration2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<typename Duration1::rep>::value && eastl::is_arithmetic<typename Duration2::rep>::value))
 	{
 		return lhs.time_since_epoch() < rhs.time_since_epoch();
 	}
 
 	template <class Clock, class Duration1, class Duration2>
 	inline EA_CONSTEXPR bool operator<=(const time_point<Clock, Duration1>& lhs,
-	                                    const time_point<Clock, Duration2>& rhs)
+	                                    const time_point<Clock, Duration2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<typename Duration1::rep>::value && eastl::is_arithmetic<typename Duration2::rep>::value))
 	{
 		return !(rhs < lhs);
 	}
 
 	template <class Clock, class Duration1, class Duration2>
-	inline EA_CONSTEXPR bool operator>(const time_point<Clock, Duration1>& lhs, const time_point<Clock, Duration2>& rhs)
+	inline EA_CONSTEXPR bool operator>(const time_point<Clock, Duration1>& lhs, const time_point<Clock, Duration2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<typename Duration1::rep>::value && eastl::is_arithmetic<typename Duration2::rep>::value))
 	{
 		return rhs < lhs;
 	}
 
 	template <class Clock, class Duration1, class Duration2>
 	inline EA_CONSTEXPR bool operator>=(const time_point<Clock, Duration1>& lhs,
-	                                    const time_point<Clock, Duration2>& rhs)
+	                                    const time_point<Clock, Duration2>& rhs) EA_NOEXCEPT_IF((eastl::is_arithmetic<typename Duration1::rep>::value && eastl::is_arithmetic<typename Duration2::rep>::value))
 	{
 		return !(lhs < rhs);
 	}
@@ -532,6 +535,7 @@ namespace chrono
 	EA_CONSTEXPR time_point<Clock, ToDuration> time_point_cast(
 	    const time_point<Clock, Duration>& t,
 	    typename eastl::enable_if<Internal::IsDuration<ToDuration>::value>::type** = 0)
+	    EA_NOEXCEPT_IF((eastl::is_arithmetic<typename Duration::rep>::value && eastl::is_arithmetic<typename ToDuration::rep>::value))
 	{
 		return time_point<Clock, ToDuration>(duration_cast<ToDuration>(t.time_since_epoch()));
 	}
@@ -714,27 +718,27 @@ namespace chrono
 				///////////////////////////////////////////////////////////////////////////////
 				// integer chrono literals
 				///////////////////////////////////////////////////////////////////////////////
-				EA_CONSTEXPR chrono::hours operator""h(unsigned long long h) { return chrono::hours(h); }
-				EA_CONSTEXPR chrono::minutes operator""min(unsigned long long m) { return chrono::minutes(m); }
-				EA_CONSTEXPR chrono::seconds operator""s(unsigned long long s) { return chrono::seconds(s); }
-				EA_CONSTEXPR chrono::milliseconds operator""ms(unsigned long long ms) { return chrono::milliseconds(ms); }
-				EA_CONSTEXPR chrono::microseconds operator""us(unsigned long long us) { return chrono::microseconds(us); }
-				EA_CONSTEXPR chrono::nanoseconds operator""ns(unsigned long long ns) { return chrono::nanoseconds(ns); }
+				EA_CONSTEXPR chrono::hours operator""h(unsigned long long h) EA_NOEXCEPT { return chrono::hours(h); }
+				EA_CONSTEXPR chrono::minutes operator""min(unsigned long long m) EA_NOEXCEPT { return chrono::minutes(m); }
+				EA_CONSTEXPR chrono::seconds operator""s(unsigned long long s) EA_NOEXCEPT { return chrono::seconds(s); }
+				EA_CONSTEXPR chrono::milliseconds operator""ms(unsigned long long ms) EA_NOEXCEPT { return chrono::milliseconds(ms); }
+				EA_CONSTEXPR chrono::microseconds operator""us(unsigned long long us) EA_NOEXCEPT { return chrono::microseconds(us); }
+				EA_CONSTEXPR chrono::nanoseconds operator""ns(unsigned long long ns) EA_NOEXCEPT { return chrono::nanoseconds(ns); }
 
 				///////////////////////////////////////////////////////////////////////////////
 				// float chrono literals
 				///////////////////////////////////////////////////////////////////////////////
-				EA_CONSTEXPR chrono::duration<long double, ratio<3600, 1>> operator""h(long double h)
+				EA_CONSTEXPR chrono::duration<long double, ratio<3600, 1>> operator""h(long double h) EA_NOEXCEPT
 					{ return chrono::duration<long double, ratio<3600, 1>>(h); }
-				EA_CONSTEXPR chrono::duration<long double, ratio<60, 1>> operator""min(long double m)
+				EA_CONSTEXPR chrono::duration<long double, ratio<60, 1>> operator""min(long double m) EA_NOEXCEPT
 					{ return chrono::duration<long double, ratio<60, 1>>(m); }
-				EA_CONSTEXPR chrono::duration<long double> operator""s(long double s)
+				EA_CONSTEXPR chrono::duration<long double> operator""s(long double s) EA_NOEXCEPT
 					{ return chrono::duration<long double>(s); }
-				EA_CONSTEXPR chrono::duration<float, milli> operator""ms(long double ms)
+				EA_CONSTEXPR chrono::duration<float, milli> operator""ms(long double ms) EA_NOEXCEPT
 					{ return chrono::duration<long double, milli>(ms); }
-				EA_CONSTEXPR chrono::duration<float, micro> operator""us(long double us)
+				EA_CONSTEXPR chrono::duration<float, micro> operator""us(long double us) EA_NOEXCEPT
 					{ return chrono::duration<long double, micro>(us); }
-				EA_CONSTEXPR chrono::duration<float, nano> operator""ns(long double ns)
+				EA_CONSTEXPR chrono::duration<float, nano> operator""ns(long double ns) EA_NOEXCEPT
 					{ return chrono::duration<long double, nano>(ns); }
 
 			} // namespace chrono_literals

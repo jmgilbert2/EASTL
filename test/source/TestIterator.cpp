@@ -19,6 +19,205 @@
 #include <EASTL/algorithm.h>
 #include <EASTL/internal/generic_iterator.h>
 
+// The exception specifications of the iterator adaptors, the inserters and the range access functions follow the
+// standard (the conditional ones as MSVC's STL strengthens them).
+namespace NoexceptIteratorTest
+{
+	template <bool Nothrow>
+	struct Iter
+	{
+		typedef eastl::random_access_iterator_tag iterator_category;
+		typedef int                               value_type;
+		typedef ptrdiff_t                         difference_type;
+		typedef int*                              pointer;
+		typedef int&                              reference;
+
+		Iter() EA_NOEXCEPT_IF(Nothrow);
+		Iter(const Iter&) EA_NOEXCEPT_IF(Nothrow);
+		Iter& operator=(const Iter&) EA_NOEXCEPT_IF(Nothrow);
+		int& operator*() const EA_NOEXCEPT_IF(Nothrow);
+		int* operator->() const EA_NOEXCEPT_IF(Nothrow);
+		Iter& operator++() EA_NOEXCEPT_IF(Nothrow);
+		Iter operator++(int) EA_NOEXCEPT_IF(Nothrow);
+		Iter& operator--() EA_NOEXCEPT_IF(Nothrow);
+		Iter operator--(int) EA_NOEXCEPT_IF(Nothrow);
+		Iter& operator+=(ptrdiff_t) EA_NOEXCEPT_IF(Nothrow);
+		Iter& operator-=(ptrdiff_t) EA_NOEXCEPT_IF(Nothrow);
+		Iter operator+(ptrdiff_t) const EA_NOEXCEPT_IF(Nothrow);
+		Iter operator-(ptrdiff_t) const EA_NOEXCEPT_IF(Nothrow);
+		int& operator[](ptrdiff_t) const EA_NOEXCEPT_IF(Nothrow);
+		friend ptrdiff_t operator-(const Iter&, const Iter&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator==(const Iter&, const Iter&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator!=(const Iter&, const Iter&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator<(const Iter&, const Iter&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator>(const Iter&, const Iter&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator<=(const Iter&, const Iter&) EA_NOEXCEPT_IF(Nothrow);
+		friend bool operator>=(const Iter&, const Iter&) EA_NOEXCEPT_IF(Nothrow);
+	};
+	typedef Iter<true>  NothrowIter;
+	typedef Iter<false> ThrowingIter;
+
+	// Converts to Iter<Nothrow> through its copy constructor.
+	template <bool Nothrow>
+	struct ConvertibleIter : public Iter<Nothrow> {};
+
+	// The exception specifications that depend on the base iterator, with a nothrow iterator (I) and an iterator that converts to it (J).
+	#define EASTL_TEST_NOEXCEPT_ITER(AdaptorE, I, J) \
+		static_assert(noexcept(AdaptorE<I>()), #AdaptorE "() is conditionally noexcept"); \
+		static_assert(noexcept(AdaptorE<I>(eastl::declval<I>())), #AdaptorE "(iterator) is conditionally noexcept"); \
+		static_assert(noexcept(AdaptorE<I>(eastl::declval<const AdaptorE<J>&>())), #AdaptorE "(const adaptor<J>&) is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<AdaptorE<I>&>() = eastl::declval<const AdaptorE<J>&>()), #AdaptorE "::operator=(const adaptor<J>&) is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<const AdaptorE<I>&>().operator->()), #AdaptorE "::operator-> is conditionally noexcept"); \
+		static_assert(noexcept(++eastl::declval<AdaptorE<I>&>()), #AdaptorE "::operator++ is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<AdaptorE<I>&>()++), #AdaptorE "::operator++(int) is conditionally noexcept"); \
+		static_assert(noexcept(--eastl::declval<AdaptorE<I>&>()), #AdaptorE "::operator-- is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<AdaptorE<I>&>()--), #AdaptorE "::operator--(int) is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<const AdaptorE<I>&>() + 1), #AdaptorE "::operator+ is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<AdaptorE<I>&>() += 1), #AdaptorE "::operator+= is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<const AdaptorE<I>&>() - 1), #AdaptorE "::operator- is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<AdaptorE<I>&>() -= 1), #AdaptorE "::operator-= is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<const AdaptorE<I>&>() - eastl::declval<const AdaptorE<I>&>()), #AdaptorE " difference is conditionally noexcept"); \
+		static_assert(noexcept(1 + eastl::declval<const AdaptorE<I>&>()), "n + " #AdaptorE " is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<const AdaptorE<I>&>() == eastl::declval<const AdaptorE<I>&>()), #AdaptorE " == is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<const AdaptorE<I>&>() != eastl::declval<const AdaptorE<I>&>()), #AdaptorE " != is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<const AdaptorE<I>&>() < eastl::declval<const AdaptorE<I>&>()), #AdaptorE " < is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<const AdaptorE<I>&>() > eastl::declval<const AdaptorE<I>&>()), #AdaptorE " > is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<const AdaptorE<I>&>() <= eastl::declval<const AdaptorE<I>&>()), #AdaptorE " <= is conditionally noexcept"); \
+		static_assert(noexcept(eastl::declval<const AdaptorE<I>&>() >= eastl::declval<const AdaptorE<I>&>()), #AdaptorE " >= is conditionally noexcept");
+
+	// reverse_iterator, with a nothrow iterator and with a pointer.
+	EASTL_TEST_NOEXCEPT_ITER(eastl::reverse_iterator, NothrowIter, ConvertibleIter<true>)
+	static_assert(noexcept(eastl::reverse_iterator<int*>()), "reverse_iterator<int*>() is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::reverse_iterator<NothrowIter>&>().base()), "reverse_iterator::base is noexcept for a nothrow iterator");
+	static_assert(noexcept(*eastl::declval<const eastl::reverse_iterator<NothrowIter>&>()), "reverse_iterator::operator* is noexcept for a nothrow iterator");
+	static_assert(noexcept(eastl::declval<const eastl::reverse_iterator<NothrowIter>&>()[1]), "reverse_iterator::operator[] is noexcept for a nothrow iterator");
+	static_assert(noexcept(eastl::make_reverse_iterator(eastl::declval<NothrowIter>())), "make_reverse_iterator is noexcept for a nothrow iterator");
+	static_assert(noexcept(eastl::make_reverse_iterator(eastl::declval<int*>())), "make_reverse_iterator is noexcept for a pointer");
+	static_assert(noexcept(eastl::declval<const eastl::reverse_iterator<int*>&>().operator->()), "reverse_iterator<int*>::operator-> is noexcept");
+
+	// ... and with an iterator that may throw: the adaptor's operations may throw too.
+	static_assert(!noexcept(eastl::reverse_iterator<ThrowingIter>()), "reverse_iterator<ThrowingIter>() may throw");
+	static_assert(!noexcept(eastl::reverse_iterator<ThrowingIter>(eastl::declval<ThrowingIter>())), "reverse_iterator<ThrowingIter>(iterator) may throw");
+	static_assert(!noexcept(eastl::declval<const eastl::reverse_iterator<ThrowingIter>&>().base()), "reverse_iterator::base may throw for a throwing iterator");
+	static_assert(!noexcept(*eastl::declval<const eastl::reverse_iterator<ThrowingIter>&>()), "reverse_iterator::operator* may throw for a throwing iterator");
+	static_assert(!noexcept(++eastl::declval<eastl::reverse_iterator<ThrowingIter>&>()), "reverse_iterator::operator++ may throw for a throwing iterator");
+	static_assert(!noexcept(eastl::declval<eastl::reverse_iterator<ThrowingIter>&>() += 1), "reverse_iterator::operator+= may throw for a throwing iterator");
+	static_assert(!noexcept(eastl::declval<const eastl::reverse_iterator<ThrowingIter>&>()[1]), "reverse_iterator::operator[] may throw for a throwing iterator");
+	static_assert(!noexcept(eastl::declval<const eastl::reverse_iterator<ThrowingIter>&>() == eastl::declval<const eastl::reverse_iterator<ThrowingIter>&>()), "reverse_iterator == may throw for a throwing iterator");
+	static_assert(!noexcept(eastl::declval<const eastl::reverse_iterator<ThrowingIter>&>() - eastl::declval<const eastl::reverse_iterator<ThrowingIter>&>()), "reverse_iterator difference may throw for a throwing iterator");
+	static_assert(!noexcept(eastl::make_reverse_iterator(eastl::declval<ThrowingIter>())), "make_reverse_iterator may throw for a throwing iterator");
+	#undef EASTL_TEST_NOEXCEPT_ITER
+
+	// move_iterator.
+	static_assert(noexcept(eastl::move_iterator<NothrowIter>()), "move_iterator() is conditionally noexcept");
+	static_assert(noexcept(eastl::move_iterator<NothrowIter>(eastl::declval<NothrowIter>())), "move_iterator(iterator) is conditionally noexcept");
+	static_assert(noexcept(eastl::move_iterator<NothrowIter>(eastl::declval<const eastl::move_iterator<ConvertibleIter<true>>&>())), "move_iterator(const move_iterator<U>&) is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<eastl::move_iterator<NothrowIter>&>() = eastl::declval<const eastl::move_iterator<ConvertibleIter<true>>&>()), "move_iterator::operator=(const move_iterator<U>&) is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>().base()), "move_iterator::base is noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>().operator->()), "move_iterator::operator-> is conditionally noexcept");
+	static_assert(noexcept(++eastl::declval<eastl::move_iterator<NothrowIter>&>()), "move_iterator::operator++ is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<eastl::move_iterator<NothrowIter>&>()++), "move_iterator::operator++(int) is conditionally noexcept");
+	static_assert(noexcept(--eastl::declval<eastl::move_iterator<NothrowIter>&>()), "move_iterator::operator-- is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<eastl::move_iterator<NothrowIter>&>()--), "move_iterator::operator--(int) is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>() + 1), "move_iterator::operator+ is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<eastl::move_iterator<NothrowIter>&>() += 1), "move_iterator::operator+= is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>() - 1), "move_iterator::operator- is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<eastl::move_iterator<NothrowIter>&>() -= 1), "move_iterator::operator-= is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>() - eastl::declval<const eastl::move_iterator<NothrowIter>&>()), "move_iterator difference is conditionally noexcept");
+	static_assert(noexcept(1 + eastl::declval<const eastl::move_iterator<NothrowIter>&>()), "n + move_iterator is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>() == eastl::declval<const eastl::move_iterator<NothrowIter>&>()), "move_iterator == is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>() != eastl::declval<const eastl::move_iterator<NothrowIter>&>()), "move_iterator != is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>() < eastl::declval<const eastl::move_iterator<NothrowIter>&>()), "move_iterator < is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>() > eastl::declval<const eastl::move_iterator<NothrowIter>&>()), "move_iterator > is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>() <= eastl::declval<const eastl::move_iterator<NothrowIter>&>()), "move_iterator <= is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>() >= eastl::declval<const eastl::move_iterator<NothrowIter>&>()), "move_iterator >= is conditionally noexcept");
+	static_assert(noexcept(eastl::make_move_iterator(eastl::declval<NothrowIter>())), "make_move_iterator is conditionally noexcept");
+	static_assert(noexcept(eastl::move_iterator<int*>()), "move_iterator<int*>() is noexcept");
+
+	static_assert(!noexcept(eastl::move_iterator<ThrowingIter>()), "move_iterator<ThrowingIter>() may throw");
+	static_assert(!noexcept(eastl::move_iterator<ThrowingIter>(eastl::declval<ThrowingIter>())), "move_iterator<ThrowingIter>(iterator) may throw");
+	static_assert(!noexcept(++eastl::declval<eastl::move_iterator<ThrowingIter>&>()), "move_iterator::operator++ may throw for a throwing iterator");
+	static_assert(!noexcept(eastl::declval<eastl::move_iterator<ThrowingIter>&>() += 1), "move_iterator::operator+= may throw for a throwing iterator");
+	static_assert(!noexcept(eastl::declval<const eastl::move_iterator<ThrowingIter>&>() == eastl::declval<const eastl::move_iterator<ThrowingIter>&>()), "move_iterator == may throw for a throwing iterator");
+	static_assert(!noexcept(eastl::declval<const eastl::move_iterator<ThrowingIter>&>() - eastl::declval<const eastl::move_iterator<ThrowingIter>&>()), "move_iterator difference may throw for a throwing iterator");
+	static_assert(!noexcept(eastl::make_move_iterator(eastl::declval<ThrowingIter>())), "make_move_iterator may throw for a throwing iterator");
+
+	// move_sentinel.
+	static_assert(noexcept(eastl::move_sentinel<NothrowIter>()), "move_sentinel() is conditionally noexcept");
+	static_assert(noexcept(eastl::move_sentinel<NothrowIter>(eastl::declval<NothrowIter>())), "move_sentinel(sentinel) is conditionally noexcept");
+	static_assert(noexcept(eastl::move_sentinel<NothrowIter>(eastl::declval<const eastl::move_sentinel<ConvertibleIter<true>>&>())), "move_sentinel(const move_sentinel<S2>&) is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<eastl::move_sentinel<NothrowIter>&>() = eastl::declval<const eastl::move_sentinel<ConvertibleIter<true>>&>()), "move_sentinel::operator=(const move_sentinel<S2>&) is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_sentinel<NothrowIter>&>().base()), "move_sentinel::base is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>() == eastl::declval<const eastl::move_sentinel<NothrowIter>&>()), "move_iterator == move_sentinel is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_sentinel<NothrowIter>&>() - eastl::declval<const eastl::move_iterator<NothrowIter>&>()), "move_sentinel - move_iterator is conditionally noexcept");
+	static_assert(noexcept(eastl::declval<const eastl::move_iterator<NothrowIter>&>() - eastl::declval<const eastl::move_sentinel<NothrowIter>&>()), "move_iterator - move_sentinel is conditionally noexcept");
+	static_assert(!noexcept(eastl::move_sentinel<ThrowingIter>()), "move_sentinel<ThrowingIter>() may throw");
+	static_assert(!noexcept(eastl::declval<const eastl::move_sentinel<ThrowingIter>&>().base()), "move_sentinel::base may throw for a throwing sentinel");
+	static_assert(!noexcept(eastl::declval<const eastl::move_iterator<ThrowingIter>&>() == eastl::declval<const eastl::move_sentinel<ThrowingIter>&>()), "move_iterator == move_sentinel may throw for a throwing iterator");
+
+	// back_insert_iterator and back_inserter.
+	static_assert(noexcept(eastl::back_insert_iterator<eastl::vector<int> >(eastl::declval<eastl::vector<int>&>())), "back_insert_iterator(container) is noexcept");
+	static_assert(noexcept(*eastl::declval<eastl::back_insert_iterator<eastl::vector<int> >&>()), "back_insert_iterator::operator* is noexcept");
+	static_assert(noexcept(++eastl::declval<eastl::back_insert_iterator<eastl::vector<int> >&>()), "back_insert_iterator::operator++ is noexcept");
+	static_assert(noexcept(eastl::declval<eastl::back_insert_iterator<eastl::vector<int> >&>()++), "back_insert_iterator::operator++(int) is noexcept");
+	static_assert(noexcept(eastl::back_inserter(eastl::declval<eastl::vector<int>&>())), "back_inserter is noexcept");
+
+	// Range access functions: noexcept when the container's member is.
+	template <bool Nothrow>
+	struct Range
+	{
+		int* begin() EA_NOEXCEPT_IF(Nothrow);
+		int* end() EA_NOEXCEPT_IF(Nothrow);
+		const int* begin() const EA_NOEXCEPT_IF(Nothrow);
+		const int* end() const EA_NOEXCEPT_IF(Nothrow);
+		eastl::reverse_iterator<int*> rbegin() EA_NOEXCEPT_IF(Nothrow);
+		eastl::reverse_iterator<int*> rend() EA_NOEXCEPT_IF(Nothrow);
+		eastl::reverse_iterator<const int*> rbegin() const EA_NOEXCEPT_IF(Nothrow);
+		eastl::reverse_iterator<const int*> rend() const EA_NOEXCEPT_IF(Nothrow);
+		size_t size() const EA_NOEXCEPT_IF(Nothrow);
+		bool empty() const EA_NOEXCEPT_IF(Nothrow);
+		int* data() EA_NOEXCEPT_IF(Nothrow);
+		const int* data() const EA_NOEXCEPT_IF(Nothrow);
+	};
+
+	#define EASTL_TEST_NOEXCEPT_RANGE(R, Expected) \
+		static_assert(noexcept(eastl::begin(eastl::declval<R&>())) == Expected, "begin(R&) exception specification"); \
+		static_assert(noexcept(eastl::begin(eastl::declval<const R&>())) == Expected, "begin(const R&) exception specification"); \
+		static_assert(noexcept(eastl::cbegin(eastl::declval<R&>())) == Expected, "cbegin exception specification"); \
+		static_assert(noexcept(eastl::end(eastl::declval<R&>())) == Expected, "end(R&) exception specification"); \
+		static_assert(noexcept(eastl::end(eastl::declval<const R&>())) == Expected, "end(const R&) exception specification"); \
+		static_assert(noexcept(eastl::cend(eastl::declval<R&>())) == Expected, "cend exception specification"); \
+		static_assert(noexcept(eastl::rbegin(eastl::declval<R&>())) == Expected, "rbegin(R&) exception specification"); \
+		static_assert(noexcept(eastl::rbegin(eastl::declval<const R&>())) == Expected, "rbegin(const R&) exception specification"); \
+		static_assert(noexcept(eastl::crbegin(eastl::declval<R&>())) == Expected, "crbegin exception specification"); \
+		static_assert(noexcept(eastl::rend(eastl::declval<R&>())) == Expected, "rend(R&) exception specification"); \
+		static_assert(noexcept(eastl::rend(eastl::declval<const R&>())) == Expected, "rend(const R&) exception specification"); \
+		static_assert(noexcept(eastl::crend(eastl::declval<R&>())) == Expected, "crend exception specification"); \
+		static_assert(noexcept(eastl::size(eastl::declval<const R&>())) == Expected, "size exception specification"); \
+		static_assert(noexcept(eastl::ssize(eastl::declval<const R&>())) == Expected, "ssize exception specification"); \
+		static_assert(noexcept(eastl::empty(eastl::declval<const R&>())) == Expected, "empty exception specification"); \
+		static_assert(noexcept(eastl::data(eastl::declval<R&>())) == Expected, "data(R&) exception specification"); \
+		static_assert(noexcept(eastl::data(eastl::declval<const R&>())) == Expected, "data(const R&) exception specification");
+	EASTL_TEST_NOEXCEPT_RANGE(Range<true>, true)
+	EASTL_TEST_NOEXCEPT_RANGE(Range<false>, false)
+	#undef EASTL_TEST_NOEXCEPT_RANGE
+
+	static_assert(noexcept(eastl::rbegin(eastl::declval<int (&)[3]>())), "rbegin(array) is noexcept");
+	static_assert(noexcept(eastl::rend(eastl::declval<int (&)[3]>())), "rend(array) is noexcept");
+	static_assert(noexcept(eastl::rbegin(eastl::declval<std::initializer_list<int> >())), "rbegin(initializer_list) is noexcept");
+	static_assert(noexcept(eastl::rend(eastl::declval<std::initializer_list<int> >())), "rend(initializer_list) is noexcept");
+
+	// front_insert_iterator and insert_iterator: they hold a pointer, and the operations that only return the iterator can't throw.
+	static_assert(noexcept(eastl::front_insert_iterator<eastl::list<int> >(eastl::declval<eastl::list<int>&>())), "front_insert_iterator(container) is noexcept");
+	static_assert(noexcept(*eastl::declval<eastl::front_insert_iterator<eastl::list<int> >&>()), "front_insert_iterator::operator* is noexcept");
+	static_assert(noexcept(++eastl::declval<eastl::front_insert_iterator<eastl::list<int> >&>()), "front_insert_iterator::operator++ is noexcept");
+	static_assert(noexcept(eastl::declval<eastl::front_insert_iterator<eastl::list<int> >&>()++), "front_insert_iterator::operator++(int) is noexcept");
+	static_assert(noexcept(eastl::front_inserter(eastl::declval<eastl::list<int>&>())), "front_inserter is noexcept");
+	static_assert(noexcept(*eastl::declval<eastl::insert_iterator<eastl::vector<int> >&>()), "insert_iterator::operator* is noexcept");
+	static_assert(noexcept(++eastl::declval<eastl::insert_iterator<eastl::vector<int> >&>()), "insert_iterator::operator++ is noexcept");
+	static_assert(noexcept(eastl::declval<eastl::insert_iterator<eastl::vector<int> >&>()++), "insert_iterator::operator++(int) is noexcept");
+}
+
 EA_DISABLE_ALL_VC_WARNINGS()
 #include <stdio.h>
 #include <string.h>

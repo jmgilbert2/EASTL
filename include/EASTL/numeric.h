@@ -245,17 +245,17 @@ namespace eastl
 ///
 namespace eastl
 {
-	[[nodiscard]] constexpr bool isnan(float f)
+	[[nodiscard]] constexpr bool isnan(float f) EA_NOEXCEPT
 	{
 		return f != f;
 	}
 
-	[[nodiscard]] constexpr bool isnan(double d)
+	[[nodiscard]] constexpr bool isnan(double d) EA_NOEXCEPT
 	{
 		return d != d;
 	}
 
-	[[nodiscard]] constexpr bool isnan(long double d)
+	[[nodiscard]] constexpr bool isnan(long double d) EA_NOEXCEPT
 	{
 		return d != d;
 	}

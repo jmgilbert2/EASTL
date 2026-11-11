@@ -28,6 +28,36 @@
 #include <EAStdC/EAMemory.h>
 #include "EASTLTest.h"  // Put this after the above so that it doesn't block any warnings from the includes above.
 
+// min and max are noexcept as in the standard: when the comparison is. lexicographical_compare of byte pointers is noexcept
+// too: it compares the memory, without any user-provided operation.
+namespace NoexceptAlgorithmTest
+{
+	struct Nothrow { Nothrow() EA_NOEXCEPT; Nothrow(const Nothrow&) EA_NOEXCEPT; };
+	struct Throwing { Throwing(); Throwing(const Throwing&); };
+	bool operator<(const Nothrow&, const Nothrow&) EA_NOEXCEPT;
+	bool operator<(const Throwing&, const Throwing&);
+	struct NothrowCompare { bool operator()(const Nothrow&, const Nothrow&) const EA_NOEXCEPT; bool operator()(const Throwing&, const Throwing&) const EA_NOEXCEPT; };
+	struct ThrowingCompare { bool operator()(const Nothrow&, const Nothrow&) const; bool operator()(const Throwing&, const Throwing&) const; };
+
+	static_assert(noexcept(eastl::min(1, 2)) && noexcept(eastl::max(1, 2)) && noexcept(eastl::min_alt(1, 2)) && noexcept(eastl::max_alt(1, 2)), "min and max of scalars are noexcept");
+	static_assert(noexcept(eastl::min(1.f, 2.f)) && noexcept(eastl::max(1.0, 2.0)) && noexcept(eastl::min_alt(1.0L, 2.0L)) && noexcept(eastl::max_alt(1.f, 2.f)), "min and max of floating point values are noexcept");
+	static_assert(noexcept(eastl::min(eastl::declval<const Nothrow&>(), eastl::declval<const Nothrow&>())) && noexcept(eastl::max(eastl::declval<const Nothrow&>(), eastl::declval<const Nothrow&>())), "min and max are noexcept when operator< is");
+	static_assert(noexcept(eastl::min_alt(eastl::declval<const Nothrow&>(), eastl::declval<const Nothrow&>())) && noexcept(eastl::max_alt(eastl::declval<const Nothrow&>(), eastl::declval<const Nothrow&>())), "min_alt and max_alt are noexcept when operator< is");
+	static_assert(!noexcept(eastl::min(eastl::declval<const Throwing&>(), eastl::declval<const Throwing&>())) && !noexcept(eastl::max(eastl::declval<const Throwing&>(), eastl::declval<const Throwing&>())), "min and max may throw when operator< may");
+	static_assert(!noexcept(eastl::min_alt(eastl::declval<const Throwing&>(), eastl::declval<const Throwing&>())) && !noexcept(eastl::max_alt(eastl::declval<const Throwing&>(), eastl::declval<const Throwing&>())), "min_alt and max_alt may throw when operator< may");
+	static_assert(noexcept(eastl::min(eastl::declval<const Throwing&>(), eastl::declval<const Throwing&>(), NothrowCompare())) && noexcept(eastl::max(eastl::declval<const Throwing&>(), eastl::declval<const Throwing&>(), NothrowCompare())), "min and max with a noexcept comparison are noexcept");
+	static_assert(noexcept(eastl::min_alt(eastl::declval<const Nothrow&>(), eastl::declval<const Nothrow&>(), NothrowCompare())) && noexcept(eastl::max_alt(eastl::declval<const Nothrow&>(), eastl::declval<const Nothrow&>(), NothrowCompare())), "min_alt and max_alt with a noexcept comparison are noexcept");
+	static_assert(!noexcept(eastl::min(eastl::declval<const Nothrow&>(), eastl::declval<const Nothrow&>(), ThrowingCompare())) && !noexcept(eastl::max(eastl::declval<const Nothrow&>(), eastl::declval<const Nothrow&>(), ThrowingCompare())), "min and max with a comparison that may throw may throw");
+
+	static_assert(noexcept(eastl::lexicographical_compare(static_cast<const char*>(nullptr), static_cast<const char*>(nullptr), static_cast<const char*>(nullptr), static_cast<const char*>(nullptr))), "lexicographical_compare(const char*) is noexcept");
+	static_assert(noexcept(eastl::lexicographical_compare(static_cast<char*>(nullptr), static_cast<char*>(nullptr), static_cast<char*>(nullptr), static_cast<char*>(nullptr))), "lexicographical_compare(char*) is noexcept");
+	static_assert(noexcept(eastl::lexicographical_compare(static_cast<const unsigned char*>(nullptr), static_cast<const unsigned char*>(nullptr), static_cast<const unsigned char*>(nullptr), static_cast<const unsigned char*>(nullptr))), "lexicographical_compare(const unsigned char*) is noexcept");
+	static_assert(noexcept(eastl::lexicographical_compare(static_cast<unsigned char*>(nullptr), static_cast<unsigned char*>(nullptr), static_cast<unsigned char*>(nullptr), static_cast<unsigned char*>(nullptr))), "lexicographical_compare(unsigned char*) is noexcept");
+	static_assert(noexcept(eastl::lexicographical_compare(static_cast<const signed char*>(nullptr), static_cast<const signed char*>(nullptr), static_cast<const signed char*>(nullptr), static_cast<const signed char*>(nullptr))), "lexicographical_compare(const signed char*) is noexcept");
+	static_assert(noexcept(eastl::lexicographical_compare(static_cast<signed char*>(nullptr), static_cast<signed char*>(nullptr), static_cast<signed char*>(nullptr), static_cast<signed char*>(nullptr))), "lexicographical_compare(signed char*) is noexcept");
+	static_assert(!noexcept(eastl::lexicographical_compare(static_cast<const int*>(nullptr), static_cast<const int*>(nullptr), static_cast<const int*>(nullptr), static_cast<const int*>(nullptr))), "the generic lexicographical_compare may throw");
+}
+
 namespace eastl
 {
 	#if 0
